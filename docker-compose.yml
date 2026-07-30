@@ -1,0 +1,26 @@
+name: devtoolbox
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: devtoolbox
+      POSTGRES_PASSWORD: devtoolbox
+      POSTGRES_DB: devtoolbox
+    ports:
+      - "5432:5432"
+    volumes:
+      - devtoolbox_pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - devtoolbox_redis_data:/data
+
+volumes:
+  devtoolbox_pg_data:
+  devtoolbox_redis_data:

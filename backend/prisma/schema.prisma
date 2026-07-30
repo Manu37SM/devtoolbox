@@ -1,0 +1,191 @@
+// Prisma schema for DevToolbox backend.
+// Full rationale and ERD: see /DATABASE.md at the repo root.
+// This file is the source of truth for migrations (`npm run db:migrate:dev`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String?
+  displayName   String?
+  avatarUrl     String?
+  plan          Plan      @default(FREE)
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  sessions       Session[]
+  snippets       Snippet[]
+  pipelines      Pipeline[]
+  shareLinks     ShareLink[]
+  favorites      Favorite[]
+  historyEntries HistoryEntry[]
+  aiUsageEvents  AiUsageEvent[]
+  oauthAccounts  OAuthAccount[]
+  memberships    OrganizationMember[]
+
+  @@index([email])
+}
+
+model OAuthAccount {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String
+  providerUserId String
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipHash           String?
+  revokedAt        DateTime?
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolSlug  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, toolSlug])
+  @@index([userId])
+}
+
+model HistoryEntry {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolSlug      String
+  inputPreview  String?  @db.Text
+  outputPreview String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([userId, toolSlug, createdAt])
+}
+
+model Snippet {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolSlug  String
+  title     String
+  content   String    @db.Text
+  isPublic  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([userId])
+}
+
+model Pipeline {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  isPublic    Boolean        @default(false)
+  steps       PipelineStep[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+
+  @@index([userId])
+}
+
+model PipelineStep {
+  id          String   @id @default(uuid())
+  pipelineId  String
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  order       Int
+  toolSlug    String
+  optionsJson Json
+
+  @@index([pipelineId, order])
+}
+
+model ShareLink {
+  id               String    @id @default(uuid())
+  slug             String    @unique
+  userId           String?
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  toolSlug         String
+  payload          Json
+  objectStorageKey String?
+  viewCount        Int       @default(0)
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([slug])
+  @@index([expiresAt])
+}
+
+model AiUsageEvent {
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  toolSlug     String
+  model        String
+  inputTokens  Int
+  outputTokens Int
+  latencyMs    Int
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  plan      Plan     @default(TEAM)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members OrganizationMember[]
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrgRole      @default(MEMBER)
+  joinedAt       DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+}

@@ -1,0 +1,199 @@
+# FEATURE.md
+
+Complete feature catalog for DevToolbox: modules, individual tools, prioritization, and phased roadmap.
+
+Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md#adding-a-new-tool). Priority: **P0** = MVP, **P1** = Phase 2, **P2** = Phase 3, **P3** = Phase 4/backlog. "Client-only" = never touches the network for its core function.
+
+## Module 1 — Data Format Tools (JSON/YAML/XML/CSV/TOML)
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| JSON Formatter/Validator/Minifier | P0 | ✅ | Syntax highlighting, error line numbers, tree view toggle |
+| JSON ↔ YAML | P0 | ✅ | |
+| JSON ↔ XML | P0 | ✅ | Handles attributes, namespaces, CDATA |
+| JSON ↔ CSV | P0 | ✅ | Nested object flattening options |
+| JSON ↔ TOML | P1 | ✅ | Cargo.toml/pyproject.toml use case |
+| JSON Path Tester (JSONPath/JMESPath) | P1 | ✅ | |
+| JSON Diff | P1 | ✅ | Structural diff, not text diff |
+| JSON Schema Generator | P1 | ✅ | Infers schema from sample JSON |
+| JSON → TypeScript / Go / Python types | P1 | ✅ | Type generation from sample payload |
+| XML Formatter/Validator | P0 | ✅ | |
+| YAML Formatter/Validator | P0 | ✅ | k8s/CI config use case |
+| CSV ↔ TSV, CSV cleaner | P1 | ✅ | Delimiter detection, header handling |
+| SQL Formatter/Minifier | P1 | ✅ | Multi-dialect (Postgres/MySQL/generic) |
+
+## Module 2 — Encoding & Decoding
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| Base64 Encode/Decode (text + file) | P0 | ✅ | |
+| URL Encode/Decode | P0 | ✅ | |
+| HTML Entity Encode/Decode | P0 | ✅ | |
+| JWT Decoder/Debugger | P0 | ✅ | Header/payload/signature view, expiry check, optional signature verify (client-side, key provided by user) |
+| Hex ↔ Text / Hex ↔ Binary | P1 | ✅ | |
+| GZip/Deflate Compress-Decompress | P1 | ✅ | Web Worker for large payloads |
+| Punycode/IDN Encode-Decode | P2 | ✅ | |
+| Certificate (PEM/CRT) Decoder | P2 | ✅ | Parses X.509 fields client-side |
+
+## Module 3 — Security & Crypto
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| Hash Generator (MD5/SHA-1/SHA-256/SHA-512/Keccak) | P0 | ✅ | Text + file input |
+| UUID/ULID/NanoID Generator + Inspector | P0 | ✅ | Bulk generation, version detection |
+| Password Generator | P0 | ✅ | Entropy meter, custom charset rules |
+| Password Strength Analyzer | P1 | ✅ | Local zxcvbn-style scoring, never transmitted |
+| HMAC Generator | P1 | ✅ | |
+| bcrypt/argon2 Hash & Verify | P1 | ✅ | WASM implementation for correctness parity with server libs |
+| RSA/EC Key Pair Generator | P2 | ✅ | Client-side WebCrypto |
+| TOTP/2FA Code Generator (testing) | P2 | ✅ | |
+
+## Module 4 — Text & String Tools
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| Text Diff Checker | P0 | ✅ | Side-by-side + inline, word/char/line modes |
+| Case Converter (camel/snake/kebab/Pascal/etc.) | P0 | ✅ | |
+| Lorem Ipsum Generator | P0 | ✅ | Word/paragraph/list-item modes |
+| String/Word/Char Counter & Analyzer | P0 | ✅ | Reading time, byte size |
+| Line Sort/Dedupe/Shuffle | P1 | ✅ | |
+| Slugify | P1 | ✅ | |
+| Text ↔ Table (Markdown/CSV/ASCII table) | P1 | ✅ | |
+| Regex Tester/Debugger | P0 | ✅ | Live match highlighting, capture groups, multi-flavor (JS/PCRE) |
+| Regex Cheat Sheet (reference) | P1 | ✅ | Static content module |
+| Markdown ↔ HTML / Live Preview | P0 | ✅ | GFM support, sanitized render |
+
+## Module 5 — Code Tools
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| JS/TS Beautifier & Minifier | P0 | ✅ | |
+| CSS Beautifier & Minifier | P0 | ✅ | |
+| HTML Beautifier & Minifier | P0 | ✅ | |
+| Code Diff (syntax-aware) | P1 | ✅ | Extends text diff with language-aware highlighting |
+| CSS ↔ Tailwind class helper | P2 | ✅ | Suggests Tailwind utility equivalents |
+| HTML ↔ JSX Converter | P1 | ✅ | |
+| .env / dotenv Formatter & Validator | P1 | ✅ | |
+| Cron Expression Builder/Parser | P0 | ✅ | Visual builder + next-run preview |
+
+## Module 6 — Converters
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| Number Base Converter (bin/oct/dec/hex) | P0 | ✅ | |
+| Unix Timestamp ↔ Human Date | P0 | ✅ | Timezone-aware, live clock |
+| Timezone Converter | P1 | ✅ | |
+| Unit Converter (data size, time, etc.) | P1 | ✅ | |
+| Color Converter (HEX/RGB/HSL/CMYK/OKLCH) | P0 | ✅ | Live swatch preview |
+| Color Palette Generator | P1 | ✅ | |
+| Roman Numeral Converter | P2 | ✅ | |
+
+## Module 7 — Image & Graphics Tools
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| Image Compressor (JPG/PNG/WebP) | P1 | ✅ | WASM (e.g., squoosh-style) |
+| Image Format Converter | P1 | ✅ | |
+| SVG Optimizer/Minifier | P1 | ✅ | |
+| SVG ↔ PNG/JPEG/WebP Exporter | P1 | ✅ | |
+| QR Code Generator (incl. WiFi/vCard) | P0 | ✅ | |
+| QR Code Reader | P1 | ✅ | Camera or upload |
+| Favicon Generator | P1 | ✅ | Multi-size bundle export |
+| Placeholder/SVG Mockup Image Generator | P2 | ✅ | |
+| Color Blindness Simulator | P2 | ✅ | |
+| CSS Gradient Generator | P1 | ✅ | |
+| Box Shadow / Border Radius Generator | P2 | ✅ | |
+
+## Module 8 — Network & Web Tools
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| HTTP Request Tester (Postman-lite) | P1 | ⚠️ server-proxied | Server proxy needed to avoid CORS/leak client IP for arbitrary requests; opt-in, request shown to user before send |
+| Webhook Tester (unique inbox URL) | P1 | ❌ server | Requires backend to receive/store inbound webhooks temporarily |
+| DNS Lookup | P1 | ❌ server | DNS resolution requires server-side or public API proxy |
+| IP Address Lookup / What's My IP | P1 | ❌ server | |
+| URL Parser/Inspector | P0 | ✅ | Client-side URL object breakdown |
+| User-Agent Parser | P1 | ✅ | |
+| Meta Tag / Open Graph Previewer | P1 | ⚠️ server-proxied | Fetching arbitrary URLs for preview requires server fetch |
+| CIDR/Subnet Calculator | P1 | ✅ | |
+
+## Module 9 — Generators & Test Data
+
+| Tool | Priority | Client-only | Notes |
+|---|---|---|---|
+| Fake/Mock Data Generator (names, addresses, JSON records) | P1 | ✅ | Faker-backed, seedable for reproducibility |
+| Random Number/String Generator | P0 | ✅ | |
+| Placeholder Text (Lorem variants: Hipster/Corporate/Bacon) | P2 | ✅ | |
+| GUID/UUID Bulk Generator | P0 | ✅ | (shared engine with Module 3) |
+| Mock REST API Response Generator | P2 | ✅ | Generates sample JSON from a schema |
+
+## Module 10 — AI-Powered Tools (differentiator layer)
+
+All AI tools: clearly labeled, show data-sent preview before first use, deterministic fallback offered where one exists, backed by the AI Gateway (ARCHITECTURE.md §8.3).
+
+| Tool | Priority | Notes |
+|---|---|---|
+| Explain This (regex / JSON schema / cron expression / SQL query) | P2 | Plain-language explanation of a pasted expression |
+| Generate From Example (JSON→schema description, sample→regex) | P2 | Natural language → structured output |
+| AI Diff Summary | P2 | Summarizes a large text/JSON diff in plain language |
+| AI Commit Message / PR Description Generator | P3 | From a pasted diff |
+| Natural Language → Cron | P2 | "every weekday at 9am" → cron expression, validated deterministically after generation |
+| Natural Language → Regex | P2 | Generated regex is always validated against user-provided test strings before shown as "confirmed" |
+| SQL Query Explainer | P2 | |
+| Code Commenter / Docstring Generator | P3 | |
+| AI JSON Repair (fix malformed JSON) | P2 | Deterministic repair attempted first; AI fallback for ambiguous cases |
+| API Response → Client Code Generator | P3 | Given a sample response, generate typed fetch/axios client stub |
+
+## Cross-Cutting Platform Features
+
+| Feature | Priority | Notes |
+|---|---|---|
+| Command palette (⌘K) with fuzzy search + smart-paste detection | P0 | Detects clipboard/paste content shape (JSON, JWT, hex color, UUID, timestamp, base64) and suggests the matching tool |
+| Local history per tool (IndexedDB) | P0 | |
+| Favorites/pinning | P0 | |
+| Dark/light/system theme | P0 | |
+| Keyboard shortcuts overlay | P0 | |
+| PWA/offline support | P1 | |
+| Pipelines (chain tools, client-only) | P1 | |
+| Optional accounts (email + OAuth) | P2 | |
+| Cross-device sync (history, favorites, pipelines) | P2 | |
+| Shareable tool state (short links) | P2 | |
+| Pipeline sharing | P2 | |
+| Team workspaces | P3 | |
+| Public API / CLI | P3 | |
+| Browser extension | P3 | |
+| Plugin system for community tools | P3 | |
+
+## Phased Roadmap
+
+### Phase 1 — MVP (target: coherent, launchable core)
+- App shell: layout, navigation, theme, command palette (search only, smart-paste stretch goal), keyboard shortcuts.
+- 20 P0 tools across Modules 1–6, 9 (the highest-search-volume, purely deterministic tools).
+- Local history + favorites (IndexedDB), no accounts yet.
+- Static tool pages with SEO metadata for all shipped tools.
+- CI/CD, basic monitoring/error tracking live from day one.
+
+### Phase 2 — Full deterministic catalog
+- Remaining P1 tools across all modules, including Module 7 (image/graphics, needs WASM pipeline) and the server-proxied subset of Module 8 (requires backend build-out: HTTP tester, webhook tester, DNS/IP lookup).
+- Pipelines (client-only chaining).
+- PWA/offline support.
+- Smart-paste detection completed for the command palette.
+
+### Phase 3 — Accounts, sync, first AI features
+- Optional accounts, cross-device sync, share links.
+- AI Gateway backend + first AI tools (Explain This, NL→Cron, NL→Regex, AI JSON Repair, AI Diff Summary).
+- Pro tier groundwork (usage quotas, billing integration).
+
+### Phase 4 — Enterprise/ecosystem
+- Team workspaces, org AI quotas/admin dashboard.
+- Public API + CLI.
+- Browser extension, VS Code extension.
+- Plugin marketplace (WASM-sandboxed community tools).
+- Remaining P2/P3 tools and AI features.
+
+## Prioritization Rationale
+
+Tools were prioritized on three axes, weighted in this order:
+1. **Search/usage volume** (per competitive research — JSON formatting, Base64, JWT, hashing, and timestamp tools dominate query volume across every competitor site reviewed).
+2. **Implementation complexity vs. client-only feasibility** — pure client-side tools ship faster and de-risk the "no backend needed for MVP" goal; anything requiring a server (Module 8's DNS/webhook/HTTP tools) is deliberately deferred past MVP.
+3. **Differentiation value** — AI tools and pipelines are placed after the deterministic catalog is solid, because they depend on (a) having enough tools to chain/explain and (b) a backend that doesn't exist yet at MVP.
