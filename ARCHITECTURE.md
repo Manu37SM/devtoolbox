@@ -154,6 +154,7 @@ Full catalog, module breakdown, and prioritization lives in [FEATURE.md](./FEATU
 - **Web Workers:** CPU-heavy transforms (large JSON diffing, image compression, hashing large payloads) run in a Web Worker pool to keep the main thread responsive.
 - **Local persistence:** Dexie.js wrapper over IndexedDB for history/favorites/drafts; localStorage only for small UI preferences (theme, layout).
 - **PWA:** App is installable and core tools work offline via a service worker precaching the app shell and tool bundles.
+- **Tool-specific parsing/formatting libraries:** added as needed per tool rather than pre-selected wholesale, each imported only by the tool that needs it (code-split, not part of the core app bundle) — `js-yaml` (YAML parse/stringify, used by JSON↔YAML and the YAML Formatter), `qrcode` (QR Code Generator), `prettier` standalone + its `parser-babel`/`parser-postcss`/`parser-html` plugins (JS/TS, CSS, and HTML Beautifier/Minifier tools; Prettier is the de facto standard here — hand-rolling a comparable formatter is not worth the accuracy trade-off). Added 2026-07 during Phase 1 implementation per CLAUDE.md rule 10 (flagged and approved before adding).
 
 ### 8.3 Backend architecture
 

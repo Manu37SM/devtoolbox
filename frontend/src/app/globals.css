@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens — UI_GUIDELINES.md §2. Light theme is the default; dark
+   theme overrides via .dark on <html>, toggled by an inline blocking
+   script in layout.tsx to avoid flash-of-unstyled-theme. */
+:root {
+  --color-bg-base: #ffffff;
+  --color-bg-raised: #f7f7f8;
+  --color-bg-overlay: #ffffff;
+  --color-border-subtle: #ececef;
+  --color-border-default: #dcdce1;
+  --color-text-primary: #17181c;
+  --color-text-secondary: #4b4d57;
+  --color-text-muted: #7a7c87;
+  --color-accent: #4f46e5;
+  --color-accent-foreground: #ffffff;
+  --color-success: #16a34a;
+  --color-success-foreground: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-foreground: #ffffff;
+  --color-danger: #dc2626;
+  --color-danger-foreground: #ffffff;
+  --color-info: #2563eb;
+  --color-info-foreground: #ffffff;
+
+  --syntax-key: #4f46e5;
+  --syntax-string: #16a34a;
+  --syntax-number: #d97706;
+  --syntax-boolean: #2563eb;
+  --syntax-comment: #9394a1;
+  --syntax-punctuation: #4b4d57;
+}
+
+.dark {
+  --color-bg-base: #101114;
+  --color-bg-raised: #17181c;
+  --color-bg-overlay: #1c1d22;
+  --color-border-subtle: #26272d;
+  --color-border-default: #303138;
+  --color-text-primary: #f2f2f4;
+  --color-text-secondary: #c2c3ca;
+  --color-text-muted: #8a8b96;
+  --color-accent: #818cf8;
+  --color-accent-foreground: #101114;
+  --color-success: #4ade80;
+  --color-success-foreground: #101114;
+  --color-warning: #fbbf24;
+  --color-warning-foreground: #101114;
+  --color-danger: #f87171;
+  --color-danger-foreground: #101114;
+  --color-info: #60a5fa;
+  --color-info-foreground: #101114;
+
+  --syntax-key: #818cf8;
+  --syntax-string: #4ade80;
+  --syntax-number: #fbbf24;
+  --syntax-boolean: #60a5fa;
+  --syntax-comment: #6b6c78;
+  --syntax-punctuation: #c2c3ca;
+}
+
+* {
+  border-color: var(--color-border-default);
+}
+
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

@@ -4,6 +4,32 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (Phase 1 — MVP implementation)
+- App shell: Next.js App Router layout, light/dark design tokens, `AppShell`/`ToolShell` page chrome, tool catalog page, dynamic `/tools/[slug]` route with static params + SEO metadata.
+- Shared UI primitives: `Button`, `Textarea`, `Badge`, `CopyButton`, `OutputPane`, `DualPane`.
+- **All 29 P0 tools shipped end-to-end** (schema, transform, tests, ToolView, registry entry, SEO content) — the full FEATURE.md MVP tool catalog:
+  - Data format: JSON Formatter, JSON↔YAML, JSON↔XML, JSON↔CSV, XML Formatter/Validator, YAML Formatter/Validator.
+  - Encoding: Base64, URL Encode/Decode, HTML Entity Encode/Decode, JWT Decoder.
+  - Security: Hash Generator (MD5/SHA-1/256/512), UUID Generator (v4/v7), Password Generator.
+  - Text: Text Diff Checker, Case Converter, Lorem Ipsum Generator, String/Word/Char Counter, Regex Tester/Debugger, Markdown↔HTML.
+  - Code: JS/TS Beautifier, CSS Beautifier, HTML Beautifier, Cron Expression Builder/Parser.
+  - Converters: Number Base Converter, Unix Timestamp Converter, Color Converter.
+  - Image: QR Code Generator (text/URL, WiFi, vCard).
+  - Generators: Random Number/String Generator, GUID/UUID Bulk Generator.
+- 221 unit tests across all 29 `transform.ts` modules (Vitest), all passing; every tool's `.ts` source verified against `tsc --strict` with zero errors.
+- **All 5 remaining P0 cross-cutting platform features**: command palette (⌘K, fuzzy search, smart-paste detection for JWT/hex color/UUID/timestamp/JSON/Base64), local history (IndexedDB via Dexie, 200-entry cap), favorites/pinning (IndexedDB), dark/light/system theme (Zustand + persisted, no flash-of-unstyled-theme), keyboard shortcuts overlay (`?` key). Home page now shows "Favorites" and "Recently used" sections above the module-grouped catalog.
+
+### Fixed
+- Added missing `@types/node`, `@types/react`, `@types/react-dom` to `frontend/package.json` devDependencies (required for the TypeScript toolchain to compile at all; gap in the original scaffold).
+
+### Dependencies
+- Added `js-yaml`, `qrcode`, `prettier` (+ standalone plugins), and `dompurify` as tool-specific frontend dependencies, flagged and approved per CLAUDE.md before adding; documented in ARCHITECTURE.md §8.2. No new dependencies needed for the cross-cutting features — `zustand`, `dexie`, `dexie-react-hooks`, and `@radix-ui/react-dialog` were already in the approved stack.
+
+### Notes
+- Remaining Phase 1 work: a persistent left nav (command palette covers primary nav for MVP), CodeMirror integration (currently a plain `<textarea>` behind the same interface), Storybook/E2E/axe-core coverage, and full `npm install`/`next build` verification (this session's sandbox couldn't complete a full install — see AUDIT_REPORT.md §7.3). Phase 2 scope (pipelines, PWA/offline, minification) tracked separately.
+
+## Planning phase
+
 ### Added
 - Complete project blueprint and planning-phase documentation set: `README.md`, `FEATURE.md`, `ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `UI_GUIDELINES.md`, `DEVELOPMENT_GUIDE.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `AUDIT_REPORT.md`.
 - Competitive landscape research covering single-tool SEO sites, aggregator web suites, and native/offline developer-tool apps.

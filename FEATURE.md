@@ -8,17 +8,17 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 
 | Tool | Priority | Client-only | Notes |
 |---|---|---|---|
-| JSON Formatter/Validator/Minifier | P0 | ✅ | Syntax highlighting, error line numbers, tree view toggle |
-| JSON ↔ YAML | P0 | ✅ | |
-| JSON ↔ XML | P0 | ✅ | Handles attributes, namespaces, CDATA |
-| JSON ↔ CSV | P0 | ✅ | Nested object flattening options |
+| JSON Formatter/Validator/Minifier | P0 | ✅ | Syntax highlighting, error line numbers, tree view toggle (✅ Shipped Phase 1) |
+| JSON ↔ YAML | P0 | ✅ | (✅ Shipped Phase 1) |
+| JSON ↔ XML | P0 | ✅ | Handles attributes, namespaces, CDATA (✅ Shipped Phase 1) |
+| JSON ↔ CSV | P0 | ✅ | Nested object flattening options (✅ Shipped Phase 1) |
 | JSON ↔ TOML | P1 | ✅ | Cargo.toml/pyproject.toml use case |
 | JSON Path Tester (JSONPath/JMESPath) | P1 | ✅ | |
 | JSON Diff | P1 | ✅ | Structural diff, not text diff |
 | JSON Schema Generator | P1 | ✅ | Infers schema from sample JSON |
 | JSON → TypeScript / Go / Python types | P1 | ✅ | Type generation from sample payload |
-| XML Formatter/Validator | P0 | ✅ | |
-| YAML Formatter/Validator | P0 | ✅ | k8s/CI config use case |
+| XML Formatter/Validator | P0 | ✅ | (✅ Shipped Phase 1) |
+| YAML Formatter/Validator | P0 | ✅ | k8s/CI config use case (✅ Shipped Phase 1) |
 | CSV ↔ TSV, CSV cleaner | P1 | ✅ | Delimiter detection, header handling |
 | SQL Formatter/Minifier | P1 | ✅ | Multi-dialect (Postgres/MySQL/generic) |
 
@@ -26,10 +26,10 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 
 | Tool | Priority | Client-only | Notes |
 |---|---|---|---|
-| Base64 Encode/Decode (text + file) | P0 | ✅ | |
-| URL Encode/Decode | P0 | ✅ | |
-| HTML Entity Encode/Decode | P0 | ✅ | |
-| JWT Decoder/Debugger | P0 | ✅ | Header/payload/signature view, expiry check, optional signature verify (client-side, key provided by user) |
+| Base64 Encode/Decode (text + file) | P0 | ✅ | (✅ Shipped Phase 1) |
+| URL Encode/Decode | P0 | ✅ | (✅ Shipped Phase 1) |
+| HTML Entity Encode/Decode | P0 | ✅ | (✅ Shipped Phase 1) |
+| JWT Decoder/Debugger | P0 | ✅ | Header/payload/signature view, expiry check, optional signature verify (client-side, key provided by user) (✅ Shipped Phase 1) |
 | Hex ↔ Text / Hex ↔ Binary | P1 | ✅ | |
 | GZip/Deflate Compress-Decompress | P1 | ✅ | Web Worker for large payloads |
 | Punycode/IDN Encode-Decode | P2 | ✅ | |
@@ -39,9 +39,9 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 
 | Tool | Priority | Client-only | Notes |
 |---|---|---|---|
-| Hash Generator (MD5/SHA-1/SHA-256/SHA-512/Keccak) | P0 | ✅ | Text + file input |
-| UUID/ULID/NanoID Generator + Inspector | P0 | ✅ | Bulk generation, version detection |
-| Password Generator | P0 | ✅ | Entropy meter, custom charset rules |
+| Hash Generator (MD5/SHA-1/SHA-256/SHA-512/Keccak) | P0 | ✅ | Text + file input (✅ Shipped Phase 1) |
+| UUID/ULID/NanoID Generator + Inspector | P0 | ✅ | Bulk generation, version detection (✅ Shipped Phase 1) |
+| Password Generator | P0 | ✅ | Entropy meter, custom charset rules (✅ Shipped Phase 1) |
 | Password Strength Analyzer | P1 | ✅ | Local zxcvbn-style scoring, never transmitted |
 | HMAC Generator | P1 | ✅ | |
 | bcrypt/argon2 Hash & Verify | P1 | ✅ | WASM implementation for correctness parity with server libs |
@@ -52,39 +52,39 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 
 | Tool | Priority | Client-only | Notes |
 |---|---|---|---|
-| Text Diff Checker | P0 | ✅ | Side-by-side + inline, word/char/line modes |
-| Case Converter (camel/snake/kebab/Pascal/etc.) | P0 | ✅ | |
-| Lorem Ipsum Generator | P0 | ✅ | Word/paragraph/list-item modes |
-| String/Word/Char Counter & Analyzer | P0 | ✅ | Reading time, byte size |
+| Text Diff Checker | P0 | ✅ | Side-by-side + inline, word/char/line modes (✅ Shipped Phase 1) |
+| Case Converter (camel/snake/kebab/Pascal/etc.) | P0 | ✅ | (✅ Shipped Phase 1) |
+| Lorem Ipsum Generator | P0 | ✅ | Word/paragraph/list-item modes (✅ Shipped Phase 1) |
+| String/Word/Char Counter & Analyzer | P0 | ✅ | Reading time, byte size (✅ Shipped Phase 1) |
 | Line Sort/Dedupe/Shuffle | P1 | ✅ | |
 | Slugify | P1 | ✅ | |
 | Text ↔ Table (Markdown/CSV/ASCII table) | P1 | ✅ | |
-| Regex Tester/Debugger | P0 | ✅ | Live match highlighting, capture groups, multi-flavor (JS/PCRE) |
+| Regex Tester/Debugger | P0 | ✅ | Live match highlighting, capture groups, multi-flavor (JS/PCRE) (✅ Shipped Phase 1) |
 | Regex Cheat Sheet (reference) | P1 | ✅ | Static content module |
-| Markdown ↔ HTML / Live Preview | P0 | ✅ | GFM support, sanitized render |
+| Markdown ↔ HTML / Live Preview | P0 | ✅ | GFM support, sanitized render (✅ Shipped Phase 1) |
 
 ## Module 5 — Code Tools
 
 | Tool | Priority | Client-only | Notes |
 |---|---|---|---|
-| JS/TS Beautifier & Minifier | P0 | ✅ | |
-| CSS Beautifier & Minifier | P0 | ✅ | |
-| HTML Beautifier & Minifier | P0 | ✅ | |
+| JS/TS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify only, see AUDIT_REPORT.md §7) |
+| CSS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify only, see AUDIT_REPORT.md §7) |
+| HTML Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify only, see AUDIT_REPORT.md §7) |
 | Code Diff (syntax-aware) | P1 | ✅ | Extends text diff with language-aware highlighting |
 | CSS ↔ Tailwind class helper | P2 | ✅ | Suggests Tailwind utility equivalents |
 | HTML ↔ JSX Converter | P1 | ✅ | |
 | .env / dotenv Formatter & Validator | P1 | ✅ | |
-| Cron Expression Builder/Parser | P0 | ✅ | Visual builder + next-run preview |
+| Cron Expression Builder/Parser | P0 | ✅ | Visual builder + next-run preview (✅ Shipped Phase 1) |
 
 ## Module 6 — Converters
 
 | Tool | Priority | Client-only | Notes |
 |---|---|---|---|
-| Number Base Converter (bin/oct/dec/hex) | P0 | ✅ | |
-| Unix Timestamp ↔ Human Date | P0 | ✅ | Timezone-aware, live clock |
+| Number Base Converter (bin/oct/dec/hex) | P0 | ✅ | (✅ Shipped Phase 1) |
+| Unix Timestamp ↔ Human Date | P0 | ✅ | Timezone-aware, live clock (✅ Shipped Phase 1) |
 | Timezone Converter | P1 | ✅ | |
 | Unit Converter (data size, time, etc.) | P1 | ✅ | |
-| Color Converter (HEX/RGB/HSL/CMYK/OKLCH) | P0 | ✅ | Live swatch preview |
+| Color Converter (HEX/RGB/HSL/CMYK/OKLCH) | P0 | ✅ | Live swatch preview (✅ Shipped Phase 1) |
 | Color Palette Generator | P1 | ✅ | |
 | Roman Numeral Converter | P2 | ✅ | |
 
@@ -96,7 +96,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | Image Format Converter | P1 | ✅ | |
 | SVG Optimizer/Minifier | P1 | ✅ | |
 | SVG ↔ PNG/JPEG/WebP Exporter | P1 | ✅ | |
-| QR Code Generator (incl. WiFi/vCard) | P0 | ✅ | |
+| QR Code Generator (incl. WiFi/vCard) | P0 | ✅ | (✅ Shipped Phase 1) |
 | QR Code Reader | P1 | ✅ | Camera or upload |
 | Favicon Generator | P1 | ✅ | Multi-size bundle export |
 | Placeholder/SVG Mockup Image Generator | P2 | ✅ | |
@@ -122,9 +122,9 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | Tool | Priority | Client-only | Notes |
 |---|---|---|---|
 | Fake/Mock Data Generator (names, addresses, JSON records) | P1 | ✅ | Faker-backed, seedable for reproducibility |
-| Random Number/String Generator | P0 | ✅ | |
+| Random Number/String Generator | P0 | ✅ | (✅ Shipped Phase 1) |
 | Placeholder Text (Lorem variants: Hipster/Corporate/Bacon) | P2 | ✅ | |
-| GUID/UUID Bulk Generator | P0 | ✅ | (shared engine with Module 3) |
+| GUID/UUID Bulk Generator | P0 | ✅ | (shared engine with Module 3) (✅ Shipped Phase 1) |
 | Mock REST API Response Generator | P2 | ✅ | Generates sample JSON from a schema |
 
 ## Module 10 — AI-Powered Tools (differentiator layer)
@@ -148,11 +148,11 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 
 | Feature | Priority | Notes |
 |---|---|---|
-| Command palette (⌘K) with fuzzy search + smart-paste detection | P0 | Detects clipboard/paste content shape (JSON, JWT, hex color, UUID, timestamp, base64) and suggests the matching tool |
-| Local history per tool (IndexedDB) | P0 | |
-| Favorites/pinning | P0 | |
-| Dark/light/system theme | P0 | |
-| Keyboard shortcuts overlay | P0 | |
+| Command palette (⌘K) with fuzzy search + smart-paste detection | P0 | Detects clipboard/paste content shape (JSON, JWT, hex color, UUID, timestamp, base64) and suggests the matching tool (✅ Shipped Phase 1) |
+| Local history per tool (IndexedDB) | P0 | (✅ Shipped Phase 1 — cross-tool recent list; see AUDIT_REPORT.md §7) |
+| Favorites/pinning | P0 | (✅ Shipped Phase 1) |
+| Dark/light/system theme | P0 | (✅ Shipped Phase 1) |
+| Keyboard shortcuts overlay | P0 | (✅ Shipped Phase 1) |
 | PWA/offline support | P1 | |
 | Pipelines (chain tools, client-only) | P1 | |
 | Optional accounts (email + OAuth) | P2 | |
