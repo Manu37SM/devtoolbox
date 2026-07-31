@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ## [Unreleased]
 
 ### Added (Phase 1 — MVP implementation)
+
 - App shell: Next.js App Router layout, light/dark design tokens, `AppShell`/`ToolShell` page chrome, tool catalog page, dynamic `/tools/[slug]` route with static params + SEO metadata.
 - Shared UI primitives: `Button`, `Textarea`, `Badge`, `CopyButton`, `OutputPane`, `DualPane`.
 - **All 29 P0 tools shipped end-to-end** (schema, transform, tests, ToolView, registry entry, SEO content) — the full FEATURE.md MVP tool catalog:
@@ -25,22 +26,26 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - **Playwright E2E + axe-core smoke suite** (`playwright.config.ts`, `e2e/a11y.spec.ts`, `e2e/critical-journeys.spec.ts`) — axe-core WCAG 2.1 A/AA checks against a fixed set of representative tool pages plus the command palette overlay, and critical-journey coverage for using a tool end-to-end and command palette search/smart-paste. New `test:e2e` script.
 
 ### Fixed
+
 - Added missing `@types/node`, `@types/react`, `@types/react-dom` to `frontend/package.json` devDependencies (required for the TypeScript toolchain to compile at all; gap in the original scaffold).
 - `backend/tsconfig.json`: replaced the deprecated `moduleResolution: "Node"` (Node10) alias with `"Node16"`, and replaced the deprecated `baseUrl` + relative `paths` pair with an explicit `rootDir` and tsconfig-relative `paths`. No behavior change.
 - **Repaired dependency corruption found after the first successful local `npm install`**: `frontend/package.json`'s `next` had reverted to `^9.3.3` (pre-App-Router, incompatible with the whole `app/` directory), `@nestjs/*` packages had leaked into `frontend`'s dependencies, root `package.json` had gained a bogus `dependencies` block, and `backend`'s `@nestjs/*` packages had mismatched majors. Root cause not conclusively identified (see AUDIT_REPORT.md §7.9) — restored all three manifests to their intended state. In the process, discovered and fixed a real latent peer-dependency conflict: `@nestjs/jwt`/`@nestjs/passport` needed bumping from their `^10.x` lines to `^11.0.0` to support `@nestjs/common@^11.1.28`. `npm audit --omit=dev` now reports only 2 findings, both bundled inside Next.js itself with no non-major fix available — tracked as accepted risk.
 
 ### Dependencies
+
 - Added `js-yaml`, `qrcode`, `prettier` (+ standalone plugins), and `dompurify` as tool-specific frontend dependencies, flagged and approved per CLAUDE.md before adding; documented in ARCHITECTURE.md §8.2. No new dependencies needed for the cross-cutting features — `zustand`, `dexie`, `dexie-react-hooks`, and `@radix-ui/react-dialog` were already in the approved stack.
 - Added `terser`, `csso`, `html-minifier-terser` (+ `@types/csso`, `@types/html-minifier-terser`) for the beautifier tools' new Minify mode, flagged and approved per CLAUDE.md before adding; documented in ARCHITECTURE.md §8.2.
 - Added `@codemirror/lang-json`, `-javascript`, `-css`, `-html`, `-xml`, `-yaml`, `-markdown`, `@codemirror/language`, `@codemirror/commands` for the new `CodeEditor` component's syntax highlighting, flagged and approved per CLAUDE.md before adding; documented in ARCHITECTURE.md §8.2.
 - Added `@storybook/react`, `@storybook/addon-essentials`, `@storybook/addon-a11y`, `storybook` as companion packages to the already-approved `@storybook/nextjs`, needed to actually run Storybook + the a11y addon named in DEVELOPMENT_GUIDE.md §6/§7; documented in AUDIT_REPORT.md §7.8.
 
 ### Notes
+
 - **The full build → typecheck → test cycle is green for the first time in this project's history.** `npm run build`, `npm run typecheck`, and `npm run test` all pass end-to-end for both workspaces — 247 real unit tests across 31 files, all passing. See AUDIT_REPORT.md §7.9–§7.10 for the full incident/remediation trail: dependency corruption, two self-inflicted tsconfig regressions, three previously-missing backend dependencies, a Node-only-package-in-client-bundle bug, a Next 15 breaking-change migration gap, two test-scoping leaks (Storybook stories into `next build`'s type-check, Playwright specs into `vitest run`), and one genuine pre-existing type bug in `random-generator`. `backend` has zero test files (expected — Phase 2/3 scope per FEATURE.md, not a regression). Remaining work: `npm run storybook`/`npm run test:e2e` haven't been run against a live app yet, and committing this session's work is still blocked inside this sandbox by the `.git/index.lock` issue (§7.3) — needs a normal terminal. Phase 2 scope (pipelines, PWA/offline) tracked separately.
 
 ## Planning phase
 
 ### Added
+
 - Complete project blueprint and planning-phase documentation set: `README.md`, `FEATURE.md`, `ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `UI_GUIDELINES.md`, `DEVELOPMENT_GUIDE.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `AUDIT_REPORT.md`.
 - Competitive landscape research covering single-tool SEO sites, aggregator web suites, and native/offline developer-tool apps.
 - Prioritized, phased feature roadmap across 10 tool modules (60+ tools) plus cross-cutting platform features.
@@ -51,6 +56,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - Monorepo folder scaffolding for `frontend/`, `backend/`, and supporting directories (no feature code yet).
 
 ### Notes
+
 - This release line represents the **planning/architecture phase only**. No product features are implemented yet. Implementation begins at `v0.1.0` per the MVP scope in `FEATURE.md`.
 
 <!--

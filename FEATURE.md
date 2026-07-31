@@ -7,7 +7,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 1 — Data Format Tools (JSON/YAML/XML/CSV/TOML)
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | JSON Formatter/Validator/Minifier | P0 | ✅ | Syntax highlighting, error line numbers, tree view toggle (✅ Shipped Phase 1) |
 | JSON ↔ YAML | P0 | ✅ | (✅ Shipped Phase 1) |
 | JSON ↔ XML | P0 | ✅ | Handles attributes, namespaces, CDATA (✅ Shipped Phase 1) |
@@ -25,7 +25,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 2 — Encoding & Decoding
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Base64 Encode/Decode (text + file) | P0 | ✅ | (✅ Shipped Phase 1) |
 | URL Encode/Decode | P0 | ✅ | (✅ Shipped Phase 1) |
 | HTML Entity Encode/Decode | P0 | ✅ | (✅ Shipped Phase 1) |
@@ -38,7 +38,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 3 — Security & Crypto
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Hash Generator (MD5/SHA-1/SHA-256/SHA-512/Keccak) | P0 | ✅ | Text + file input (✅ Shipped Phase 1) |
 | UUID/ULID/NanoID Generator + Inspector | P0 | ✅ | Bulk generation, version detection (✅ Shipped Phase 1) |
 | Password Generator | P0 | ✅ | Entropy meter, custom charset rules (✅ Shipped Phase 1) |
@@ -51,7 +51,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 4 — Text & String Tools
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Text Diff Checker | P0 | ✅ | Side-by-side + inline, word/char/line modes (✅ Shipped Phase 1) |
 | Case Converter (camel/snake/kebab/Pascal/etc.) | P0 | ✅ | (✅ Shipped Phase 1) |
 | Lorem Ipsum Generator | P0 | ✅ | Word/paragraph/list-item modes (✅ Shipped Phase 1) |
@@ -66,7 +66,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 5 — Code Tools
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | JS/TS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify + minify; TS input not minifiable, see AUDIT_REPORT.md §7) |
 | CSS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify + minify) |
 | HTML Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify + minify) |
@@ -79,7 +79,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 6 — Converters
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Number Base Converter (bin/oct/dec/hex) | P0 | ✅ | (✅ Shipped Phase 1) |
 | Unix Timestamp ↔ Human Date | P0 | ✅ | Timezone-aware, live clock (✅ Shipped Phase 1) |
 | Timezone Converter | P1 | ✅ | |
@@ -91,7 +91,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 7 — Image & Graphics Tools
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Image Compressor (JPG/PNG/WebP) | P1 | ✅ | WASM (e.g., squoosh-style) |
 | Image Format Converter | P1 | ✅ | |
 | SVG Optimizer/Minifier | P1 | ✅ | |
@@ -107,7 +107,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 8 — Network & Web Tools
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | HTTP Request Tester (Postman-lite) | P1 | ⚠️ server-proxied | Server proxy needed to avoid CORS/leak client IP for arbitrary requests; opt-in, request shown to user before send |
 | Webhook Tester (unique inbox URL) | P1 | ❌ server | Requires backend to receive/store inbound webhooks temporarily |
 | DNS Lookup | P1 | ❌ server | DNS resolution requires server-side or public API proxy |
@@ -120,7 +120,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 ## Module 9 — Generators & Test Data
 
 | Tool | Priority | Client-only | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Fake/Mock Data Generator (names, addresses, JSON records) | P1 | ✅ | Faker-backed, seedable for reproducibility |
 | Random Number/String Generator | P0 | ✅ | (✅ Shipped Phase 1) |
 | Placeholder Text (Lorem variants: Hipster/Corporate/Bacon) | P2 | ✅ | |
@@ -132,7 +132,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 All AI tools: clearly labeled, show data-sent preview before first use, deterministic fallback offered where one exists, backed by the AI Gateway (ARCHITECTURE.md §8.3).
 
 | Tool | Priority | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Explain This (regex / JSON schema / cron expression / SQL query) | P2 | Plain-language explanation of a pasted expression |
 | Generate From Example (JSON→schema description, sample→regex) | P2 | Natural language → structured output |
 | AI Diff Summary | P2 | Summarizes a large text/JSON diff in plain language |
@@ -147,7 +147,7 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 ## Cross-Cutting Platform Features
 
 | Feature | Priority | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Command palette (⌘K) with fuzzy search + smart-paste detection | P0 | Detects clipboard/paste content shape (JSON, JWT, hex color, UUID, timestamp, base64) and suggests the matching tool (✅ Shipped Phase 1) |
 | Local history per tool (IndexedDB) | P0 | (✅ Shipped Phase 1 — cross-tool recent list; see AUDIT_REPORT.md §7) |
 | Favorites/pinning | P0 | (✅ Shipped Phase 1) |
@@ -167,6 +167,7 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 ## Phased Roadmap
 
 ### Phase 1 — MVP (target: coherent, launchable core)
+
 - App shell: layout, navigation, theme, command palette (search only, smart-paste stretch goal), keyboard shortcuts.
 - 20 P0 tools across Modules 1–6, 9 (the highest-search-volume, purely deterministic tools).
 - Local history + favorites (IndexedDB), no accounts yet.
@@ -174,17 +175,20 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 - CI/CD, basic monitoring/error tracking live from day one.
 
 ### Phase 2 — Full deterministic catalog
+
 - Remaining P1 tools across all modules, including Module 7 (image/graphics, needs WASM pipeline) and the server-proxied subset of Module 8 (requires backend build-out: HTTP tester, webhook tester, DNS/IP lookup).
 - Pipelines (client-only chaining).
 - PWA/offline support.
 - Smart-paste detection completed for the command palette.
 
 ### Phase 3 — Accounts, sync, first AI features
+
 - Optional accounts, cross-device sync, share links.
 - AI Gateway backend + first AI tools (Explain This, NL→Cron, NL→Regex, AI JSON Repair, AI Diff Summary).
 - Pro tier groundwork (usage quotas, billing integration).
 
 ### Phase 4 — Enterprise/ecosystem
+
 - Team workspaces, org AI quotas/admin dashboard.
 - Public API + CLI.
 - Browser extension, VS Code extension.
