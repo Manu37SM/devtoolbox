@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,12 @@ export function JsonYamlToolView() {
               <label className="text-sm font-medium text-text-secondary">
                 {options.mode === "json-to-yaml" ? "JSON" : "YAML"}
               </label>
-              <Textarea value={input} onChange={(e) => setInput(e.target.value)} aria-label="Input" />
+              <CodeEditor
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                language={options.mode === "json-to-yaml" ? "json" : "yaml"}
+                aria-label="Input"
+              />
             </div>
           }
           output={

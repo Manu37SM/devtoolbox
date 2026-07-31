@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
@@ -68,9 +68,10 @@ export function JsonFormatterToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea
+              <CodeEditor
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                language="json"
                 placeholder='{"hello":"world"}'
                 aria-label="JSON input"
               />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
@@ -92,7 +92,12 @@ export function JsTsBeautifierToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea value={input} onChange={(e) => setInput(e.target.value)} aria-label="Code input" />
+              <CodeEditor
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                language={options.language === "typescript" ? "typescript" : "javascript"}
+                aria-label="Code input"
+              />
             </div>
           }
           output={<OutputPane value={output} error={error} />}

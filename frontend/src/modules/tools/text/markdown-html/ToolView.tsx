@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import DOMPurify from "dompurify";
-import { Textarea } from "@/components/ui/textarea";
+import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { markdownToHtml } from "./transform";
 
@@ -29,7 +29,12 @@ export function MarkdownHtmlToolView() {
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="flex h-full flex-col gap-2">
           <label className="text-sm font-medium text-text-secondary">Markdown</label>
-          <Textarea value={input} onChange={(e) => setInput(e.target.value)} aria-label="Markdown input" />
+          <CodeEditor
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            language="markdown"
+            aria-label="Markdown input"
+          />
         </div>
         {showPreview ? (
           <div className="flex h-full flex-col gap-2">

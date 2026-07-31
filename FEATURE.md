@@ -67,9 +67,9 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 
 | Tool | Priority | Client-only | Notes |
 |---|---|---|---|
-| JS/TS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify only, see AUDIT_REPORT.md §7) |
-| CSS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify only, see AUDIT_REPORT.md §7) |
-| HTML Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify only, see AUDIT_REPORT.md §7) |
+| JS/TS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify + minify; TS input not minifiable, see AUDIT_REPORT.md §7) |
+| CSS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify + minify) |
+| HTML Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify + minify) |
 | Code Diff (syntax-aware) | P1 | ✅ | Extends text diff with language-aware highlighting |
 | CSS ↔ Tailwind class helper | P2 | ✅ | Suggests Tailwind utility equivalents |
 | HTML ↔ JSX Converter | P1 | ✅ | |

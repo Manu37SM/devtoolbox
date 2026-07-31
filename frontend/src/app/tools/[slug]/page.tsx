@@ -4,16 +4,21 @@ import { getToolBySlug, toolRegistry } from "@/lib/registry";
 import { toolViewRegistry } from "@/lib/tool-view-registry";
 import { ToolShell } from "@/components/tools/ToolShell";
 
+// Next.js 15 App Router: dynamic route `params` are async (a Promise),
+// not a plain object, in both the page component and
+// generateMetadata/generateStaticParams consumers — a breaking change
+// from Next 14. See AUDIT_REPORT.md §7.10.
 interface ToolPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export function generateStaticParams() {
   return toolRegistry.map((tool) => ({ slug: tool.slug }));
 }
 
-export function generateMetadata({ params }: ToolPageProps): Metadata {
-  const tool = getToolBySlug(params.slug);
+export async function generateMetadata({ params }: ToolPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const tool = getToolBySlug(slug);
   if (!tool) return {};
   return {
     title: tool.name,
@@ -22,8 +27,9 @@ export function generateMetadata({ params }: ToolPageProps): Metadata {
   };
 }
 
-export default function ToolPage({ params }: ToolPageProps) {
-  const tool = getToolBySlug(params.slug);
+export default async function ToolPage({ params }: ToolPageProps) {
+  const { slug } = await params;
+  const tool = getToolBySlug(slug);
   if (!tool) notFound();
 
   const ToolView = toolViewRegistry[tool.slug];

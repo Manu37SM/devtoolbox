@@ -1,27 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { KeyboardShortcutsOverlay } from "@/components/layout/KeyboardShortcutsOverlay";
+import { LeftNav } from "@/components/layout/LeftNav";
 import { useCommandPaletteStore } from "@/store/command-palette-store";
+import { useNavStore } from "@/store/nav-store";
 
-// One shell, sixty tools (UI_GUIDELINES.md §1.2): fixed top bar, the
-// middle content area is the only thing that changes per route. Left nav
-// is tracked as follow-up work (see AUDIT_REPORT.md) — the command
-// palette covers primary navigation for now.
+// One shell, sixty tools (UI_GUIDELINES.md §1.2): fixed top bar (56px) +
+// persistent left nav (240px, collapsible to 64px icon rail — see
+// LeftNav.tsx) + main content area, per UI_GUIDELINES.md §3.
 export function AppShell({ children }: { children: React.ReactNode }) {
   const openPalette = useCommandPaletteStore((s) => s.open);
+  const openMobileNav = useNavStore((s) => s.openMobile);
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 items-center gap-4 border-b border-border-subtle bg-bg-base px-6">
+        <button
+          onClick={openMobileNav}
+          aria-label="Open navigation"
+          className="rounded-sm p-1 hover:bg-bg-raised lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
         <Link href="/" className="text-sm font-semibold text-text-primary">
           DevToolbox
         </Link>
-        <nav className="flex items-center gap-4 text-sm text-text-secondary">
+        <nav className="hidden items-center gap-4 text-sm text-text-secondary lg:flex">
           <Link href="/" className="hover:text-text-primary">
             All tools
           </Link>
@@ -39,7 +47,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <ThemeToggle />
         </div>
       </header>
-      <main className="flex-1">{children}</main>
+      <div className="flex flex-1">
+        <LeftNav />
+        <main className="min-w-0 flex-1">{children}</main>
+      </div>
       <CommandPalette />
       <KeyboardShortcutsOverlay />
     </div>

@@ -9,10 +9,17 @@ import type { RandomGeneratorOptions } from "./schema";
 export function RandomGeneratorToolView() {
   const [kind, setKind] = useState<"number" | "string">("number");
   const [numberOpts, setNumberOpts] = useState({ min: 1, max: 100, count: 10, allowDuplicates: true });
-  const [stringOpts, setStringOpts] = useState({
+  // Explicit type annotation required here: without it, TypeScript infers
+  // `charset` as the narrow literal type "alphanumeric" (from the initial
+  // value) rather than the full schema union, which then rejects the
+  // onChange handler's broader assignment below — see AUDIT_REPORT.md
+  // §7.10 for the build failure this caused.
+  const [stringOpts, setStringOpts] = useState<
+    Omit<Extract<RandomGeneratorOptions, { kind: "string" }>, "kind">
+  >({
     length: 16,
     count: 10,
-    charset: "alphanumeric" as const,
+    charset: "alphanumeric",
   });
   const [seed, setSeed] = useState(0);
 
