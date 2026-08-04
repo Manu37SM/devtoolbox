@@ -25,6 +25,19 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - **Storybook wired up** (`.storybook/main.ts`, `preview.ts`) with 8 stories covering every shared component (`Button`, `Badge`, `Textarea`, `CodeEditor`, `OutputPane`, `DualPane`, `CopyButton`, `ToolShell`) and `@storybook/addon-a11y` running axe-core against every story automatically.
 - **Playwright E2E + axe-core smoke suite** (`playwright.config.ts`, `e2e/a11y.spec.ts`, `e2e/critical-journeys.spec.ts`) — axe-core WCAG 2.1 A/AA checks against a fixed set of representative tool pages plus the command palette overlay, and critical-journey coverage for using a tool end-to-end and command palette search/smart-paste. New `test:e2e` script.
 
+### Added (Phase 2 — full deterministic catalog, wave 1)
+
+- **24 new P1 tools shipped**, closing out the client-only portion of FEATURE.md's Phase 2 scope (Module 7 image/WASM tools and Module 8's server-proxied tools — HTTP tester, webhook tester, DNS/IP lookup — remain deferred, see FEATURE.md):
+  - Data format: JSON ↔ TOML, JSON Path Tester (JMESPath), JSON Diff, JSON Schema Generator, JSON → TypeScript/Go/Python Types, SQL Formatter/Minifier, CSV ↔ TSV.
+  - Encoding: Hex ↔ Text/Binary, GZip/Deflate Compress-Decompress (native `CompressionStream`/`DecompressionStream`, no new dependency).
+  - Security: Password Strength Analyzer (local heuristic scoring, nothing transmitted), HMAC Generator (Web Crypto).
+  - Text: Line Sort/Dedupe/Shuffle, Slugify, Text ↔ Table (Markdown/CSV/ASCII), Regex Cheat Sheet.
+  - Code: Code Diff (syntax-aware), HTML ↔ JSX Converter, .env/dotenv Formatter & Validator.
+  - Converters: Timezone Converter, Unit Converter, Color Palette Generator.
+  - Network: User-Agent Parser, CIDR/Subnet Calculator (Module 8's first two shipped tools, both client-only — establishes the `network` module in the left nav for the first time).
+  - Generators: Fake/Mock Data Generator (Faker-backed, seedable).
+  - All 24 follow the standard tool contract (schema/transform/tests/ToolView/registry entry/SEO content) and are registered in `frontend/src/lib/registry.ts` and `frontend/src/lib/tool-view-registry.ts`.
+
 ### Fixed
 
 - Added missing `@types/node`, `@types/react`, `@types/react-dom` to `frontend/package.json` devDependencies (required for the TypeScript toolchain to compile at all; gap in the original scaffold).
@@ -37,9 +50,11 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - Added `terser`, `csso`, `html-minifier-terser` (+ `@types/csso`, `@types/html-minifier-terser`) for the beautifier tools' new Minify mode, flagged and approved per CLAUDE.md before adding; documented in ARCHITECTURE.md §8.2.
 - Added `@codemirror/lang-json`, `-javascript`, `-css`, `-html`, `-xml`, `-yaml`, `-markdown`, `@codemirror/language`, `@codemirror/commands` for the new `CodeEditor` component's syntax highlighting, flagged and approved per CLAUDE.md before adding; documented in ARCHITECTURE.md §8.2.
 - Added `@storybook/react`, `@storybook/addon-essentials`, `@storybook/addon-a11y`, `storybook` as companion packages to the already-approved `@storybook/nextjs`, needed to actually run Storybook + the a11y addon named in DEVELOPMENT_GUIDE.md §6/§7; documented in AUDIT_REPORT.md §7.8.
+- Added `smol-toml`, `jmespath` (+ `@types/jmespath`), `sql-formatter`, `ua-parser-js`, `@faker-js/faker` for the Phase 2 tool wave (JSON↔TOML, JSON Path Tester, SQL Formatter, User-Agent Parser, Fake Data Generator respectively). No new dependency was needed for gzip-deflate (native `CompressionStream`), hmac-generator/password-strength-analyzer (native Web Crypto + hand-rolled heuristics), or any of the remaining 17 tools — all hand-rolled against existing approved packages.
 
 ### Notes
 
+- **Phase 2, wave 1 (24 P1 tools) shipped** — see the "Added (Phase 2 — full deterministic catalog, wave 1)" section above. Built via 5 parallel implementation passes across the tool catalog, then wired into the shared registries by hand to avoid merge conflicts on those single-file-per-app registries. Not yet run through a real `npm install` / build / test cycle in this session — same sandbox constraint as before (§7.9); run `npm run typecheck && npm run test && npm run build` locally to verify before merging, same as the Phase 1 verification pass.
 - **The full build → typecheck → test cycle is green for the first time in this project's history.** `npm run build`, `npm run typecheck`, and `npm run test` all pass end-to-end for both workspaces — 247 real unit tests across 31 files, all passing. See AUDIT_REPORT.md §7.9–§7.10 for the full incident/remediation trail: dependency corruption, two self-inflicted tsconfig regressions, three previously-missing backend dependencies, a Node-only-package-in-client-bundle bug, a Next 15 breaking-change migration gap, two test-scoping leaks (Storybook stories into `next build`'s type-check, Playwright specs into `vitest run`), and one genuine pre-existing type bug in `random-generator`. `backend` has zero test files (expected — Phase 2/3 scope per FEATURE.md, not a regression). Remaining work: `npm run storybook`/`npm run test:e2e` haven't been run against a live app yet, and committing this session's work is still blocked inside this sandbox by the `.git/index.lock` issue (§7.3) — needs a normal terminal. Phase 2 scope (pipelines, PWA/offline) tracked separately.
 
 ## Planning phase

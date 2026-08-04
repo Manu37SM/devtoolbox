@@ -33,6 +33,31 @@ import { CronBuilderToolView } from "@/modules/tools/code/cron-builder/ToolView"
 import { QrCodeGeneratorToolView } from "@/modules/tools/image/qr-code-generator/ToolView";
 import { RandomGeneratorToolView } from "@/modules/tools/generators/random-generator/ToolView";
 import { UuidBulkToolView } from "@/modules/tools/generators/uuid-bulk/ToolView";
+// Phase 2 (P1) tools
+import { JsonTomlToolView } from "@/modules/tools/data-format/json-toml/ToolView";
+import { JsonPathTesterToolView } from "@/modules/tools/data-format/json-path-tester/ToolView";
+import { JsonDiffToolView } from "@/modules/tools/data-format/json-diff/ToolView";
+import { JsonSchemaGeneratorToolView } from "@/modules/tools/data-format/json-schema-generator/ToolView";
+import { JsonToTypesToolView } from "@/modules/tools/data-format/json-to-types/ToolView";
+import { SqlFormatterToolView } from "@/modules/tools/data-format/sql-formatter/ToolView";
+import { CsvTsvToolView } from "@/modules/tools/data-format/csv-tsv/ToolView";
+import { HexTextToolView } from "@/modules/tools/encoding/hex-text/ToolView";
+import { GzipDeflateToolView } from "@/modules/tools/encoding/gzip-deflate/ToolView";
+import { PasswordStrengthAnalyzerToolView } from "@/modules/tools/security/password-strength-analyzer/ToolView";
+import { HmacGeneratorToolView } from "@/modules/tools/security/hmac-generator/ToolView";
+import { LineSortDedupeToolView } from "@/modules/tools/text/line-sort-dedupe/ToolView";
+import { SlugifyToolView } from "@/modules/tools/text/slugify/ToolView";
+import { TextTableToolView } from "@/modules/tools/text/text-table/ToolView";
+import { RegexCheatsheetToolView } from "@/modules/tools/text/regex-cheatsheet/ToolView";
+import { CodeDiffToolView } from "@/modules/tools/code/code-diff/ToolView";
+import { HtmlJsxToolView } from "@/modules/tools/code/html-jsx/ToolView";
+import { DotenvFormatterToolView } from "@/modules/tools/code/dotenv-formatter/ToolView";
+import { TimezoneConverterToolView } from "@/modules/tools/converters/timezone-converter/ToolView";
+import { UnitConverterToolView } from "@/modules/tools/converters/unit-converter/ToolView";
+import { ColorPaletteGeneratorToolView } from "@/modules/tools/converters/color-palette-generator/ToolView";
+import { UserAgentParserToolView } from "@/modules/tools/network/user-agent-parser/ToolView";
+import { CidrSubnetCalculatorToolView } from "@/modules/tools/network/cidr-subnet-calculator/ToolView";
+import { FakeDataGeneratorToolView } from "@/modules/tools/generators/fake-data-generator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -64,4 +89,29 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "qr-code-generator": QrCodeGeneratorToolView,
   "random-generator": RandomGeneratorToolView,
   "uuid-bulk-generator": UuidBulkToolView,
+  // Phase 2 (P1) tools
+  "json-toml": JsonTomlToolView,
+  "json-path-tester": JsonPathTesterToolView,
+  "json-diff": JsonDiffToolView,
+  "json-schema-generator": JsonSchemaGeneratorToolView,
+  "json-to-types": JsonToTypesToolView,
+  "sql-formatter": SqlFormatterToolView,
+  "csv-tsv": CsvTsvToolView,
+  "hex-text": HexTextToolView,
+  "gzip-deflate": GzipDeflateToolView,
+  "password-strength-analyzer": PasswordStrengthAnalyzerToolView,
+  "hmac-generator": HmacGeneratorToolView,
+  "line-sort-dedupe": LineSortDedupeToolView,
+  slugify: SlugifyToolView,
+  "text-table": TextTableToolView,
+  "regex-cheatsheet": RegexCheatsheetToolView,
+  "code-diff": CodeDiffToolView,
+  "html-jsx": HtmlJsxToolView,
+  "dotenv-formatter": DotenvFormatterToolView,
+  "timezone-converter": TimezoneConverterToolView,
+  "unit-converter": UnitConverterToolView,
+  "color-palette-generator": ColorPaletteGeneratorToolView,
+  "user-agent-parser": UserAgentParserToolView,
+  "cidr-subnet-calculator": CidrSubnetCalculatorToolView,
+  "fake-data-generator": FakeDataGeneratorToolView,
 };

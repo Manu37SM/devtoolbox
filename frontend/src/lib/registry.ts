@@ -32,6 +32,31 @@ import { cronBuilderTool } from "@/modules/tools/code/cron-builder";
 import { qrCodeGeneratorTool } from "@/modules/tools/image/qr-code-generator";
 import { randomGeneratorTool } from "@/modules/tools/generators/random-generator";
 import { uuidBulkTool } from "@/modules/tools/generators/uuid-bulk";
+// Phase 2 (P1) tools — see FEATURE.md's "Phased Roadmap" §Phase 2.
+import { jsonTomlTool } from "@/modules/tools/data-format/json-toml";
+import { jsonPathTesterTool } from "@/modules/tools/data-format/json-path-tester";
+import { jsonDiffTool } from "@/modules/tools/data-format/json-diff";
+import { jsonSchemaGeneratorTool } from "@/modules/tools/data-format/json-schema-generator";
+import { jsonToTypesTool } from "@/modules/tools/data-format/json-to-types";
+import { sqlFormatterTool } from "@/modules/tools/data-format/sql-formatter";
+import { csvTsvTool } from "@/modules/tools/data-format/csv-tsv";
+import { hexTextTool } from "@/modules/tools/encoding/hex-text";
+import { gzipDeflateTool } from "@/modules/tools/encoding/gzip-deflate";
+import { passwordStrengthAnalyzerTool } from "@/modules/tools/security/password-strength-analyzer";
+import { hmacGeneratorTool } from "@/modules/tools/security/hmac-generator";
+import { lineSortDedupeTool } from "@/modules/tools/text/line-sort-dedupe";
+import { slugifyTool } from "@/modules/tools/text/slugify";
+import { textTableTool } from "@/modules/tools/text/text-table";
+import { regexCheatsheetTool } from "@/modules/tools/text/regex-cheatsheet";
+import { codeDiffTool } from "@/modules/tools/code/code-diff";
+import { htmlJsxTool } from "@/modules/tools/code/html-jsx";
+import { dotenvFormatterTool } from "@/modules/tools/code/dotenv-formatter";
+import { timezoneConverterTool } from "@/modules/tools/converters/timezone-converter";
+import { unitConverterTool } from "@/modules/tools/converters/unit-converter";
+import { colorPaletteGeneratorTool } from "@/modules/tools/converters/color-palette-generator";
+import { userAgentParserTool } from "@/modules/tools/network/user-agent-parser";
+import { cidrSubnetCalculatorTool } from "@/modules/tools/network/cidr-subnet-calculator";
+import { fakeDataGeneratorTool } from "@/modules/tools/generators/fake-data-generator";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -63,6 +88,31 @@ export const toolRegistry: ToolRegistryEntry[] = [
   qrCodeGeneratorTool,
   randomGeneratorTool,
   uuidBulkTool,
+  // Phase 2 (P1) tools
+  jsonTomlTool,
+  jsonPathTesterTool,
+  jsonDiffTool,
+  jsonSchemaGeneratorTool,
+  jsonToTypesTool,
+  sqlFormatterTool,
+  csvTsvTool,
+  hexTextTool,
+  gzipDeflateTool,
+  passwordStrengthAnalyzerTool,
+  hmacGeneratorTool,
+  lineSortDedupeTool,
+  slugifyTool,
+  textTableTool,
+  regexCheatsheetTool,
+  codeDiffTool,
+  htmlJsxTool,
+  dotenvFormatterTool,
+  timezoneConverterTool,
+  unitConverterTool,
+  colorPaletteGeneratorTool,
+  userAgentParserTool,
+  cidrSubnetCalculatorTool,
+  fakeDataGeneratorTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {
