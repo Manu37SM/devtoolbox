@@ -1,0 +1,13 @@
+## How it works
+
+Upload an image and pick a target format. The tool draws it onto an offscreen canvas and re-encodes it using the browser's built-in `canvas.toBlob` encoder — entirely client-side, nothing is uploaded. This is a v1 simplification: encoding relies on whatever codecs your browser ships (rather than a dedicated codec library), so exact output size/quality can vary slightly between browsers. A quality slider is shown for JPEG/WebP targets, since those are lossy; PNG has no quality setting because it's lossless.
+
+## Common use cases
+
+- Converting a PNG screenshot to JPEG to shrink it before emailing.
+- Converting a JPEG photo to WebP for a faster-loading website.
+- Getting a browser-incompatible or unusual image format into a standard one your tools can open.
+
+## Related tools
+
+Image Compressor · SVG ↔ Raster Exporter · Favicon Generator

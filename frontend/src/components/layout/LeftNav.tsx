@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsLeft, ChevronsRight, X } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Workflow, X } from "lucide-react";
 import { DynamicIcon } from "@/components/ui/DynamicIcon";
 import { toolRegistry, getToolsByModule } from "@/lib/registry";
 import { MODULE_META, MODULE_ORDER } from "@/lib/module-meta";
@@ -38,6 +38,18 @@ export function LeftNav() {
             <X className="h-4 w-4" />
           </button>
         </div>
+        {/* Pipelines lives outside the module-grouped tool list (it's not a
+            tool itself) — the top bar links to it on desktop (`lg`+), so
+            mirror that here for the mobile drawer where the top bar's nav
+            is hidden. */}
+        <Link
+          href="/pipelines"
+          onClick={closeMobile}
+          className="mx-2 mt-2 flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-text-secondary hover:bg-bg-raised hover:text-text-primary lg:hidden"
+        >
+          <Workflow className="h-4 w-4 shrink-0" aria-hidden="true" />
+          Pipelines
+        </Link>
 
         <nav className="flex-1 overflow-y-auto py-2" aria-label="Tool modules">
           {modules.map((moduleKey) => {

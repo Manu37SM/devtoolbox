@@ -1,0 +1,13 @@
+## How it works
+
+Upload a JPG, PNG, or WebP image, pick an output format and quality, and the tool redraws it onto an offscreen canvas and re-encodes it via the browser's native `canvas.toBlob` encoder — entirely client-side, nothing is uploaded. This is a v1 simplification: it relies on whatever JPEG/WebP encoder your browser ships rather than a dedicated codec library (e.g. mozjpeg or a WASM-based encoder), so compression ratios and quality trade-offs will vary slightly by browser. PNG is excluded from the format choices since it's lossless and has no meaningful "quality" setting.
+
+## Common use cases
+
+- Shrinking photos before attaching them to an email or uploading to a form with a size limit.
+- Reducing image weight for a website or blog post without a separate image-editing app.
+- Comparing JPEG vs. WebP output size for the same source image.
+
+## Related tools
+
+Image Format Converter · SVG ↔ Raster Exporter · Favicon Generator

@@ -1,0 +1,13 @@
+## How it works
+
+Paste SVG markup or upload an `.svg` file, choose an output format and pixel size, and the tool loads the SVG into an image element, draws it onto an offscreen canvas at that size, and exports it via the browser's native `canvas.toBlob` encoder — entirely client-side, nothing is uploaded. This is a v1 simplification: rasterization quality depends on the browser's own SVG renderer and canvas encoder rather than a dedicated codec/rasterizer library. Since JPEG has no alpha channel, exporting a transparent background to JPEG falls back to opaque white automatically.
+
+## Common use cases
+
+- Turning a logo or icon SVG into a PNG for use in a tool that doesn't support vector formats.
+- Generating a fixed-size raster thumbnail from a vector illustration.
+- Producing a JPEG or WebP preview image from SVG markup for social sharing.
+
+## Related tools
+
+Image Format Converter · Image Compressor · SVG Optimizer/Minifier · Favicon Generator

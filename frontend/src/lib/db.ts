@@ -17,9 +17,29 @@ export interface FavoriteEntry {
   pinnedAt: number; // epoch ms
 }
 
+// Pipelines (Phase 2, P1 — FEATURE.md "Pipelines (chain tools, client-only)").
+// `PipelineStepRecord` is deliberately field-compatible with
+// `PipelineStepDto` (packages/shared/src/index.ts's `PipelineStepSchema`)
+// so a future backend sync (Phase 3) doesn't require a rename — see
+// CLAUDE.md rule 10 on not inventing new shapes silently.
+export interface PipelineStepRecord {
+  toolSlug: string;
+  optionsJson: Record<string, unknown>;
+}
+
+export interface PipelineRecord {
+  id?: number;
+  name: string;
+  description?: string;
+  steps: PipelineStepRecord[];
+  createdAt: number;
+  updatedAt: number;
+}
+
 class DevToolboxDatabase extends Dexie {
   history!: EntityTable<HistoryEntry, "id">;
   favorites!: EntityTable<FavoriteEntry, "toolSlug">;
+  pipelines!: EntityTable<PipelineRecord, "id">;
 
   constructor() {
     super("devtoolbox");
@@ -28,6 +48,15 @@ class DevToolboxDatabase extends Dexie {
       // visitedAt indexed for "recent N across all tools" queries.
       history: "++id, toolSlug, visitedAt",
       favorites: "toolSlug, pinnedAt",
+    });
+    // v2 adds the `pipelines` table (Phase 2). Dexie requires the full
+    // schema (old + new tables) repeated per version — the `version(1)`
+    // block above is left untouched per Dexie's versioning API.
+    this.version(2).stores({
+      history: "++id, toolSlug, visitedAt",
+      favorites: "toolSlug, pinnedAt",
+      // updatedAt indexed for "most recently edited pipelines first" listing.
+      pipelines: "++id, updatedAt",
     });
   }
 }
@@ -62,4 +91,46 @@ export async function toggleFavorite(toolSlug: string): Promise<boolean> {
   }
   await db.favorites.put({ toolSlug, pinnedAt: Date.now() });
   return true;
+}
+
+// ── Pipelines CRUD ──────────────────────────────────────────────────────
+// Components read the list via `useLiveQuery(() => db.pipelines...)`
+// directly (see useFavorites.ts/useLocalHistory.ts for the established
+// pattern) — these helpers cover the write side only.
+
+export async function createPipeline(
+  data: Pick<PipelineRecord, "name" | "description" | "steps">,
+): Promise<number> {
+  if (!db) return -1;
+  const now = Date.now();
+  // Dexie infers `add()`'s resolved type from the PK field's own type
+  // (`PipelineRecord["id"]`, which is `number | undefined` since `id` is
+  // optional pre-insert), not from the actual runtime guarantee that a
+  // successful add on an auto-increment table always resolves to the new
+  // numeric key — hence the assertion.
+  const id = await db.pipelines.add({ ...data, createdAt: now, updatedAt: now });
+  return id as number;
+}
+
+export async function updatePipeline(
+  id: number,
+  data: Partial<Pick<PipelineRecord, "name" | "description" | "steps">>,
+): Promise<void> {
+  if (!db) return;
+  await db.pipelines.update(id, { ...data, updatedAt: Date.now() });
+}
+
+export async function deletePipeline(id: number): Promise<void> {
+  if (!db) return;
+  await db.pipelines.delete(id);
+}
+
+export async function getAllPipelines(): Promise<PipelineRecord[]> {
+  if (!db) return [];
+  return db.pipelines.orderBy("updatedAt").reverse().toArray();
+}
+
+export async function getPipeline(id: number): Promise<PipelineRecord | undefined> {
+  if (!db) return undefined;
+  return db.pipelines.get(id);
 }

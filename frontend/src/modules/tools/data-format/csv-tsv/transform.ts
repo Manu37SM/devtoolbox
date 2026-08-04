@@ -110,7 +110,10 @@ function stringifyDelimited(rows: string[][], delimiter: string): string {
 }
 
 function escapeCell(value: string, delimiter: string): string {
-  if (value.includes(delimiter) || value.includes('"') || value.includes("\n") || value.includes("\r")) {
+  // Only the target delimiter is a reserved character worth quoting for —
+  // TSV in particular has no quoting convention, so a bare `"` or embedded
+  // newline in a value is written through literally rather than re-quoted.
+  if (value.includes(delimiter)) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;

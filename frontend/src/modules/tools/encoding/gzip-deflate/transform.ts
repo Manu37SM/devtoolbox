@@ -20,12 +20,16 @@ export async function compressText(input: string, options: GzipDeflateOptions): 
     const decompressed = await runStream(inputBytes, new DecompressionStream(options.format));
     return { output: new TextDecoder("utf-8", { fatal: false }).decode(decompressed), error: null };
   } catch (err) {
+    // Some runtimes reject the decompression stream with an Error/DOMException
+    // that has an empty `.message` (e.g. a bad gzip header), so fall back to
+    // a descriptive default whenever the caught error has no usable message.
+    const caughtMessage = err instanceof Error ? err.message : "";
     return {
       output: "",
       error: {
         message:
-          err instanceof Error
-            ? err.message
+          caughtMessage.length > 0
+            ? caughtMessage
             : options.mode === "compress"
               ? "Failed to compress input"
               : "Failed to decompress input — is it valid base64-encoded compressed data?",

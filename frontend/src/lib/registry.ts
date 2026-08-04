@@ -57,6 +57,15 @@ import { colorPaletteGeneratorTool } from "@/modules/tools/converters/color-pale
 import { userAgentParserTool } from "@/modules/tools/network/user-agent-parser";
 import { cidrSubnetCalculatorTool } from "@/modules/tools/network/cidr-subnet-calculator";
 import { fakeDataGeneratorTool } from "@/modules/tools/generators/fake-data-generator";
+import { urlParserTool } from "@/modules/tools/network/url-parser";
+// Module 7 (image/graphics) tools
+import { imageCompressorTool } from "@/modules/tools/image/image-compressor";
+import { imageFormatConverterTool } from "@/modules/tools/image/image-format-converter";
+import { svgExporterTool } from "@/modules/tools/image/svg-exporter";
+import { svgOptimizerTool } from "@/modules/tools/image/svg-optimizer";
+import { qrCodeReaderTool } from "@/modules/tools/image/qr-code-reader";
+import { faviconGeneratorTool } from "@/modules/tools/image/favicon-generator";
+import { cssGradientGeneratorTool } from "@/modules/tools/converters/css-gradient-generator";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -113,6 +122,14 @@ export const toolRegistry: ToolRegistryEntry[] = [
   userAgentParserTool,
   cidrSubnetCalculatorTool,
   fakeDataGeneratorTool,
+  urlParserTool,
+  imageCompressorTool,
+  imageFormatConverterTool,
+  svgExporterTool,
+  svgOptimizerTool,
+  qrCodeReaderTool,
+  faviconGeneratorTool,
+  cssGradientGeneratorTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

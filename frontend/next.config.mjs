@@ -35,6 +35,27 @@ const nextConfig = {
     }
     return config;
   },
+  // PWA/offline support (FEATURE.md's Cross-Cutting Platform Features, P1):
+  // service workers are notorious for getting stuck on a stale cached
+  // copy of themselves, since browsers historically applied their normal
+  // HTTP caching heuristics to /sw.js just like any other static file —
+  // delaying detection of a new worker version, sometimes indefinitely.
+  // Force revalidation on every request for this one file specifically so
+  // update checks (which the browser already runs periodically/on
+  // navigation) actually see fresh bytes instead of a cached response.
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -92,16 +92,16 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 
 | Tool | Priority | Client-only | Notes |
 | --- | --- | --- | --- |
-| Image Compressor (JPG/PNG/WebP) | P1 | ✅ | WASM (e.g., squoosh-style) |
-| Image Format Converter | P1 | ✅ | |
-| SVG Optimizer/Minifier | P1 | ✅ | |
-| SVG ↔ PNG/JPEG/WebP Exporter | P1 | ✅ | |
+| Image Compressor (JPG/PNG/WebP) | P1 | ✅ | (✅ Shipped Phase 2 — native Canvas `toBlob` encoder, not a WASM/squoosh-style codec; documented v1 simplification) |
+| Image Format Converter | P1 | ✅ | (✅ Shipped Phase 2) |
+| SVG Optimizer/Minifier | P1 | ✅ | (✅ Shipped Phase 2 — via `svgo`'s browser build) |
+| SVG ↔ PNG/JPEG/WebP Exporter | P1 | ✅ | (✅ Shipped Phase 2) |
 | QR Code Generator (incl. WiFi/vCard) | P0 | ✅ | (✅ Shipped Phase 1) |
-| QR Code Reader | P1 | ✅ | Camera or upload |
-| Favicon Generator | P1 | ✅ | Multi-size bundle export |
+| QR Code Reader | P1 | ✅ | Camera or upload (✅ Shipped Phase 2 — upload only, no camera capture yet) |
+| Favicon Generator | P1 | ✅ | Multi-size bundle export (✅ Shipped Phase 2 — zip bundle via `jszip`) |
 | Placeholder/SVG Mockup Image Generator | P2 | ✅ | |
 | Color Blindness Simulator | P2 | ✅ | |
-| CSS Gradient Generator | P1 | ✅ | |
+| CSS Gradient Generator | P1 | ✅ | (✅ Shipped Phase 2 — lives in the `converters` module alongside Color Palette Generator) |
 | Box Shadow / Border Radius Generator | P2 | ✅ | |
 
 ## Module 8 — Network & Web Tools
@@ -112,7 +112,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | Webhook Tester (unique inbox URL) | P1 | ❌ server | Requires backend to receive/store inbound webhooks temporarily |
 | DNS Lookup | P1 | ❌ server | DNS resolution requires server-side or public API proxy |
 | IP Address Lookup / What's My IP | P1 | ❌ server | |
-| URL Parser/Inspector | P0 | ✅ | Client-side URL object breakdown |
+| URL Parser/Inspector | P0 | ✅ | Client-side URL object breakdown (✅ Shipped Phase 2 — gap-fix; was marked P0 but never actually built until now) |
 | User-Agent Parser | P1 | ✅ | (✅ Shipped Phase 2) |
 | Meta Tag / Open Graph Previewer | P1 | ⚠️ server-proxied | Fetching arbitrary URLs for preview requires server fetch |
 | CIDR/Subnet Calculator | P1 | ✅ | (✅ Shipped Phase 2) |
@@ -148,13 +148,13 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 
 | Feature | Priority | Notes |
 | --- | --- | --- |
-| Command palette (⌘K) with fuzzy search + smart-paste detection | P0 | Detects clipboard/paste content shape (JSON, JWT, hex color, UUID, timestamp, base64) and suggests the matching tool (✅ Shipped Phase 1) |
+| Command palette (⌘K) with fuzzy search + smart-paste detection | P0 | Detects clipboard/paste content shape and suggests the matching tool (✅ Shipped Phase 1 with 6 detectors: JSON, JWT, hex color, UUID, timestamp, base64; ✅ expanded Phase 2 to 15 detectors — adds CIDR, cron, SQL, User-Agent, .env, XML, YAML, CSV/TSV, hash digest, generic hex) |
 | Local history per tool (IndexedDB) | P0 | (✅ Shipped Phase 1 — cross-tool recent list; see AUDIT_REPORT.md §7) |
 | Favorites/pinning | P0 | (✅ Shipped Phase 1) |
 | Dark/light/system theme | P0 | (✅ Shipped Phase 1) |
 | Keyboard shortcuts overlay | P0 | (✅ Shipped Phase 1) |
-| PWA/offline support | P1 | |
-| Pipelines (chain tools, client-only) | P1 | |
+| PWA/offline support | P1 | (✅ Shipped Phase 2) |
+| Pipelines (chain tools, client-only) | P1 | (✅ Shipped Phase 2 — 23 compatible tools, single-input/single-output chains only, no per-step option customization yet) |
 | Optional accounts (email + OAuth) | P2 | |
 | Cross-device sync (history, favorites, pipelines) | P2 | |
 | Shareable tool state (short links) | P2 | |

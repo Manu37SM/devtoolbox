@@ -33,6 +33,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="hover:text-text-primary">
             All tools
           </Link>
+          <Link href="/pipelines" className="hover:text-text-primary">
+            Pipelines
+          </Link>
         </nav>
         <button
           onClick={openPalette}

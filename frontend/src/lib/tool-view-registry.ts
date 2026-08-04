@@ -58,6 +58,14 @@ import { ColorPaletteGeneratorToolView } from "@/modules/tools/converters/color-
 import { UserAgentParserToolView } from "@/modules/tools/network/user-agent-parser/ToolView";
 import { CidrSubnetCalculatorToolView } from "@/modules/tools/network/cidr-subnet-calculator/ToolView";
 import { FakeDataGeneratorToolView } from "@/modules/tools/generators/fake-data-generator/ToolView";
+import { UrlParserToolView } from "@/modules/tools/network/url-parser/ToolView";
+import { ImageCompressorToolView } from "@/modules/tools/image/image-compressor/ToolView";
+import { ImageFormatConverterToolView } from "@/modules/tools/image/image-format-converter/ToolView";
+import { SvgExporterToolView } from "@/modules/tools/image/svg-exporter/ToolView";
+import { SvgOptimizerToolView } from "@/modules/tools/image/svg-optimizer/ToolView";
+import { QrCodeReaderToolView } from "@/modules/tools/image/qr-code-reader/ToolView";
+import { FaviconGeneratorToolView } from "@/modules/tools/image/favicon-generator/ToolView";
+import { CssGradientGeneratorToolView } from "@/modules/tools/converters/css-gradient-generator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -114,4 +122,12 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "user-agent-parser": UserAgentParserToolView,
   "cidr-subnet-calculator": CidrSubnetCalculatorToolView,
   "fake-data-generator": FakeDataGeneratorToolView,
+  "url-parser": UrlParserToolView,
+  "image-compressor": ImageCompressorToolView,
+  "image-format-converter": ImageFormatConverterToolView,
+  "svg-exporter": SvgExporterToolView,
+  "svg-optimizer": SvgOptimizerToolView,
+  "qr-code-reader": QrCodeReaderToolView,
+  "favicon-generator": FaviconGeneratorToolView,
+  "css-gradient-generator": CssGradientGeneratorToolView,
 };
