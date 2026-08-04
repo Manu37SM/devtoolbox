@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hashText } from "./transform";
+import { hashFile, hashText } from "./transform";
 
 describe("hashText", () => {
   it("computes MD5", async () => {
@@ -42,5 +42,32 @@ describe("hashText", () => {
     const longInput = "a".repeat(10_000);
     const result = await hashText(longInput, { algorithm: "SHA-256", uppercase: false });
     expect(result.output).toHaveLength(64);
+  });
+});
+
+describe("hashFile", () => {
+  it("hashes a file's bytes identically to hashing the same text", async () => {
+    const file = new File(["hello"], "greeting.txt", { type: "text/plain" });
+    const fromFile = await hashFile(file, { algorithm: "SHA-256", uppercase: false });
+    const fromText = await hashText("hello", { algorithm: "SHA-256", uppercase: false });
+    expect(fromFile.error).toBeNull();
+    expect(fromFile.output).toBe(fromText.output);
+  });
+
+  it("hashes an empty file", async () => {
+    const file = new File([], "empty.txt");
+    const result = await hashFile(file, { algorithm: "SHA-256", uppercase: false });
+    expect(result.error).toBeNull();
+    // An empty file hashes to SHA-256's known empty-input digest, distinct
+    // from `hashText("")`'s early-return `{ output: "", error: null }" —
+    // an empty *file* is still a real (zero-byte) input worth hashing.
+    expect(result.output).toBe("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+  });
+
+  it("respects the uppercase and algorithm options", async () => {
+    const file = new File(["hello"], "greeting.txt");
+    const result = await hashFile(file, { algorithm: "MD5", uppercase: true });
+    expect(result.output).toBe(result.output.toUpperCase());
+    expect(result.output).toHaveLength(32);
   });
 });

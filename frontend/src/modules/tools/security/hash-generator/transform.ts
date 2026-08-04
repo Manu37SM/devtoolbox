@@ -11,14 +11,32 @@ export interface HashResult {
  * (Vitest), and a Worker since `crypto.subtle` is available in all three. */
 export async function hashText(input: string, options: HashGeneratorOptions): Promise<HashResult> {
   if (input.length === 0) return { output: "", error: null };
+  return hashBytes(new TextEncoder().encode(input), options);
+}
 
+/** Hashes raw bytes directly — the shared core both `hashText` (encodes a
+ * string first) and `hashFile` (reads a File's bytes first) funnel through,
+ * so the two entry points can't drift on algorithm handling. */
+export async function hashBytes(bytes: Uint8Array, options: HashGeneratorOptions): Promise<HashResult> {
   try {
-    const bytes = new TextEncoder().encode(input);
     const digest = options.algorithm === "MD5" ? md5(bytes) : await webCryptoDigest(bytes, options.algorithm);
     const hex = bytesToHex(digest);
     return { output: options.uppercase ? hex.toUpperCase() : hex, error: null };
   } catch (err) {
     return { output: "", error: { message: err instanceof Error ? err.message : "Hashing failed" } };
+  }
+}
+
+/** File-input variant (FEATURE.md Module 3: "Text + file input"). Reads the
+ * whole file into memory via `arrayBuffer()` — fine for the hash sizes this
+ * tool is meant for (checksumming a downloaded file, verifying a small
+ * artifact), not a streaming/huge-file design. */
+export async function hashFile(file: File, options: HashGeneratorOptions): Promise<HashResult> {
+  try {
+    const buffer = await file.arrayBuffer();
+    return await hashBytes(new Uint8Array(buffer), options);
+  } catch (err) {
+    return { output: "", error: { message: err instanceof Error ? err.message : "Could not read this file" } };
   }
 }
 

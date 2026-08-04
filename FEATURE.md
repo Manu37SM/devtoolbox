@@ -39,7 +39,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 
 | Tool | Priority | Client-only | Notes |
 | --- | --- | --- | --- |
-| Hash Generator (MD5/SHA-1/SHA-256/SHA-512/Keccak) | P0 | ✅ | Text + file input (✅ Shipped Phase 1) |
+| Hash Generator (MD5/SHA-1/SHA-256/SHA-512/Keccak) | P0 | ✅ | Text + file input (✅ Shipped Phase 1 text-only; file input added in a Phase 2 cleanup pass — Keccak still not implemented, only MD5/SHA-1/SHA-256/SHA-512) |
 | UUID/ULID/NanoID Generator + Inspector | P0 | ✅ | Bulk generation, version detection (✅ Shipped Phase 1) |
 | Password Generator | P0 | ✅ | Entropy meter, custom charset rules (✅ Shipped Phase 1) |
 | Password Strength Analyzer | P1 | ✅ | Local zxcvbn-style scoring, never transmitted (✅ Shipped Phase 2) |

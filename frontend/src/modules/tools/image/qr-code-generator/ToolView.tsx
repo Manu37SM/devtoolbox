@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { generateQrCode } from "./transform";
 import type { QrCodeGeneratorOptions } from "./schema";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 export function QrCodeGeneratorToolView() {
   const [text, setText] = useState("https://example.com");
@@ -33,10 +34,10 @@ export function QrCodeGeneratorToolView() {
     <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
       <div className="flex flex-col gap-3">
         <label className="text-sm font-medium text-text-secondary">Text or URL</label>
-        <textarea
+        <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="h-28 w-full resize-none rounded-md border border-border-default bg-bg-raised p-3 font-mono text-sm"
+          className="h-28"
           aria-label="QR code content"
         />
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}

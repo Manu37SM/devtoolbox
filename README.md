@@ -2,9 +2,9 @@
 
 **A free, modern, AI-powered developer toolbox — every utility a developer reaches for daily, in one fast, private, ad-light workspace.**
 
-DevToolbox bundles 60+ tools across formatting, conversion, encoding, security, text, image, network, and time utilities, wraps them in a consistent, keyboard-first UI, and layers in an optional AI Assistant for tasks that go beyond deterministic transforms (explain this regex, generate a JSON schema from this payload, summarize this diff). Every tool that *can* run entirely in the browser *does* — nothing is sent to a server unless the user explicitly opts into a server-side or AI-powered feature.
+DevToolbox bundles 62 tools across formatting, conversion, encoding, security, text, code, image, network, and generator utilities, wraps them in a consistent, keyboard-first UI (command palette, smart-paste detection, pipelines to chain tools together, local history/favorites, PWA/offline support), and lays the groundwork for an optional AI Assistant for tasks that go beyond deterministic transforms (explain this regex, generate a JSON schema from this payload, summarize this diff). Every shipped tool runs entirely client-side — nothing is sent to a server; that AI layer and accounts/sync are still ahead on the roadmap, not live yet.
 
-> Status: **Planning / Architecture phase complete.** This repository currently contains the full project blueprint, documentation set, and scaffolding. Feature implementation follows the roadmap in [FEATURE.md](./FEATURE.md) and [AUDIT_REPORT.md](./AUDIT_REPORT.md).
+> Status: **Phase 2 (full deterministic tool catalog) complete.** All P0/P1 client-side tools are shipped, along with pipelines, PWA/offline support, and an expanded command palette. Remaining Phase 2 scope is the server-proxied Module 8 tools (HTTP tester, webhook tester, DNS/IP lookup), which need real backend work. Phase 3 (accounts, sync, AI Gateway) hasn't started. See [FEATURE.md](./FEATURE.md) for the full catalog/roadmap and [CHANGELOG.md](./CHANGELOG.md) for what's actually shipped, version by version.
 
 ---
 
@@ -35,8 +35,8 @@ The category is crowded — JSON formatters, Base64 encoders, and JWT decoders e
 
 ## Tech Stack (summary — full rationale in ARCHITECTURE.md)
 
-- **Frontend:** Next.js 15 (App Router) + React 19 + TypeScript, Tailwind CSS + shadcn/ui, Zustand, TanStack Query
-- **Backend:** Node.js + NestJS (TypeScript), PostgreSQL + Prisma, Redis, BullMQ
+- **Frontend:** Next.js 15 (App Router) + React 19 + TypeScript, Tailwind CSS, Zustand (UI/theme state), Dexie/IndexedDB (local-first history, favorites, pipelines — no server-state library needed at this stage)
+- **Backend:** Node.js + NestJS (TypeScript), PostgreSQL + Prisma, Redis, BullMQ — scaffolded per ARCHITECTURE.md but not yet load-bearing; no shipped tool currently depends on it
 - **AI layer:** Anthropic Claude API (Sonnet/Haiku tier routing) via a thin internal AI gateway service
 - **Infra:** Docker, GitHub Actions CI/CD, Vercel (frontend) + Fly.io/Render (API), Cloudflare (CDN/WAF), S3-compatible object storage
 - **Observability:** OpenTelemetry, Sentry, Grafana/Prometheus (self-hosted) or hosted equivalents
@@ -54,15 +54,16 @@ devtoolbox/
 
 See [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) for the full directory breakdown of both apps.
 
-## Quick Start (once implementation begins)
+## Quick Start
 
 ```bash
 git clone <repo-url> devtoolbox && cd devtoolbox
-cp .env.example .env
-docker compose up -d           # postgres + redis
-npm install                    # installs frontend + backend workspaces
+cp .env.example .env           # defaults are fine — no tool currently requires real values
+npm install                    # installs frontend + backend + shared workspaces (run from repo root only)
 npm run dev                    # runs frontend (3000) + backend (4000) concurrently
 ```
+
+`docker compose up -d` (Postgres + Redis) is only needed once Phase 3 work starts using the backend for real — every shipped tool today is client-only and works with zero backend/database running.
 
 ## License
 
