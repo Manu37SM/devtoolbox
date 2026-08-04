@@ -74,6 +74,85 @@ export const CreatePipelineSchema = z.object({
 });
 export type CreatePipelineDto = z.infer<typeof CreatePipelineSchema>;
 
+// ── Network Tool Proxy DTOs (see API.md §10 — Module 8 server-proxied
+// tools; server-assisted, non-persistent per ARCHITECTURE.md §8.4 tier 2) ──
+export const HttpRequestProxySchema = z.object({
+  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]),
+  url: z.string().url().max(4_000),
+  headers: z.record(z.string().max(4_000)).optional().default({}),
+  body: z.string().max(1_000_000).optional(),
+});
+export type HttpRequestProxyDto = z.infer<typeof HttpRequestProxySchema>;
+
+export interface HttpRequestProxyResult {
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  body: string;
+  bodyTruncated: boolean;
+  durationMs: number;
+}
+
+export const DnsLookupSchema = z.object({
+  domain: z
+    .string()
+    .min(1)
+    .max(253)
+    .regex(/^[a-zA-Z0-9.-]+$/, "Not a valid hostname."),
+  recordType: z.enum(["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SOA"]).default("A"),
+});
+export type DnsLookupDto = z.infer<typeof DnsLookupSchema>;
+
+export interface DnsLookupResult {
+  domain: string;
+  recordType: DnsLookupDto["recordType"];
+  records: string[];
+}
+
+export const IpLookupSchema = z.object({
+  ip: z.string().max(45).optional(), // omitted -> looks up the caller's own IP
+});
+export type IpLookupDto = z.infer<typeof IpLookupSchema>;
+
+export interface IpLookupResult {
+  ip: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  org?: string;
+  timezone?: string;
+}
+
+export const WebhookInboxCreateResult = z.object({
+  id: z.string(),
+  inboxUrl: z.string(),
+  expiresAt: z.number(), // epoch ms
+});
+export type WebhookInboxCreateResultDto = z.infer<typeof WebhookInboxCreateResult>;
+
+export interface WebhookInboxEvent {
+  id: string;
+  receivedAt: number; // epoch ms
+  method: string;
+  headers: Record<string, string>;
+  body: string;
+  query: Record<string, string>;
+}
+
+export const UrlPreviewSchema = z.object({
+  url: z.string().url().max(2_000),
+});
+export type UrlPreviewDto = z.infer<typeof UrlPreviewSchema>;
+
+export interface UrlPreviewResult {
+  url: string;
+  title?: string;
+  description?: string;
+  image?: string;
+  siteName?: string;
+  favicon?: string;
+}
+
 // ── Standard API error shape (see API.md §1) ───────────────────────────────
 export interface ApiErrorBody {
   error: {

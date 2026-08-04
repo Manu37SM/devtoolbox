@@ -66,6 +66,12 @@ import { svgOptimizerTool } from "@/modules/tools/image/svg-optimizer";
 import { qrCodeReaderTool } from "@/modules/tools/image/qr-code-reader";
 import { faviconGeneratorTool } from "@/modules/tools/image/favicon-generator";
 import { cssGradientGeneratorTool } from "@/modules/tools/converters/css-gradient-generator";
+// Module 8 server-proxied tools (isClientOnly: false — see API.md §10)
+import { httpRequestTesterTool } from "@/modules/tools/network/http-request-tester";
+import { dnsLookupTool } from "@/modules/tools/network/dns-lookup";
+import { ipLookupTool } from "@/modules/tools/network/ip-lookup";
+import { webhookTesterTool } from "@/modules/tools/network/webhook-tester";
+import { metaTagPreviewerTool } from "@/modules/tools/network/meta-tag-previewer";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -130,6 +136,11 @@ export const toolRegistry: ToolRegistryEntry[] = [
   qrCodeReaderTool,
   faviconGeneratorTool,
   cssGradientGeneratorTool,
+  httpRequestTesterTool,
+  dnsLookupTool,
+  ipLookupTool,
+  webhookTesterTool,
+  metaTagPreviewerTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

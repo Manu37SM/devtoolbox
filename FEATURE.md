@@ -108,13 +108,13 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 
 | Tool | Priority | Client-only | Notes |
 | --- | --- | --- | --- |
-| HTTP Request Tester (Postman-lite) | P1 | ⚠️ server-proxied | Server proxy needed to avoid CORS/leak client IP for arbitrary requests; opt-in, request shown to user before send |
-| Webhook Tester (unique inbox URL) | P1 | ❌ server | Requires backend to receive/store inbound webhooks temporarily |
-| DNS Lookup | P1 | ❌ server | DNS resolution requires server-side or public API proxy |
-| IP Address Lookup / What's My IP | P1 | ❌ server | |
+| HTTP Request Tester (Postman-lite) | P1 | ⚠️ server-proxied | Server proxy needed to avoid CORS/leak client IP for arbitrary requests; opt-in, request shown to user before send (✅ Shipped Phase 2 — SSRF-guarded proxy, see backend/src/common/net/ssrf-guard.ts) |
+| Webhook Tester (unique inbox URL) | P1 | ❌ server | Requires backend to receive/store inbound webhooks temporarily (✅ Shipped Phase 2 — Redis-backed, 30min TTL, capped at 50 events/inbox) |
+| DNS Lookup | P1 | ❌ server | DNS resolution requires server-side or public API proxy (✅ Shipped Phase 2 — Node's native `dns/promises`, no external API) |
+| IP Address Lookup / What's My IP | P1 | ❌ server | (✅ Shipped Phase 2 — geolocation via ip-api.com's free keyless tier; best-effort, falls back to bare IP on failure) |
 | URL Parser/Inspector | P0 | ✅ | Client-side URL object breakdown (✅ Shipped Phase 2 — gap-fix; was marked P0 but never actually built until now) |
 | User-Agent Parser | P1 | ✅ | (✅ Shipped Phase 2) |
-| Meta Tag / Open Graph Previewer | P1 | ⚠️ server-proxied | Fetching arbitrary URLs for preview requires server fetch |
+| Meta Tag / Open Graph Previewer | P1 | ⚠️ server-proxied | Fetching arbitrary URLs for preview requires server fetch (✅ Shipped Phase 2 — SSRF-guarded, parses OG/meta tags via cheerio) |
 | CIDR/Subnet Calculator | P1 | ✅ | (✅ Shipped Phase 2) |
 
 ## Module 9 — Generators & Test Data
@@ -174,12 +174,12 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 - Static tool pages with SEO metadata for all shipped tools.
 - CI/CD, basic monitoring/error tracking live from day one.
 
-### Phase 2 — Full deterministic catalog
+### Phase 2 — Full deterministic catalog ✅ complete
 
-- Remaining P1 tools across all modules, including Module 7 (image/graphics, needs WASM pipeline) and the server-proxied subset of Module 8 (requires backend build-out: HTTP tester, webhook tester, DNS/IP lookup).
-- Pipelines (client-only chaining).
-- PWA/offline support.
-- Smart-paste detection completed for the command palette.
+- Remaining P1 tools across all modules, including Module 7 (image/graphics — shipped using native Canvas + `svgo`/`jsqr`/`jszip` instead of a WASM/squoosh-style pipeline, a documented v1 simplification) and the server-proxied subset of Module 8 (✅ shipped — first real backend build-out: NestJS `NetModule`, SSRF guard, Redis-backed webhook inbox; HTTP tester, webhook tester, DNS/IP lookup, meta tag previewer).
+- Pipelines (client-only chaining). ✅ shipped
+- PWA/offline support. ✅ shipped
+- Smart-paste detection completed for the command palette. ✅ shipped (15 detectors)
 
 ### Phase 3 — Accounts, sync, first AI features
 

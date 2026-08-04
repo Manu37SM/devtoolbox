@@ -66,6 +66,11 @@ import { SvgOptimizerToolView } from "@/modules/tools/image/svg-optimizer/ToolVi
 import { QrCodeReaderToolView } from "@/modules/tools/image/qr-code-reader/ToolView";
 import { FaviconGeneratorToolView } from "@/modules/tools/image/favicon-generator/ToolView";
 import { CssGradientGeneratorToolView } from "@/modules/tools/converters/css-gradient-generator/ToolView";
+import { HttpRequestTesterToolView } from "@/modules/tools/network/http-request-tester/ToolView";
+import { DnsLookupToolView } from "@/modules/tools/network/dns-lookup/ToolView";
+import { IpLookupToolView } from "@/modules/tools/network/ip-lookup/ToolView";
+import { WebhookTesterToolView } from "@/modules/tools/network/webhook-tester/ToolView";
+import { MetaTagPreviewerToolView } from "@/modules/tools/network/meta-tag-previewer/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -130,4 +135,9 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "qr-code-reader": QrCodeReaderToolView,
   "favicon-generator": FaviconGeneratorToolView,
   "css-gradient-generator": CssGradientGeneratorToolView,
+  "http-request-tester": HttpRequestTesterToolView,
+  "dns-lookup": DnsLookupToolView,
+  "ip-lookup": IpLookupToolView,
+  "webhook-tester": WebhookTesterToolView,
+  "meta-tag-previewer": MetaTagPreviewerToolView,
 };

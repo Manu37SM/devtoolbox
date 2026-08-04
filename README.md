@@ -2,9 +2,9 @@
 
 **A free, modern, AI-powered developer toolbox — every utility a developer reaches for daily, in one fast, private, ad-light workspace.**
 
-DevToolbox bundles 62 tools across formatting, conversion, encoding, security, text, code, image, network, and generator utilities, wraps them in a consistent, keyboard-first UI (command palette, smart-paste detection, pipelines to chain tools together, local history/favorites, PWA/offline support), and lays the groundwork for an optional AI Assistant for tasks that go beyond deterministic transforms (explain this regex, generate a JSON schema from this payload, summarize this diff). Every shipped tool runs entirely client-side — nothing is sent to a server; that AI layer and accounts/sync are still ahead on the roadmap, not live yet.
+DevToolbox bundles 67 tools across formatting, conversion, encoding, security, text, code, image, network, and generator utilities, wraps them in a consistent, keyboard-first UI (command palette, smart-paste detection, pipelines to chain tools together, local history/favorites, PWA/offline support), and lays the groundwork for an optional AI Assistant for tasks that go beyond deterministic transforms (explain this regex, generate a JSON schema from this payload, summarize this diff). Nearly every tool runs entirely client-side — nothing is sent to a server. Five Module 8 tools (HTTP Request Tester, DNS Lookup, IP Lookup, Webhook Tester, Meta Tag Previewer) are the deliberate exception: they proxy through a small backend because the underlying operation (DNS resolution, receiving real inbound webhook traffic, avoiding CORS) genuinely can't happen in a browser tab — each one says so visibly in its own UI. Accounts/sync and the AI layer are still ahead on the roadmap, not live yet.
 
-> Status: **Phase 2 (full deterministic tool catalog) complete.** All P0/P1 client-side tools are shipped, along with pipelines, PWA/offline support, and an expanded command palette. Remaining Phase 2 scope is the server-proxied Module 8 tools (HTTP tester, webhook tester, DNS/IP lookup), which need real backend work. Phase 3 (accounts, sync, AI Gateway) hasn't started. See [FEATURE.md](./FEATURE.md) for the full catalog/roadmap and [CHANGELOG.md](./CHANGELOG.md) for what's actually shipped, version by version.
+> Status: **Phase 2 (full deterministic tool catalog) complete — 67 tools shipped.** Every P0/P1 tool is live, including Module 8's server-proxied network tools (HTTP Request Tester, DNS Lookup, IP Lookup, Webhook Tester, Meta Tag Previewer) — the first real backend code in this project, behind a NestJS `NetModule` with SSRF protections. Everything else remains client-only by default. Phase 3 (accounts, sync, AI Gateway) hasn't started. See [FEATURE.md](./FEATURE.md) for the full catalog/roadmap and [CHANGELOG.md](./CHANGELOG.md) for what's actually shipped, version by version.
 
 ---
 
@@ -63,7 +63,7 @@ npm install                    # installs frontend + backend + shared workspaces
 npm run dev                    # runs frontend (3000) + backend (4000) concurrently
 ```
 
-`docker compose up -d` (Postgres + Redis) is only needed once Phase 3 work starts using the backend for real — every shipped tool today is client-only and works with zero backend/database running.
+`docker compose up -d` (Postgres + Redis) is needed if you want the 5 Module 8 network tools (HTTP Request Tester, DNS Lookup, IP Lookup, Webhook Tester, Meta Tag Previewer) to work — they're the only tools with a real backend dependency (Redis, specifically, for the webhook inbox). Every other tool is client-only and works with zero backend/database running. Postgres itself still isn't used by anything yet — that's Phase 3 (accounts/sync) scope.
 
 ## License
 

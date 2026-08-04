@@ -152,7 +152,7 @@ These exist because the underlying operation cannot run client-side (CORS, DNS r
 | Method | Path | Description |
 |---|---|---|
 | POST | `/net/http-request` | Proxies an outbound HTTP request the user configured `{ method, url, headers, body }`; domain allowlist/blocklist and size/timeout caps enforced |
-| GET | `/net/dns?domain=&type=` | DNS record lookup |
+| GET | `/net/dns?domain=&recordType=` | DNS record lookup (`recordType` one of A/AAAA/CNAME/MX/TXT/NS/SOA, defaults to A) |
 | GET | `/net/ip-lookup?ip=` | IP geolocation/ASN lookup (defaults to caller's IP if omitted) |
 | POST | `/net/webhook-inbox` | Creates a temporary inbox URL (`/net/webhook-inbox/:id`) that captures inbound requests for N minutes, polled by the client |
 | GET | `/net/webhook-inbox/:id/events` | Poll captured webhook events for an inbox |

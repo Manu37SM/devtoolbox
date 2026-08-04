@@ -8,6 +8,7 @@ import { ShareModule } from "./modules/share/share.module";
 import { AiGatewayModule } from "./modules/ai-gateway/ai-gateway.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { NetModule } from "./modules/net/net.module";
 import { ConfigModule } from "./config/config.module";
 
 /**
@@ -27,6 +28,7 @@ import { ConfigModule } from "./config/config.module";
     AiGatewayModule,
     AnalyticsModule,
     AdminModule,
+    NetModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
