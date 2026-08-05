@@ -1,4 +1,5 @@
 import { NestFactory } from "@nestjs/core";
+import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./common/filters/global-exception.filter";
@@ -11,8 +12,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(helmet());
+  app.use(cookieParser());
+  // Explicit single-origin allowlist, not `origin: true` — reflecting the
+  // request origin with credentials:true would let any site read
+  // cookie-authenticated responses (see ARCHITECTURE.md §9 CSRF note; the
+  // refresh-token cookie is sameSite=strict as defense-in-depth on top of
+  // this, not instead of it).
   app.enableCors({
-    origin: process.env.NEXT_PUBLIC_API_BASE_URL ? true : false,
+    origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
     credentials: true,
   });
   app.setGlobalPrefix("v1");

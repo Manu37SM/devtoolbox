@@ -183,9 +183,9 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 
 ### Phase 3 — Accounts, sync, first AI features
 
-- Optional accounts, cross-device sync, share links.
-- AI Gateway backend + first AI tools (Explain This, NL→Cron, NL→Regex, AI JSON Repair, AI Diff Summary).
-- Pro tier groundwork (usage quotas, billing integration).
+- Optional accounts, cross-device sync, share links. **✅ shipped (wave 1)** — email/password + GitHub/Google OAuth auth (rotating refresh tokens, reuse detection), account profile/export/delete, Favorites + History sync (AES-256-GCM at rest), Snippets, server-synced Pipelines (+ duplicate), Share Links. First Postgres/Prisma-backed surface in the app; see AUDIT_REPORT.md for deviations from the original DATABASE.md spec (VerificationToken table, UUIDv4 not v7, single-key history encryption).
+- AI Gateway backend + first AI tools (Explain This, NL→Cron, NL→Regex, AI JSON Repair, AI Diff Summary). Not started.
+- Pro tier groundwork (usage quotas, billing integration). Not started.
 
 ### Phase 4 — Enterprise/ecosystem
 

@@ -4,7 +4,7 @@
 
 DevToolbox bundles 67 tools across formatting, conversion, encoding, security, text, code, image, network, and generator utilities, wraps them in a consistent, keyboard-first UI (command palette, smart-paste detection, pipelines to chain tools together, local history/favorites, PWA/offline support), and lays the groundwork for an optional AI Assistant for tasks that go beyond deterministic transforms (explain this regex, generate a JSON schema from this payload, summarize this diff). Nearly every tool runs entirely client-side — nothing is sent to a server. Five Module 8 tools (HTTP Request Tester, DNS Lookup, IP Lookup, Webhook Tester, Meta Tag Previewer) are the deliberate exception: they proxy through a small backend because the underlying operation (DNS resolution, receiving real inbound webhook traffic, avoiding CORS) genuinely can't happen in a browser tab — each one says so visibly in its own UI. Accounts/sync and the AI layer are still ahead on the roadmap, not live yet.
 
-> Status: **Phase 2 (full deterministic tool catalog) complete — 67 tools shipped.** Every P0/P1 tool is live, including Module 8's server-proxied network tools (HTTP Request Tester, DNS Lookup, IP Lookup, Webhook Tester, Meta Tag Previewer) — the first real backend code in this project, behind a NestJS `NetModule` with SSRF protections. Everything else remains client-only by default. Phase 3 (accounts, sync, AI Gateway) hasn't started. See [FEATURE.md](./FEATURE.md) for the full catalog/roadmap and [CHANGELOG.md](./CHANGELOG.md) for what's actually shipped, version by version.
+> Status: **Phase 2 (full deterministic tool catalog) complete — 67 tools shipped.** Phase 3 (accounts, sync, AI Gateway) is underway: optional accounts, email/password + GitHub/Google OAuth, cross-device Favorites/History sync, Snippets, server-synced Pipelines, and Share Links all shipped in wave 1, backed by the project's first Postgres/Prisma database. The AI Gateway and first AI tools haven't started yet. Every tool remains usable with zero account/backend setup — accounts are additive, never required. See [FEATURE.md](./FEATURE.md) for the full catalog/roadmap and [CHANGELOG.md](./CHANGELOG.md) for what's actually shipped, version by version.
 
 ---
 
@@ -58,12 +58,16 @@ See [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) for the full directory breakd
 
 ```bash
 git clone <repo-url> devtoolbox && cd devtoolbox
-cp .env.example .env           # defaults are fine — no tool currently requires real values
+cp .env.example .env           # fill in JWT_ACCESS_SECRET/JWT_REFRESH_SECRET/HISTORY_ENCRYPTION_KEY — see below
 npm install                    # installs frontend + backend + shared workspaces (run from repo root only)
+docker compose up -d           # Postgres + Redis
+npm run db:migrate:dev         # applies the Prisma migration (first run only, or after a schema change)
 npm run dev                    # runs frontend (3000) + backend (4000) concurrently
 ```
 
-`docker compose up -d` (Postgres + Redis) is needed if you want the 5 Module 8 network tools (HTTP Request Tester, DNS Lookup, IP Lookup, Webhook Tester, Meta Tag Previewer) to work — they're the only tools with a real backend dependency (Redis, specifically, for the webhook inbox). Every other tool is client-only and works with zero backend/database running. Postgres itself still isn't used by anything yet — that's Phase 3 (accounts/sync) scope.
+Every tool works with zero accounts/backend running — client-side tools never touch the network, and Module 8's 5 server-proxied tools (HTTP Request Tester, DNS Lookup, IP Lookup, Webhook Tester, Meta Tag Previewer) are the only ones that need Redis. Postgres is now used too, for the optional-accounts/sync features (Phase 3, wave 1): register/login, Favorites/History sync, Snippets, Pipelines, Share Links. None of it is required to use the tool catalog — accounts are purely additive.
+
+`JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET`/`HISTORY_ENCRYPTION_KEY` must be set for the backend to boot at all (fail-fast env validation, DEVELOPMENT_GUIDE.md §9) — generate each with `openssl rand -base64 32`. `GITHUB_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_ID` (+ secrets) are optional; email/password auth works without them, and the corresponding OAuth provider just returns a clear error if used unconfigured.
 
 ## License
 

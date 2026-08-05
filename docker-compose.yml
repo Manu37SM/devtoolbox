@@ -8,8 +8,13 @@ services:
       POSTGRES_USER: devtoolbox
       POSTGRES_PASSWORD: devtoolbox
       POSTGRES_DB: devtoolbox
+    # Host port remapped to 5433 — 5432 conflicts with a locally-installed
+    # Postgres on some dev machines (Docker Desktop's host-port forwarding
+    # and a natively-running Windows service can both claim localhost:5432,
+    # with inconsistent results). Update DATABASE_URL in .env to match:
+    # postgresql://devtoolbox:devtoolbox@localhost:5433/devtoolbox
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - devtoolbox_pg_data:/var/lib/postgresql/data
 

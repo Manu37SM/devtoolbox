@@ -23,6 +23,15 @@ enum OrgRole {
   MEMBER
 }
 
+// Not in the original DATABASE.md ERD — added to actually implement the
+// email-verify / password-reset flows API.md §2 documents. Single table,
+// discriminated by `type`, rather than two near-identical tables. Deviation
+// noted in DATABASE.md and AUDIT_REPORT.md per CLAUDE.md rule 10.
+enum VerificationTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -35,17 +44,31 @@ model User {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
-  sessions       Session[]
-  snippets       Snippet[]
-  pipelines      Pipeline[]
-  shareLinks     ShareLink[]
-  favorites      Favorite[]
-  historyEntries HistoryEntry[]
-  aiUsageEvents  AiUsageEvent[]
-  oauthAccounts  OAuthAccount[]
-  memberships    OrganizationMember[]
+  sessions            Session[]
+  snippets            Snippet[]
+  pipelines           Pipeline[]
+  shareLinks          ShareLink[]
+  favorites           Favorite[]
+  historyEntries      HistoryEntry[]
+  aiUsageEvents       AiUsageEvent[]
+  oauthAccounts       OAuthAccount[]
+  memberships         OrganizationMember[]
+  verificationTokens  VerificationToken[]
 
   @@index([email])
+}
+
+model VerificationToken {
+  id        String                @id @default(uuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String                @unique // hashed, never store the raw token
+  type      VerificationTokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime              @default(now())
+
+  @@index([userId, type])
 }
 
 model OAuthAccount {

@@ -12,7 +12,21 @@ const envSchema = z.object({
   REDIS_URL: z.string().url(),
   JWT_ACCESS_SECRET: z.string().min(16),
   JWT_REFRESH_SECRET: z.string().min(16),
+  // AES-256-GCM key (32 raw bytes, base64-encoded) for encrypting
+  // HistoryEntry previews at rest per DATABASE.md §4. Required once Sync
+  // (Phase 3) is live, not just Auth — validated here so it fails fast
+  // rather than at first history write.
+  HISTORY_ENCRYPTION_KEY: z.string().min(32),
+  FRONTEND_URL: z.string().url().default("http://localhost:3000"),
   ANTHROPIC_API_KEY: z.string().optional(),
+  // OAuth: optional in dev — Auth module checks these at call time and
+  // returns a clear error if a provider is used without its creds set,
+  // rather than failing boot (email/password auth must keep working
+  // without any OAuth app registered).
+  GITHUB_OAUTH_CLIENT_ID: z.string().optional(),
+  GITHUB_OAUTH_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
 });
 
 @Module({

@@ -9,7 +9,10 @@ import { AiGatewayModule } from "./modules/ai-gateway/ai-gateway.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { NetModule } from "./modules/net/net.module";
+import { SnippetsModule } from "./modules/snippets/snippets.module";
+import { PipelinesModule } from "./modules/pipelines/pipelines.module";
 import { ConfigModule } from "./config/config.module";
+import { PrismaModule } from "./database/prisma.module";
 
 /**
  * Root module. Each feature module owns its own controller/service/DTO
@@ -20,10 +23,13 @@ import { ConfigModule } from "./config/config.module";
 @Module({
   imports: [
     ConfigModule,
+    PrismaModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     AuthModule,
     UsersModule,
     SyncModule,
+    SnippetsModule,
+    PipelinesModule,
     ShareModule,
     AiGatewayModule,
     AnalyticsModule,

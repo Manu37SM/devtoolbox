@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Search, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { AccountNavLink } from "@/components/layout/AccountNavLink";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { KeyboardShortcutsOverlay } from "@/components/layout/KeyboardShortcutsOverlay";
 import { LeftNav } from "@/components/layout/LeftNav";
@@ -47,6 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <kbd className="ml-auto rounded-sm border border-border-subtle px-1.5 py-0.5 text-xs">⌘K</kbd>
         </button>
         <div className="ml-auto flex items-center gap-1">
+          <AccountNavLink />
           <ThemeToggle />
         </div>
       </header>

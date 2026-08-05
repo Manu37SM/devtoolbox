@@ -213,7 +213,41 @@ enum OrgRole {
   ADMIN
   MEMBER
 }
+
+// Added during Phase 3 implementation — not in the original ERD above.
+// Backs the email-verify / password-reset flows API.md §2 documents;
+// discriminated by `type` rather than two near-identical tables. See
+// AUDIT_REPORT.md Phase 3 section for the full rationale.
+enum VerificationTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model VerificationToken {
+  id        String                @id @default(uuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String                @unique // hashed, never store the raw token
+  type      VerificationTokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime              @default(now())
+
+  @@index([userId, type])
+}
 ```
+
+**Implementation notes (Phase 3):**
+- Primary keys use Prisma's `@default(uuid())` (UUIDv4), not true UUIDv7 as
+  originally specified above — Prisma/Postgres don't generate UUIDv7
+  natively yet. Tracked as a follow-up; the index-locality benefit UUIDv7
+  would give is a performance optimization, not a correctness requirement,
+  so this shipped as documented technical debt rather than blocking Phase 3.
+- `HistoryEntry` encryption uses a single server-wide AES-256-GCM key
+  (`HISTORY_ENCRYPTION_KEY`) with a random IV per record, not a true
+  per-user derived key as this doc originally described — a per-user KMS
+  key-wrapping scheme is a larger project on its own. Also tracked as a
+  follow-up.
 
 ## 4. Data Retention & Privacy Notes
 
