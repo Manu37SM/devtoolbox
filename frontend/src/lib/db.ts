@@ -34,6 +34,13 @@ export interface PipelineRecord {
   steps: PipelineStepRecord[];
   createdAt: number;
   updatedAt: number;
+  // Phase 3 sync (optional — only set once a pipeline has been pushed to
+  // an account at least once; see lib/pipeline-sync.ts). `syncedUpdatedAt`
+  // is the server's `updatedAt` as of the last successful push/pull —
+  // comparing it against a fresh fetch is how conflict detection works
+  // (DATABASE.md §7's "user-visible conflict prompt for pipelines").
+  syncedId?: string;
+  syncedUpdatedAt?: string;
 }
 
 class DevToolboxDatabase extends Dexie {

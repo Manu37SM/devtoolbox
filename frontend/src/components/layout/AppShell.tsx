@@ -9,6 +9,7 @@ import { KeyboardShortcutsOverlay } from "@/components/layout/KeyboardShortcutsO
 import { LeftNav } from "@/components/layout/LeftNav";
 import { useCommandPaletteStore } from "@/store/command-palette-store";
 import { useNavStore } from "@/store/nav-store";
+import { useAuthStore } from "@/store/auth-store";
 
 // One shell, sixty tools (UI_GUIDELINES.md §1.2): fixed top bar (56px) +
 // persistent left nav (240px, collapsible to 64px icon rail — see
@@ -16,6 +17,7 @@ import { useNavStore } from "@/store/nav-store";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const openPalette = useCommandPaletteStore((s) => s.open);
   const openMobileNav = useNavStore((s) => s.openMobile);
+  const isAuthenticated = useAuthStore((s) => s.status === "authenticated");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -37,6 +39,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/pipelines" className="hover:text-text-primary">
             Pipelines
           </Link>
+          {isAuthenticated && (
+            <Link href="/snippets" className="hover:text-text-primary">
+              Snippets
+            </Link>
+          )}
         </nav>
         <button
           onClick={openPalette}

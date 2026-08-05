@@ -7,6 +7,7 @@ import type { AuthTokenResponse } from "@devtoolbox/shared";
 import { apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -42,6 +43,8 @@ export default function LoginPage() {
           Sync your favorites, history, and pipelines across devices. Every tool still works without an account.
         </p>
       </div>
+
+      <OAuthButtons />
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5 text-sm text-text-primary">

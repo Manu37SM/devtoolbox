@@ -10,6 +10,10 @@ import { createPipeline, updatePipeline, type PipelineRecord, type PipelineStepR
 import { getToolBySlug } from "@/lib/registry";
 import { pipelineCompatibleSlugs } from "@/lib/pipeline-adapters";
 import { runPipeline, type PipelineRunResult } from "@/lib/pipeline-runner";
+import { pushPipelineToAccount, PipelineConflictError } from "@/lib/pipeline-sync";
+import { useAuthStore } from "@/store/auth-store";
+import { ApiClientError } from "@/lib/api-client";
+import { Badge } from "@/components/ui/badge";
 
 interface PipelineBuilderProps {
   /** Existing pipeline to edit, or undefined when creating a new one. */
@@ -28,6 +32,7 @@ const DEFAULT_FIRST_SLUG = pipelineCompatibleSlugs[0] ?? "";
  * defaults. */
 export function PipelineBuilder({ pipeline }: PipelineBuilderProps) {
   const router = useRouter();
+  const isAuthenticated = useAuthStore((s) => s.status === "authenticated");
   const [name, setName] = useState(pipeline?.name ?? "");
   const [description, setDescription] = useState(pipeline?.description ?? "");
   const [steps, setSteps] = useState<PipelineStepRecord[]>(
@@ -36,8 +41,10 @@ export function PipelineBuilder({ pipeline }: PipelineBuilderProps) {
   const [initialInput, setInitialInput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [runResult, setRunResult] = useState<PipelineRunResult | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   function addStep() {
     if (!DEFAULT_FIRST_SLUG) return;
@@ -97,6 +104,36 @@ export function PipelineBuilder({ pipeline }: PipelineBuilderProps) {
       }
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleSync(force = false) {
+    if (!pipeline || pipeline.id === undefined) {
+      setSyncMessage("Save this pipeline locally first.");
+      return;
+    }
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      await pushPipelineToAccount(pipeline, { force });
+      setSyncMessage("Synced to your account.");
+    } catch (err) {
+      if (err instanceof PipelineConflictError) {
+        // Last-write-wins once confirmed — see pipeline-sync.ts's docblock
+        // and DATABASE.md §7's "user-visible conflict prompt" callout.
+        const overwrite = confirm(
+          "The account version of this pipeline has changed since you last synced (maybe from another device). Overwrite it with this local version?",
+        );
+        if (overwrite) {
+          await handleSync(true);
+          return;
+        }
+        setSyncMessage("Not synced — kept the account version.");
+      } else {
+        setSyncMessage(err instanceof ApiClientError ? err.message : "Couldn't sync. Please try again.");
+      }
+    } finally {
+      setIsSyncing(false);
     }
   }
 
@@ -202,6 +239,16 @@ export function PipelineBuilder({ pipeline }: PipelineBuilderProps) {
           </Button>
           {saveMessage ? <span className="text-sm text-text-muted">{saveMessage}</span> : null}
         </div>
+
+        {isAuthenticated && (
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => handleSync()} disabled={isSyncing}>
+              {isSyncing ? "Syncing…" : pipeline?.syncedId ? "Push update to account" : "Save to account"}
+            </Button>
+            {pipeline?.syncedId ? <Badge variant="info">Synced</Badge> : null}
+            {syncMessage ? <span className="text-sm text-text-muted">{syncMessage}</span> : null}
+          </div>
+        )}
 
         <div>
           <label className="text-sm font-medium text-text-secondary" htmlFor="pipeline-input">

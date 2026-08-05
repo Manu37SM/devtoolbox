@@ -7,6 +7,7 @@ import type { AuthTokenResponse } from "@devtoolbox/shared";
 import { apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -45,6 +46,8 @@ export default function RegisterPage() {
         <h1 className="text-xl font-semibold text-text-primary">Create an account</h1>
         <p className="mt-1 text-sm text-text-secondary">Free, optional, and never required to use any tool.</p>
       </div>
+
+      <OAuthButtons />
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5 text-sm text-text-primary">

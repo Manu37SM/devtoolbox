@@ -184,6 +184,8 @@ DATABASE_URL=
 REDIS_URL=
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
+HISTORY_ENCRYPTION_KEY=
+FRONTEND_URL=
 ANTHROPIC_API_KEY=
 OBJECT_STORAGE_ENDPOINT=
 OBJECT_STORAGE_BUCKET=
@@ -197,6 +199,10 @@ SENTRY_DSN=
 NEXT_PUBLIC_API_BASE_URL=
 NEXT_PUBLIC_SENTRY_DSN=
 NEXT_PUBLIC_ANALYTICS_HOST=
+NEXT_PUBLIC_GITHUB_CLIENT_ID=
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=
 ```
 
 Backend config is validated at boot via a Zod schema (`backend/src/config`) — the process fails fast with a clear message on any missing/malformed variable rather than failing later at first use.
+
+Both workspaces' `dev`/`build`/`start`/`db:*` scripts are wrapped with `dotenv-cli` (`dotenv -e ../.env -- ...`) so a single root-level `.env` is the source of truth for both — Next.js and the Prisma CLI otherwise only look for env files inside their own workspace directory, not the monorepo root. `build`/`start` additionally force `NODE_ENV=production` via `cross-env` *before* `dotenv` loads the file, since `dotenv` never overrides a variable that's already set — without that, `.env`'s `NODE_ENV=development` (correct for `dev`) would leak into production commands and break `next build`'s static generation in confusing ways.
