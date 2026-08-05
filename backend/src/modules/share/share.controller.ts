@@ -1,22 +1,27 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
-import { Throttle } from "@nestjs/throttler";
 import { CreateShareLinkSchema } from "@devtoolbox/shared";
 import { ShareService } from "./share.service";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { OptionalJwtAuthGuard } from "../auth/guards/optional-jwt-auth.guard";
 import { CurrentUser, type AuthenticatedUser } from "../auth/decorators/current-user.decorator";
+import { PlanThrottle } from "../../common/rate-limit/plan-throttle.decorator";
+import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 
 @Controller("shares")
 export class ShareController {
   constructor(private readonly shareService: ShareService) {}
 
-  // 20/hour/IP anonymous per API.md §12 — the harshest tier since this
-  // route accepts anonymous writes. (Per-user higher limits for signed-in
-  // Free/Pro callers aren't differentiated yet — same simplification as
-  // every other @Throttle usage in this codebase so far.)
-  @Throttle({ default: { limit: 20, ttl: 3_600_000 } })
-  @UseGuards(OptionalJwtAuthGuard)
+  // Per API.md §12: 20/hour anonymous, 100/hour Free, 1000/hour Pro/Team.
+  // OptionalJwtAuthGuard runs first so PlanThrottleGuard sees `req.user`
+  // when a valid token is present.
+  @PlanThrottle({
+    route: "shares-create",
+    anonymous: { limit: 20, ttlSeconds: 3_600 },
+    free: { limit: 100, ttlSeconds: 3_600 },
+    pro: { limit: 1000, ttlSeconds: 3_600 },
+  })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
   @Post()
   @HttpCode(201)
   async create(

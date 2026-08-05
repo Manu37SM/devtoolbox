@@ -27,6 +27,11 @@ const envSchema = z.object({
   GITHUB_OAUTH_CLIENT_SECRET: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
+  // Email: optional in dev — EmailService falls back to logging the
+  // link to the console when unset, same "degrade, don't fail boot"
+  // treatment as the OAuth pairs above.
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
 });
 
 @Module({

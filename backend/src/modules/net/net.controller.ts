@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   Req,
+  UseGuards,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
@@ -23,6 +24,9 @@ import {
 import { NetService } from "./net.service";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { SsrfBlockedError } from "../../common/net/ssrf-guard";
+import { OptionalJwtAuthGuard } from "../auth/guards/optional-jwt-auth.guard";
+import { PlanThrottle } from "../../common/rate-limit/plan-throttle.decorator";
+import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 
 /**
  * Module 8 server-proxied network tools — see API.md §10 and
@@ -37,9 +41,18 @@ import { SsrfBlockedError } from "../../common/net/ssrf-guard";
 export class NetController {
   constructor(private readonly netService: NetService) {}
 
-  // Rate limit per API.md §12: 10/hour/IP anonymous. `@Throttle` overrides
-  // the global 300/min default set in AppModule for this route only.
-  @Throttle({ default: { limit: 10, ttl: 3_600_000 } })
+  // Per API.md §12: 10/hour anonymous, 60/hour Free, 500/hour Pro/Team.
+  // This tool doesn't require an account to use — OptionalJwtAuthGuard
+  // just identifies the caller *if* they happen to send a valid token, so
+  // signed-in users get their plan's higher limit without auth being
+  // required to reach the route at all.
+  @PlanThrottle({
+    route: "net-http-request",
+    anonymous: { limit: 10, ttlSeconds: 3_600 },
+    free: { limit: 60, ttlSeconds: 3_600 },
+    pro: { limit: 500, ttlSeconds: 3_600 },
+  })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
   @Post("http-request")
   async httpRequest(@Body(new ZodValidationPipe(HttpRequestProxySchema)) dto: unknown) {
     try {

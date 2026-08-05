@@ -53,8 +53,8 @@ export class SyncService {
       items: page.map((entry) => ({
         id: entry.id,
         toolSlug: entry.toolSlug,
-        inputPreview: decryptPreview(key, entry.inputPreview),
-        outputPreview: decryptPreview(key, entry.outputPreview),
+        inputPreview: decryptPreview(key, userId, entry.inputPreview),
+        outputPreview: decryptPreview(key, userId, entry.outputPreview),
         createdAt: entry.createdAt.toISOString(),
       })),
       nextCursor: hasMore ? page[page.length - 1]!.id : null,
@@ -67,8 +67,8 @@ export class SyncService {
       data: {
         userId,
         toolSlug: dto.toolSlug,
-        inputPreview: encryptPreview(key, dto.inputPreview),
-        outputPreview: encryptPreview(key, dto.outputPreview),
+        inputPreview: encryptPreview(key, userId, dto.inputPreview),
+        outputPreview: encryptPreview(key, userId, dto.outputPreview),
       },
     });
     return { id: entry.id, toolSlug: entry.toolSlug, createdAt: entry.createdAt.toISOString() };

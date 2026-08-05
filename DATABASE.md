@@ -243,11 +243,15 @@ model VerificationToken {
   natively yet. Tracked as a follow-up; the index-locality benefit UUIDv7
   would give is a performance optimization, not a correctness requirement,
   so this shipped as documented technical debt rather than blocking Phase 3.
-- `HistoryEntry` encryption uses a single server-wide AES-256-GCM key
-  (`HISTORY_ENCRYPTION_KEY`) with a random IV per record, not a true
-  per-user derived key as this doc originally described — a per-user KMS
-  key-wrapping scheme is a larger project on its own. Also tracked as a
-  follow-up.
+- `HistoryEntry` encryption: **resolved**. Each record's AES-256-GCM key is
+  now derived per-user via HKDF-SHA256 from the single master secret
+  (`HISTORY_ENCRYPTION_KEY`), using the owning user's id as the derivation
+  context (`backend/src/common/crypto/history-encryption.ts`), plus a
+  random IV per record. This is not full KMS-backed per-user key-wrapping
+  (one user's key still can't be rotated/revoked independently of the
+  master secret) — that remains a larger follow-up if ever needed — but it
+  does mean a leaked derived key only ever exposes one user's history, not
+  everyone's.
 
 ## 4. Data Retention & Privacy Notes
 

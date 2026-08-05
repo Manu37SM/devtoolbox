@@ -4,6 +4,16 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (Phase 3 — security/production-readiness pass)
+
+- **Real transactional email provider.** `EmailService` sends verification/password-reset emails via Resend when `RESEND_API_KEY` is set, falling back to logging the link to the console otherwise (unchanged local-dev behavior). New env vars `RESEND_API_KEY`/`EMAIL_FROM` (both optional). Never throws on send failure — register/reset-request already return a generic response regardless, for account-enumeration safety.
+- **Per-plan-tier rate limiting.** New `PlanThrottleGuard`/`@PlanThrottle()` (Redis-backed fixed-window counter, standalone `CanActivate` guard rather than extending `@nestjs/throttler`'s `ThrottlerGuard`, which has no per-plan limit variation) applied to `POST /shares` (20/100/1000 per hour, anonymous/free/pro) and `POST /net/http-request` (10/60/500 per hour) — the two routes API.md §12 specifies tiered numbers for. Sets `X-RateLimit-Remaining`; throws 429 with `Retry-After` once a tier's limit is hit.
+- **Per-user history encryption key derivation.** `history-encryption.ts` now derives a distinct AES-256-GCM key per user via HKDF-SHA256 from the single `HISTORY_ENCRYPTION_KEY` master secret (owning user's id as the HKDF context), replacing the single server-wide key noted as a tracked deviation since Phase 3 wave 1. A leaked derived key now only exposes one user's history.
+
+### Audit (Phase 3 cleanup/audit pass)
+
+- Reviewed all Phase 3 backend modules (Auth, Users, Sync, Snippets, Pipelines, Share, plus the new rate-limit/email pieces) and a sample of new frontend pages against CLAUDE.md/DEVELOPMENT_GUIDE.md's contract — ownership checks, guard ordering on the new rate-limited routes, form accessibility, dead code. No defects found; see AUDIT_REPORT.md §10.2 for what was checked.
+
 ### Fixed (Phase 3 verification — env loading, CORS, build)
 
 Found during the user's real `npm install`/`typecheck`/`test`/`build`/`db:migrate:dev` verification pass, not part of the original Phase 3 wave 1 scope:
@@ -15,6 +25,7 @@ Found during the user's real `npm install`/`typecheck`/`test`/`build`/`db:migrat
 - **`next build` failed with a confusing `<Html> should not be imported outside of pages/_document` error** — root cause was `NODE_ENV=development` from `.env` leaking into the `dotenv`-wrapped `build`/`start` scripts (Next warns about this as a "non-standard NODE_ENV value" and behaves inconsistently during static generation). Fixed by adding `cross-env NODE_ENV=production` ahead of the `dotenv` call in `build`/`start` for both workspaces — `dotenv` never overrides an already-set variable, so this pins production commands to the right mode regardless of what `.env` says (which is correctly `development`, for `dev`).
 - **CORS anti-pattern in `main.ts`** (reflecting any request origin with `credentials: true`, effectively disabling CORS protection for cookie-authenticated requests) — pre-existing from earlier scaffolding, but only became a real risk once this wave introduced the first credentialed cookie (the refresh token). Fixed to pin against `FRONTEND_URL`.
 - **Docker Postgres port conflict**: `docker-compose.yml`'s Postgres was mapped to the host's default 5432, which collided with a natively-installed Postgres on the dev machine — connections landed on whichever service Windows/Docker Desktop happened to route them to, producing intermittent/misleading `P1000` auth failures even with correct credentials. Remapped to host port 5433; `.env.example`'s `DATABASE_URL` updated to match.
+- **Frontend dev/start server silently bound to port 4000 instead of 3000, colliding with the backend.** `.env`'s `PORT=4000` is meant only for the backend (`ConfigModule`/`main.ts` read it), but Next.js's own dev/start server *also* honors a `PORT` env var for its own listen port — once the frontend's scripts started loading the whole root `.env` via `dotenv`, it inherited `PORT=4000` too, so frontend and backend raced for the same port (`EADDRINUSE` for whichever lost). Fixed by pinning the frontend explicitly with `next dev -p 3000`/`next start -p 3000`, which overrides any inherited `PORT`.
 
 ### Added (Phase 3 — frontend polish)
 
