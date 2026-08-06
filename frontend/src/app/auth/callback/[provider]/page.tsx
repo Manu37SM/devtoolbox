@@ -27,8 +27,13 @@ function OAuthCallbackContent({ provider }: { provider: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
-  const [status, setStatus] = useState<"exchanging" | "error">("exchanging");
+  const authStatus = useAuthStore((s) => s.status);
+  const [status, setStatus] = useState<"exchanging" | "waiting-for-session" | "error">("exchanging");
   const [error, setError] = useState<string | null>(null);
+  // Set once by the first effect (sign-in vs. link, and the code/redirectUri
+  // it validated) so the second effect — which needs to wait on auth
+  // hydration for "link" — doesn't have to re-parse the URL.
+  const [pendingLink, setPendingLink] = useState<{ code: string; redirectUri: string } | null>(null);
 
   useEffect(() => {
     if (!OAuthProviders.includes(provider as OAuthProvider)) {
@@ -46,16 +51,26 @@ function OAuthCallbackContent({ provider }: { provider: string }) {
       setError("Sign-in was cancelled or denied.");
       return;
     }
-    if (!code || !consumeOAuthState(state)) {
+    const mode = consumeOAuthState(state);
+    if (!code || !mode) {
       setStatus("error");
       setError("This sign-in link is invalid or expired. Please try again.");
       return;
     }
 
-    apiPost<AuthTokenResponse>(`/auth/oauth/${provider}/callback`, {
-      code,
-      redirectUri: oauthRedirectUri(provider as OAuthProvider),
-    })
+    const redirectUri = oauthRedirectUri(provider as OAuthProvider);
+
+    if (mode === "link") {
+      // The full-page redirect to the provider and back means the in-memory
+      // access token is gone — AuthHydrator hasn't necessarily finished
+      // re-establishing the session from the refresh cookie yet. Defer to
+      // the second effect, which waits for that to settle.
+      setPendingLink({ code, redirectUri });
+      setStatus("waiting-for-session");
+      return;
+    }
+
+    apiPost<AuthTokenResponse>(`/auth/oauth/${provider}/callback`, { code, redirectUri })
       .then((res) => {
         setSession(res.accessToken, res.user);
         void syncFavoritesOnSignIn();
@@ -70,8 +85,29 @@ function OAuthCallbackContent({ provider }: { provider: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (status === "exchanging") {
-    return <div className="mx-auto max-w-sm px-4 py-16 text-sm text-text-secondary">Signing you in…</div>;
+  useEffect(() => {
+    if (status !== "waiting-for-session" || !pendingLink || authStatus === "loading") return;
+
+    if (authStatus === "anonymous") {
+      setStatus("error");
+      setError("Your session expired before the connection could finish. Please sign in and try again.");
+      return;
+    }
+
+    apiPost(`/auth/oauth/${provider}/link`, pendingLink, { authenticated: true })
+      .then(() => router.push("/account?connected=" + provider))
+      .catch((err) => {
+        setStatus("error");
+        setError(err instanceof ApiClientError ? err.message : "Couldn't connect this account. Please try again.");
+      });
+  }, [status, pendingLink, authStatus, provider, router]);
+
+  if (status === "exchanging" || status === "waiting-for-session") {
+    return (
+      <div className="mx-auto max-w-sm px-4 py-16 text-sm text-text-secondary">
+        {status === "waiting-for-session" ? "Connecting your account…" : "Signing you in…"}
+      </div>
+    );
   }
 
   return (

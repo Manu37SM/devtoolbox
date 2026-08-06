@@ -22,7 +22,7 @@ export default function NewSnippetPage() {
     if (status === "anonymous") router.replace("/login");
   }, [status, router]);
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);

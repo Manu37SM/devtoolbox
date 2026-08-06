@@ -4,6 +4,11 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (Phase 3 — closing remaining gaps: OAuth linking, sync docs)
+
+- **OAuth account-linking.** New `GET /auth/oauth/linked`, `POST /auth/oauth/:provider/link`, `DELETE /auth/oauth/:provider` (all `JwtAuthGuard`-protected) let an already-signed-in user connect/disconnect GitHub or Google, separate from the sign-in flow — `unlinkAccount` refuses to remove a user's last remaining sign-in method. New "Connected accounts" section on `/account`; `OAuthButtons` now takes a `mode: "signin" | "link"` prop, and the OAuth callback page waits for auth hydration to resolve before completing a "link" (the full-page redirect round-trip discards the in-memory access token, so it can't call the authenticated link endpoint immediately on return).
+- **Clarified, not changed:** DATABASE.md §7's sync-merge description was rewritten to state the per-entity strategy explicitly (favorites = set union, history = append-only, pipelines = last-write-wins with a user-visible conflict prompt) — the conflict prompt already only applied to Pipelines in the actual implementation; the doc's old single-sentence phrasing just read as a broader, unbuilt gap than it was. See AUDIT_REPORT.md §11.2.
+
 ### Added (Phase 3 — security/production-readiness pass)
 
 - **Real transactional email provider.** `EmailService` sends verification/password-reset emails via Resend when `RESEND_API_KEY` is set, falling back to logging the link to the console otherwise (unchanged local-dev behavior). New env vars `RESEND_API_KEY`/`EMAIL_FROM` (both optional). Never throws on send failure — register/reset-request already return a generic response regardless, for account-enumeration safety.
@@ -124,7 +129,7 @@ Found during the user's real `npm install`/`typecheck`/`test`/`build`/`db:migrat
 - Design system specification: tokens, component library, accessibility standards, responsive behavior.
 - Monorepo folder scaffolding for `frontend/`, `backend/`, and supporting directories (no feature code yet).
 
-### Notes
+### Planning Notes
 
 - This release line represents the **planning/architecture phase only**. No product features are implemented yet. Implementation begins at `v0.1.0` per the MVP scope in `FEATURE.md`.
 

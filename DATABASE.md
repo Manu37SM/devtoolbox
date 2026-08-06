@@ -16,7 +16,7 @@ Database design for DevToolbox's backend services (auth, sync, sharing, analytic
 
 ## 2. Entity-Relationship Overview
 
-```
+```text
 User ──1:N── Session (refresh tokens)
 User ──1:N── Snippet
 User ──1:N── Pipeline ──1:N── PipelineStep
@@ -238,6 +238,7 @@ model VerificationToken {
 ```
 
 **Implementation notes (Phase 3):**
+
 - Primary keys use Prisma's `@default(uuid())` (UUIDv4), not true UUIDv7 as
   originally specified above — Prisma/Postgres don't generate UUIDv7
   natively yet. Tracked as a follow-up; the index-locality benefit UUIDv7
@@ -256,7 +257,7 @@ model VerificationToken {
 ## 4. Data Retention & Privacy Notes
 
 | Table | Contains user content? | Retention |
-|---|---|---|
+| --- | --- | --- |
 | `HistoryEntry` | Yes (opt-in sync only) | User-purgeable anytime; previews truncated (e.g., 4KB) and encrypted at rest |
 | `Snippet` / `Pipeline` | Yes (explicit save) | Until user deletes; soft-deleted 30 days before hard purge |
 | `ShareLink` | Yes (explicit share) | Default 30-day expiry, hard-deleted by scheduled job after expiry |
@@ -284,4 +285,8 @@ For completeness — most "data" in this product lives on-device, not in this sc
 - **IndexedDB (via Dexie.js):** `history` (per-tool, capped at N entries, purgeable), `favorites`, `draftPipelines`, `preferences`.
 - **localStorage:** theme, layout density, onboarding-seen flags — small, non-sensitive UI state only.
 
-This local-first data becomes the source of truth for anonymous users and is merged (last-write-wins, user-visible conflict prompt for pipelines) into the server tables on first sign-in with sync enabled.
+This local-first data becomes the source of truth for anonymous users and is merged into the server tables on first sign-in with sync enabled. The merge strategy differs per entity because the conflict shape differs per entity, not out of inconsistency:
+
+- **Favorites** — a plain set union (local ∪ server). A `toolSlug` is either favorited or not; there's no field to overwrite, so nothing can conflict. See `frontend/src/lib/sync.ts`.
+- **History** — append-only, never backfilled on sign-in (only new entries created after sign-in sync). Each record is a distinct, immutable entry, never updated in place, so there's no overwrite hazard and no conflict case to prompt for.
+- **Pipelines** — the one entity that's actually mutable and re-savable, so it's the one that needs last-write-wins with a **user-visible conflict prompt**: before overwriting an already-synced pipeline, the client re-fetches the server copy's `updatedAt` and compares it against what was recorded at the last successful sync; a mismatch surfaces a confirm dialog before retrying with `force: true`. See `frontend/src/lib/pipeline-sync.ts`.

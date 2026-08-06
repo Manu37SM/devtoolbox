@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { UserProfile } from "@devtoolbox/shared";
+import type { LinkedOAuthAccount, UserProfile } from "@devtoolbox/shared";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
+
+const PROVIDER_LABEL: Record<string, string> = { github: "GitHub", google: "Google" };
 
 export default function AccountPage() {
   const router = useRouter();
@@ -20,6 +23,9 @@ export default function AccountPage() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedOAuthAccount[] | null>(null);
+  const [linkedError, setLinkedError] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -28,6 +34,26 @@ export default function AccountPage() {
   useEffect(() => {
     setDisplayName(user?.displayName ?? "");
   }, [user?.displayName]);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    apiGet<{ accounts: LinkedOAuthAccount[] }>("/auth/oauth/linked", { authenticated: true })
+      .then((res) => setLinkedAccounts(res.accounts))
+      .catch(() => setLinkedAccounts([]));
+  }, [status]);
+
+  async function onDisconnect(provider: string) {
+    setLinkedError(null);
+    setDisconnecting(provider);
+    try {
+      await apiDelete(`/auth/oauth/${provider}`, { authenticated: true });
+      setLinkedAccounts((prev) => (prev ? prev.filter((a) => a.provider !== provider) : prev));
+    } catch (err) {
+      setLinkedError(err instanceof ApiClientError ? err.message : "Couldn't disconnect. Please try again.");
+    } finally {
+      setDisconnecting(null);
+    }
+  }
 
   if (status === "loading" || !user) {
     return <div className="mx-auto max-w-lg px-4 py-16 text-sm text-text-secondary">Loading…</div>;
@@ -130,6 +156,41 @@ export default function AccountPage() {
           </Button>
           {syncMessage && <span className="text-sm text-text-secondary">{syncMessage}</span>}
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-text-primary">Connected accounts</h2>
+        {linkedAccounts === null ? (
+          <p className="text-sm text-text-secondary">Loading…</p>
+        ) : (
+          <>
+            {linkedAccounts.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {linkedAccounts.map((account) => (
+                  <li
+                    key={account.provider}
+                    className="flex items-center justify-between rounded-md border border-border-default px-3 py-2 text-sm"
+                  >
+                    <span className="text-text-primary">{PROVIDER_LABEL[account.provider] ?? account.provider}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDisconnect(account.provider)}
+                      disabled={disconnecting === account.provider}
+                    >
+                      {disconnecting === account.provider ? "Disconnecting…" : "Disconnect"}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {linkedError && <p className="text-sm text-danger">{linkedError}</p>}
+            <OAuthButtons
+              mode="link"
+              connectedProviders={linkedAccounts.map((a) => a.provider) as Array<"github" | "google">}
+            />
+          </>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">

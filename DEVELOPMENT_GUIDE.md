@@ -24,7 +24,7 @@ Frontend-only contributors (the majority of tool work) can run `npm run dev --wo
 
 ## 3. Monorepo Structure
 
-```
+```text
 devtoolbox/
 ├── frontend/
 │   ├── src/
@@ -125,6 +125,7 @@ Every tool — regardless of module — must ship these five pieces. Use `npm ru
 3. **`transform.test.ts`** — Vitest unit tests covering: valid input, edge cases (empty, huge, malformed), and every documented option combination. Minimum coverage threshold enforced in CI (see below).
 4. **`ToolView.tsx`** — the React UI, composed from `ToolShell` + shared components (`OptionsPanel`, `OutputPane`, `CodeEditor`, etc. — see UI_GUIDELINES.md §4). New bespoke layout code requires design review sign-off; the default path is composition only.
 5. **`index.ts`** — the registry entry:
+
    ```ts
    export const jsonFormatterTool: ToolRegistryEntry = {
      slug: "json-formatter",
@@ -139,6 +140,7 @@ Every tool — regardless of module — must ship these five pieces. Use `npm ru
      seo: { keywords: ["json formatter", "json validator", "json beautifier"] },
    };
    ```
+
 6. Register the entry in `frontend/src/lib/registry.ts` (single array, becomes the source for the command palette, sitemap, catalog page, and related-tools linking — never hand-duplicate tool metadata elsewhere).
 7. Add `content.mdx` with a short "how it works"/"common use cases" section per UI_GUIDELINES.md §8 and ARCHITECTURE.md §13 (SEO).
 
@@ -147,7 +149,7 @@ Every tool — regardless of module — must ship these five pieces. Use `npm ru
 ## 6. Testing Strategy
 
 | Layer | Tool | Scope |
-|---|---|---|
+| --- | --- | --- |
 | Unit (transform logic) | Vitest | Every `transform.ts` — the highest-leverage tests in the repo |
 | Component | React Testing Library + Vitest | Shared components (`ui/`, `tools/`) and representative `ToolView`s |
 | Visual/interaction | Storybook + Chromatic (or Percy) | Shared component states, catch unintended visual regressions |
@@ -178,7 +180,7 @@ Coverage gate: 80% line coverage minimum on `transform.ts` files and backend `se
 
 `.env.example` documents every required variable with no real values:
 
-```
+```bash
 # Backend
 DATABASE_URL=
 REDIS_URL=

@@ -66,6 +66,14 @@ export const OAuthCallbackSchema = z.object({
 });
 export type OAuthCallbackDto = z.infer<typeof OAuthCallbackSchema>;
 
+// Response shape for GET /auth/oauth/linked — which providers the signed-in
+// user has connected, for account-settings UI (not a request DTO, so no
+// Zod schema needed; the backend is the only producer).
+export interface LinkedOAuthAccount {
+  provider: OAuthProvider;
+  createdAt: string;
+}
+
 export const VerifyEmailSchema = z.object({
   token: z.string().min(1),
 });

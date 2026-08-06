@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, HttpCode, Param, Post, Req, Res } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
@@ -7,6 +7,8 @@ import { OAuthService } from "./oauth.service";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_PATH } from "./auth.constants";
 import type { IssuedRefreshToken } from "./auth.service";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { CurrentUser, type AuthenticatedUser } from "./decorators/current-user.decorator";
 
 @Controller("auth/oauth")
 export class OAuthController {
@@ -38,6 +40,42 @@ export class OAuthController {
 
     this.setRefreshCookie(res, refreshToken);
     return tokens;
+  }
+
+  // ── Account-linking (signed-in user connecting/disconnecting a provider,
+  // distinct from the sign-in/signup flow above) — reached from /account,
+  // not /login or /register. ────────────────────────────────────────────
+  @UseGuards(JwtAuthGuard)
+  @Get("linked")
+  async listLinked(@CurrentUser() user: AuthenticatedUser) {
+    return { accounts: await this.oauthService.listLinkedAccounts(user.userId) };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post(":provider/link")
+  @HttpCode(200)
+  async link(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("provider") provider: string,
+    @Body(new ZodValidationPipe(OAuthCallbackSchema)) dto: unknown,
+  ) {
+    if (!OAuthProviders.includes(provider as OAuthProvider)) {
+      throw new BadRequestException(`Unsupported OAuth provider "${provider}".`);
+    }
+    const { code, redirectUri } = dto as { code: string; redirectUri: string };
+    await this.oauthService.linkAccount(user.userId, provider as OAuthProvider, code, redirectUri);
+    return { ok: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(":provider")
+  @HttpCode(204)
+  async unlink(@CurrentUser() user: AuthenticatedUser, @Param("provider") provider: string) {
+    if (!OAuthProviders.includes(provider as OAuthProvider)) {
+      throw new BadRequestException(`Unsupported OAuth provider "${provider}".`);
+    }
+    await this.oauthService.unlinkAccount(user.userId, provider as OAuthProvider);
   }
 
   private setRefreshCookie(res: Response, token: IssuedRefreshToken): void {
