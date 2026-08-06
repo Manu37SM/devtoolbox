@@ -134,15 +134,15 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 | Tool | Priority | Notes |
 | --- | --- | --- |
 | Explain This (regex / JSON schema / cron expression / SQL query) | P2 | ✅ Shipped Phase 3 — plain-language explanation of a pasted expression |
-| Generate From Example (JSON→schema description, sample→regex) | P2 | Natural language → structured output |
+| Generate From Example (JSON→schema description, sample→regex) | P2 | ✅ Shipped Phase 3 — infers a regex or JSON Schema purely from pasted examples, composed onto the existing /ai/generate endpoint |
 | AI Diff Summary | P2 | ✅ Shipped Phase 3 — summarizes a large text/JSON diff in plain language |
-| AI Commit Message / PR Description Generator | P3 | From a pasted diff |
+| AI Commit Message / PR Description Generator | P3 | ✅ Shipped Phase 3 — from a pasted diff |
 | Natural Language → Cron | P2 | ✅ Shipped Phase 3 — "every weekday at 9am" → cron expression, validated deterministically after generation |
 | Natural Language → Regex | P2 | ✅ Shipped Phase 3 — generated regex is always validated against user-provided test strings before shown as "confirmed" |
 | SQL Query Explainer | P2 | Covered by Explain This's `subject: "sql"` — no separate tool needed |
-| Code Commenter / Docstring Generator | P3 | |
+| Code Commenter / Docstring Generator | P3 | ✅ Shipped Phase 3 |
 | AI JSON Repair (fix malformed JSON) | P2 | ✅ Shipped Phase 3 — deterministic repair attempted first; AI fallback for ambiguous cases |
-| API Response → Client Code Generator | P3 | Given a sample response, generate typed fetch/axios client stub |
+| API Response → Client Code Generator | P3 | ✅ Shipped Phase 3 — given a sample response, generates a typed fetch/axios client stub |
 
 ## Cross-Cutting Platform Features
 
@@ -155,10 +155,10 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 | Keyboard shortcuts overlay | P0 | (✅ Shipped Phase 1) |
 | PWA/offline support | P1 | (✅ Shipped Phase 2) |
 | Pipelines (chain tools, client-only) | P1 | (✅ Shipped Phase 2 — 23 compatible tools, single-input/single-output chains only, no per-step option customization yet) |
-| Optional accounts (email + OAuth) | P2 | |
-| Cross-device sync (history, favorites, pipelines) | P2 | |
-| Shareable tool state (short links) | P2 | |
-| Pipeline sharing | P2 | |
+| Optional accounts (email + OAuth) | P2 | ✅ Shipped Phase 3 — email/password + GitHub/Google, with account-linking for signed-in users |
+| Cross-device sync (history, favorites, pipelines) | P2 | ✅ Shipped Phase 3 — favorites are set-union merged, history is append-only (no conflict case), pipelines are last-write-wins with a user-visible confirm prompt (see DATABASE.md §7) |
+| Shareable tool state (short links) | P2 | ✅ Shipped Phase 3 — Share Links module |
+| Pipeline sharing | P2 | ✅ Shipped Phase 3 — via Share Links |
 | Team workspaces | P3 | |
 | Public API / CLI | P3 | |
 | Browser extension | P3 | |
@@ -198,6 +198,7 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 ## Prioritization Rationale
 
 Tools were prioritized on three axes, weighted in this order:
+
 1. **Search/usage volume** (per competitive research — JSON formatting, Base64, JWT, hashing, and timestamp tools dominate query volume across every competitor site reviewed).
 2. **Implementation complexity vs. client-only feasibility** — pure client-side tools ship faster and de-risk the "no backend needed for MVP" goal; anything requiring a server (Module 8's DNS/webhook/HTTP tools) is deliberately deferred past MVP.
 3. **Differentiation value** — AI tools and pipelines are placed after the deterministic catalog is solid, because they depend on (a) having enough tools to chain/explain and (b) a backend that doesn't exist yet at MVP.

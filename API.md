@@ -129,6 +129,9 @@ All AI endpoints share: request-shape validation, per-user/IP rate limiting, a s
 | POST | `/ai/generate` | `{ target: "regex"\|"cron"\|"json-schema", prompt, examples? }` → generated artifact + deterministic validation result |
 | POST | `/ai/diff-summary` | `{ before, after, format: "text"\|"json" }` → natural-language summary of a diff |
 | POST | `/ai/json-repair` | `{ input }` → attempts deterministic repair first (`repairedBy: "deterministic"`); falls back to AI only if needed (`repairedBy: "ai"`) |
+| POST | `/ai/commit-message` | `{ diff }` → `{ commitMessage, prDescription }` generated from a pasted git diff |
+| POST | `/ai/code-comment` | `{ code, language? }` → the same code with inline comments/docstrings added |
+| POST | `/ai/client-code` | `{ sampleResponse, target: "fetch"\|"axios", typeName? }` → typed client function + response type generated from a sample JSON response |
 | GET | `/ai/usage` | Current user's usage against their plan quota (counts only, no content) |
 
 **Example — `POST /ai/generate`**

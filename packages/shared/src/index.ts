@@ -343,7 +343,10 @@ export type AiGenerateTarget = (typeof AiGenerateTargets)[number];
 
 export const AiGenerateSchema = z.object({
   target: z.enum(AiGenerateTargets),
-  prompt: z.string().min(1).max(1_000),
+  // 4_000 (not 1_000) so the "Generate From Example" tool can pass a raw
+  // JSON sample as `prompt` for the json-schema target — matches
+  // AiExplainSchema's input ceiling rather than inventing a new one.
+  prompt: z.string().min(1).max(4_000),
   examples: z.array(z.string().max(500)).max(10).optional(),
 });
 export type AiGenerateDto = z.infer<typeof AiGenerateSchema>;
@@ -380,6 +383,46 @@ export interface AiJsonRepairResult {
   repairedBy: "deterministic" | "ai";
   model?: string; // present only when repairedBy === "ai"
   dataSentPreview?: string;
+}
+
+export const AiCommitMessageSchema = z.object({
+  diff: z.string().min(1).max(20_000),
+});
+export type AiCommitMessageDto = z.infer<typeof AiCommitMessageSchema>;
+
+export interface AiCommitMessageResult {
+  commitMessage: string;
+  prDescription: string;
+  model: string;
+  dataSentPreview: string;
+}
+
+export const AiCodeCommentSchema = z.object({
+  code: z.string().min(1).max(10_000),
+  language: z.string().min(1).max(40).optional(),
+});
+export type AiCodeCommentDto = z.infer<typeof AiCodeCommentSchema>;
+
+export interface AiCodeCommentResult {
+  commented: string;
+  model: string;
+  dataSentPreview: string;
+}
+
+export const AiClientCodeTargets = ["fetch", "axios"] as const;
+export type AiClientCodeTarget = (typeof AiClientCodeTargets)[number];
+
+export const AiClientCodeSchema = z.object({
+  sampleResponse: z.string().min(1).max(10_000),
+  target: z.enum(AiClientCodeTargets),
+  typeName: z.string().min(1).max(60).optional(),
+});
+export type AiClientCodeDto = z.infer<typeof AiClientCodeSchema>;
+
+export interface AiClientCodeResult {
+  code: string;
+  model: string;
+  dataSentPreview: string;
 }
 
 export interface AiUsageSummary {

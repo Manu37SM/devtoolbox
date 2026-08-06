@@ -76,6 +76,10 @@ import { NlToCronToolView } from "@/modules/tools/ai/nl-to-cron/ToolView";
 import { NlToRegexToolView } from "@/modules/tools/ai/nl-to-regex/ToolView";
 import { AiJsonRepairToolView } from "@/modules/tools/ai/ai-json-repair/ToolView";
 import { AiDiffSummaryToolView } from "@/modules/tools/ai/ai-diff-summary/ToolView";
+import { GenerateFromExampleToolView } from "@/modules/tools/ai/generate-from-example/ToolView";
+import { AiCommitMessageToolView } from "@/modules/tools/ai/ai-commit-message/ToolView";
+import { CodeCommenterToolView } from "@/modules/tools/ai/code-commenter/ToolView";
+import { ApiResponseToClientCodeToolView } from "@/modules/tools/ai/api-response-to-client-code/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -150,4 +154,8 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "nl-to-regex": NlToRegexToolView,
   "ai-json-repair": AiJsonRepairToolView,
   "ai-diff-summary": AiDiffSummaryToolView,
+  "generate-from-example": GenerateFromExampleToolView,
+  "ai-commit-message": AiCommitMessageToolView,
+  "code-commenter": CodeCommenterToolView,
+  "api-response-to-client-code": ApiResponseToClientCodeToolView,
 };

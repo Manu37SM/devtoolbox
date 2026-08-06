@@ -78,6 +78,10 @@ import { nlToCronTool } from "@/modules/tools/ai/nl-to-cron";
 import { nlToRegexTool } from "@/modules/tools/ai/nl-to-regex";
 import { aiJsonRepairTool } from "@/modules/tools/ai/ai-json-repair";
 import { aiDiffSummaryTool } from "@/modules/tools/ai/ai-diff-summary";
+import { generateFromExampleTool } from "@/modules/tools/ai/generate-from-example";
+import { aiCommitMessageTool } from "@/modules/tools/ai/ai-commit-message";
+import { codeCommenterTool } from "@/modules/tools/ai/code-commenter";
+import { apiResponseToClientCodeTool } from "@/modules/tools/ai/api-response-to-client-code";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -152,6 +156,10 @@ export const toolRegistry: ToolRegistryEntry[] = [
   nlToRegexTool,
   aiJsonRepairTool,
   aiDiffSummaryTool,
+  generateFromExampleTool,
+  aiCommitMessageTool,
+  codeCommenterTool,
+  apiResponseToClientCodeTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

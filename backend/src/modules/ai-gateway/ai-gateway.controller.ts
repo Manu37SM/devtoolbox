@@ -1,5 +1,13 @@
 import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
-import { AiDiffSummarySchema, AiExplainSchema, AiGenerateSchema, AiJsonRepairSchema } from "@devtoolbox/shared";
+import {
+  AiClientCodeSchema,
+  AiCodeCommentSchema,
+  AiCommitMessageSchema,
+  AiDiffSummarySchema,
+  AiExplainSchema,
+  AiGenerateSchema,
+  AiJsonRepairSchema,
+} from "@devtoolbox/shared";
 import { AiGatewayService } from "./ai-gateway.service";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { OptionalJwtAuthGuard } from "../auth/guards/optional-jwt-auth.guard";
@@ -59,6 +67,36 @@ export class AiGatewayController {
     @Body(new ZodValidationPipe(AiJsonRepairSchema)) dto: unknown,
   ) {
     return this.aiGatewayService.jsonRepair(dto as Parameters<AiGatewayService["jsonRepair"]>[0], user?.userId);
+  }
+
+  @PlanThrottle({ route: "ai-commit-message", ...AI_THROTTLE })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
+  @Post("commit-message")
+  async commitMessage(
+    @CurrentUser() user: AuthenticatedUser | undefined,
+    @Body(new ZodValidationPipe(AiCommitMessageSchema)) dto: unknown,
+  ) {
+    return this.aiGatewayService.commitMessage(dto as Parameters<AiGatewayService["commitMessage"]>[0], user?.userId);
+  }
+
+  @PlanThrottle({ route: "ai-code-comment", ...AI_THROTTLE })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
+  @Post("code-comment")
+  async codeComment(
+    @CurrentUser() user: AuthenticatedUser | undefined,
+    @Body(new ZodValidationPipe(AiCodeCommentSchema)) dto: unknown,
+  ) {
+    return this.aiGatewayService.codeComment(dto as Parameters<AiGatewayService["codeComment"]>[0], user?.userId);
+  }
+
+  @PlanThrottle({ route: "ai-client-code", ...AI_THROTTLE })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
+  @Post("client-code")
+  async clientCode(
+    @CurrentUser() user: AuthenticatedUser | undefined,
+    @Body(new ZodValidationPipe(AiClientCodeSchema)) dto: unknown,
+  ) {
+    return this.aiGatewayService.clientCode(dto as Parameters<AiGatewayService["clientCode"]>[0], user?.userId);
   }
 
   @UseGuards(JwtAuthGuard)

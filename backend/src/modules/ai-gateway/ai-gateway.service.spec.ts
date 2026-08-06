@@ -157,6 +157,42 @@ describe("AiGatewayService", () => {
     );
   });
 
+  it("commitMessage() parses COMMIT/DESCRIPTION and routes to the sonnet model", async () => {
+    mockCreate.mockResolvedValue(
+      textResponse("COMMIT: fix null check in parser\nDESCRIPTION: Guards against a crash when the input is empty."),
+    );
+    const service = new AiGatewayService(makePrisma() as never, makeConfig() as never);
+
+    const result = await service.commitMessage({ diff: "--- a/parser.ts\n+++ b/parser.ts\n@@ ..." }, "user-1");
+
+    expect(result.commitMessage).toBe("fix null check in parser");
+    expect(result.prDescription).toBe("Guards against a crash when the input is empty.");
+    expect(result.model).toBe("claude-sonnet-4-5");
+  });
+
+  it("codeComment() strips a code fence and calls the haiku model", async () => {
+    mockCreate.mockResolvedValue(textResponse("```ts\n// Adds two numbers\nfunction add(a: number, b: number) {\n  return a + b;\n}\n```"));
+    const service = new AiGatewayService(makePrisma() as never, makeConfig() as never);
+
+    const result = await service.codeComment({ code: "function add(a,b) { return a+b; }", language: "typescript" }, "user-1");
+
+    expect(result.commented).toBe("// Adds two numbers\nfunction add(a: number, b: number) {\n  return a + b;\n}");
+    expect(result.model).toBe("claude-haiku-4-5");
+  });
+
+  it("clientCode() strips a code fence and records usage under a target-specific tool slug", async () => {
+    mockCreate.mockResolvedValue(textResponse("```ts\ninterface User { id: number; name: string; }\n```"));
+    const prisma = makePrisma();
+    const service = new AiGatewayService(prisma as never, makeConfig() as never);
+
+    const result = await service.clientCode({ sampleResponse: '{"id":1,"name":"Ada"}', target: "fetch" }, "user-1");
+
+    expect(result.code).toBe("interface User { id: number; name: string; }");
+    expect(prisma.aiUsageEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ toolSlug: "ai-client-code-fetch" }) }),
+    );
+  });
+
   it("getUsage() returns the request count and quota for the user's plan", async () => {
     const prisma = makePrisma();
     const service = new AiGatewayService(prisma as never, makeConfig() as never);
