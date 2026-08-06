@@ -72,6 +72,12 @@ import { dnsLookupTool } from "@/modules/tools/network/dns-lookup";
 import { ipLookupTool } from "@/modules/tools/network/ip-lookup";
 import { webhookTesterTool } from "@/modules/tools/network/webhook-tester";
 import { metaTagPreviewerTool } from "@/modules/tools/network/meta-tag-previewer";
+// Module 10 AI-powered tools (isClientOnly: false — see API.md §9)
+import { explainThisTool } from "@/modules/tools/ai/explain-this";
+import { nlToCronTool } from "@/modules/tools/ai/nl-to-cron";
+import { nlToRegexTool } from "@/modules/tools/ai/nl-to-regex";
+import { aiJsonRepairTool } from "@/modules/tools/ai/ai-json-repair";
+import { aiDiffSummaryTool } from "@/modules/tools/ai/ai-diff-summary";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -141,6 +147,11 @@ export const toolRegistry: ToolRegistryEntry[] = [
   ipLookupTool,
   webhookTesterTool,
   metaTagPreviewerTool,
+  explainThisTool,
+  nlToCronTool,
+  nlToRegexTool,
+  aiJsonRepairTool,
+  aiDiffSummaryTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

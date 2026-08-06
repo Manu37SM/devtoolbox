@@ -133,15 +133,15 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 
 | Tool | Priority | Notes |
 | --- | --- | --- |
-| Explain This (regex / JSON schema / cron expression / SQL query) | P2 | Plain-language explanation of a pasted expression |
+| Explain This (regex / JSON schema / cron expression / SQL query) | P2 | ✅ Shipped Phase 3 — plain-language explanation of a pasted expression |
 | Generate From Example (JSON→schema description, sample→regex) | P2 | Natural language → structured output |
-| AI Diff Summary | P2 | Summarizes a large text/JSON diff in plain language |
+| AI Diff Summary | P2 | ✅ Shipped Phase 3 — summarizes a large text/JSON diff in plain language |
 | AI Commit Message / PR Description Generator | P3 | From a pasted diff |
-| Natural Language → Cron | P2 | "every weekday at 9am" → cron expression, validated deterministically after generation |
-| Natural Language → Regex | P2 | Generated regex is always validated against user-provided test strings before shown as "confirmed" |
-| SQL Query Explainer | P2 | |
+| Natural Language → Cron | P2 | ✅ Shipped Phase 3 — "every weekday at 9am" → cron expression, validated deterministically after generation |
+| Natural Language → Regex | P2 | ✅ Shipped Phase 3 — generated regex is always validated against user-provided test strings before shown as "confirmed" |
+| SQL Query Explainer | P2 | Covered by Explain This's `subject: "sql"` — no separate tool needed |
 | Code Commenter / Docstring Generator | P3 | |
-| AI JSON Repair (fix malformed JSON) | P2 | Deterministic repair attempted first; AI fallback for ambiguous cases |
+| AI JSON Repair (fix malformed JSON) | P2 | ✅ Shipped Phase 3 — deterministic repair attempted first; AI fallback for ambiguous cases |
 | API Response → Client Code Generator | P3 | Given a sample response, generate typed fetch/axios client stub |
 
 ## Cross-Cutting Platform Features
@@ -184,7 +184,7 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 ### Phase 3 — Accounts, sync, first AI features
 
 - Optional accounts, cross-device sync, share links. **✅ shipped (wave 1)** — email/password + GitHub/Google OAuth auth (rotating refresh tokens, reuse detection), account profile/export/delete, Favorites + History sync (AES-256-GCM at rest), Snippets, server-synced Pipelines (+ duplicate), Share Links. First Postgres/Prisma-backed surface in the app; see AUDIT_REPORT.md for deviations from the original DATABASE.md spec (VerificationToken table, UUIDv4 not v7, single-key history encryption).
-- AI Gateway backend + first AI tools (Explain This, NL→Cron, NL→Regex, AI JSON Repair, AI Diff Summary). Not started.
+- AI Gateway backend + first AI tools (Explain This, NL→Cron, NL→Regex, AI JSON Repair, AI Diff Summary). **✅ shipped** — task-specific `/ai/*` endpoints (never a generic chat passthrough, per ARCHITECTURE.md §8.3), Haiku for explain/generate, Sonnet for diff-summary, deterministic-first JSON repair, deterministic cron/regex validation after generation, per-plan-tier rate limits, GET /ai/usage. See AUDIT_REPORT.md §12.
 - Pro tier groundwork (usage quotas, billing integration). Not started.
 
 ### Phase 4 — Enterprise/ecosystem

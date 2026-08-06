@@ -1,0 +1,13 @@
+## How it works
+
+Describe a schedule in plain English and Claude (Anthropic's AI model) generates the matching cron expression. Before it's shown to you, the result is deterministically validated — checked for exactly 5 well-formed fields — independently of the AI, so a malformed generation is visibly flagged as "Couldn't validate" rather than silently presented as correct.
+
+## Common use cases
+
+- Turning "every weekday at 9am UTC" into `0 9 * * 1-5` without memorizing cron syntax.
+- Quickly drafting a schedule for a new cron job before refining it by hand.
+- Double-checking your own hand-written cron expression matches your intent (pair with Explain This).
+
+## Related tools
+
+Cron Expression Builder/Parser · Explain This · Natural Language → Regex

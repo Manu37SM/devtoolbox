@@ -18,7 +18,15 @@ const envSchema = z.object({
   // rather than at first history write.
   HISTORY_ENCRYPTION_KEY: z.string().min(32),
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
+  // AI Gateway: optional in dev — AiGatewayService returns a clear 503
+  // ("AI features aren't configured") from any endpoint that actually needs
+  // to call the model, rather than failing boot; the deterministic-first
+  // half of /ai/json-repair still works with no key at all. Model names are
+  // env-configurable rather than hardcoded so a future Anthropic model
+  // rename/deprecation is a config change, not a code change.
   ANTHROPIC_API_KEY: z.string().optional(),
+  AI_MODEL_HAIKU: z.string().default("claude-haiku-4-5"),
+  AI_MODEL_SONNET: z.string().default("claude-sonnet-4-5"),
   // OAuth: optional in dev — Auth module checks these at call time and
   // returns a clear error if a provider is used without its creds set,
   // rather than failing boot (email/password auth must keep working

@@ -71,6 +71,11 @@ import { DnsLookupToolView } from "@/modules/tools/network/dns-lookup/ToolView";
 import { IpLookupToolView } from "@/modules/tools/network/ip-lookup/ToolView";
 import { WebhookTesterToolView } from "@/modules/tools/network/webhook-tester/ToolView";
 import { MetaTagPreviewerToolView } from "@/modules/tools/network/meta-tag-previewer/ToolView";
+import { ExplainThisToolView } from "@/modules/tools/ai/explain-this/ToolView";
+import { NlToCronToolView } from "@/modules/tools/ai/nl-to-cron/ToolView";
+import { NlToRegexToolView } from "@/modules/tools/ai/nl-to-regex/ToolView";
+import { AiJsonRepairToolView } from "@/modules/tools/ai/ai-json-repair/ToolView";
+import { AiDiffSummaryToolView } from "@/modules/tools/ai/ai-diff-summary/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -140,4 +145,9 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "ip-lookup": IpLookupToolView,
   "webhook-tester": WebhookTesterToolView,
   "meta-tag-previewer": MetaTagPreviewerToolView,
+  "explain-this": ExplainThisToolView,
+  "nl-to-cron": NlToCronToolView,
+  "nl-to-regex": NlToRegexToolView,
+  "ai-json-repair": AiJsonRepairToolView,
+  "ai-diff-summary": AiDiffSummaryToolView,
 };

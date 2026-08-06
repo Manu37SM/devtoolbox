@@ -316,6 +316,79 @@ export interface UrlPreviewResult {
   favicon?: string;
 }
 
+// ── AI Gateway DTOs (see API.md §9, ARCHITECTURE.md §8.3, CLAUDE.md rule 7) ─
+// Every one of these schemas bounds input length — the AI gateway is the
+// one surface in this app where user text reaches a model, so keeping
+// payloads small is both a cost control and part of the prompt-injection
+// mitigation (less room for an attacker to bury instructions in a huge blob
+// the system prompt has to visually compete with).
+export const AiExplainSubjects = ["regex", "cron", "json-schema", "sql"] as const;
+export type AiExplainSubject = (typeof AiExplainSubjects)[number];
+
+export const AiExplainSchema = z.object({
+  toolSlug: z.string().min(1).max(80),
+  subject: z.enum(AiExplainSubjects),
+  input: z.string().min(1).max(4_000),
+});
+export type AiExplainDto = z.infer<typeof AiExplainSchema>;
+
+export interface AiExplainResult {
+  explanation: string;
+  model: string;
+  dataSentPreview: string;
+}
+
+export const AiGenerateTargets = ["regex", "cron", "json-schema"] as const;
+export type AiGenerateTarget = (typeof AiGenerateTargets)[number];
+
+export const AiGenerateSchema = z.object({
+  target: z.enum(AiGenerateTargets),
+  prompt: z.string().min(1).max(1_000),
+  examples: z.array(z.string().max(500)).max(10).optional(),
+});
+export type AiGenerateDto = z.infer<typeof AiGenerateSchema>;
+
+export interface AiGenerateResult {
+  result: string;
+  explanation: string;
+  validated: boolean;
+  validationNote?: string;
+  model: string;
+  dataSentPreview: string;
+}
+
+export const AiDiffSummarySchema = z.object({
+  before: z.string().max(20_000),
+  after: z.string().max(20_000),
+  format: z.enum(["text", "json"]),
+});
+export type AiDiffSummaryDto = z.infer<typeof AiDiffSummarySchema>;
+
+export interface AiDiffSummaryResult {
+  summary: string;
+  model: string;
+  dataSentPreview: string;
+}
+
+export const AiJsonRepairSchema = z.object({
+  input: z.string().min(1).max(20_000),
+});
+export type AiJsonRepairDto = z.infer<typeof AiJsonRepairSchema>;
+
+export interface AiJsonRepairResult {
+  repaired: string;
+  repairedBy: "deterministic" | "ai";
+  model?: string; // present only when repairedBy === "ai"
+  dataSentPreview?: string;
+}
+
+export interface AiUsageSummary {
+  plan: "FREE" | "PRO" | "TEAM";
+  periodStart: string;
+  requestCount: number;
+  quota: number;
+}
+
 // ── Standard API error shape (see API.md §1) ───────────────────────────────
 export interface ApiErrorBody {
   error: {
