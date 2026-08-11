@@ -144,6 +144,8 @@ export const CreateSnippetSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().max(200_000),
   isPublic: z.boolean().optional().default(false),
+  // Phase 4 team workspaces (API.md §17) — caller must be a member of this org.
+  organizationId: z.string().uuid().optional(),
 });
 export type CreateSnippetDto = z.infer<typeof CreateSnippetSchema>;
 
@@ -169,6 +171,8 @@ export const CreateSyncedPipelineSchema = z.object({
     )
     .min(1)
     .max(20),
+  // Phase 4 team workspaces (API.md §17) — caller must be a member of this org.
+  organizationId: z.string().uuid().optional(),
 });
 export type CreateSyncedPipelineDto = z.infer<typeof CreateSyncedPipelineSchema>;
 
@@ -478,6 +482,175 @@ export type PublicJsonValidateDto = z.infer<typeof PublicJsonValidateSchema>;
 export interface PublicJsonValidateResult {
   valid: boolean;
   error?: string;
+}
+
+// ── Billing (Phase 4 — API.md §9) ──────────────────────────────────────────
+export const BillablePlans = ["PRO", "TEAM"] as const;
+export type BillablePlan = (typeof BillablePlans)[number];
+
+export const CreateCheckoutSessionSchema = z.object({
+  plan: z.enum(BillablePlans),
+});
+export type CreateCheckoutSessionDto = z.infer<typeof CreateCheckoutSessionSchema>;
+
+export interface CheckoutSessionResult {
+  url: string;
+}
+
+export interface PortalSessionResult {
+  url: string;
+}
+
+export const SubscriptionStatuses = [
+  "ACTIVE",
+  "PAST_DUE",
+  "CANCELED",
+  "INCOMPLETE",
+  "INCOMPLETE_EXPIRED",
+  "TRIALING",
+  "UNPAID",
+] as const;
+export type SubscriptionStatus = (typeof SubscriptionStatuses)[number];
+
+export interface SubscriptionSummary {
+  plan: BillablePlan;
+  status: SubscriptionStatus;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+}
+
+// ── Team workspaces (Phase 4 — API.md §17) ─────────────────────────────────
+export const OrgRoles = ["OWNER", "ADMIN", "MEMBER"] as const;
+export type OrgRole = (typeof OrgRoles)[number];
+
+export const CreateOrganizationSchema = z.object({
+  name: z.string().min(1).max(80),
+});
+export type CreateOrganizationDto = z.infer<typeof CreateOrganizationSchema>;
+
+export const UpdateOrganizationSchema = z.object({
+  name: z.string().min(1).max(80),
+});
+export type UpdateOrganizationDto = z.infer<typeof UpdateOrganizationSchema>;
+
+export const AddOrganizationMemberSchema = z.object({
+  email: z.string().email(),
+});
+export type AddOrganizationMemberDto = z.infer<typeof AddOrganizationMemberSchema>;
+
+export const UpdateOrganizationMemberRoleSchema = z.object({
+  role: z.enum(["ADMIN", "MEMBER"]),
+});
+export type UpdateOrganizationMemberRoleDto = z.infer<typeof UpdateOrganizationMemberRoleSchema>;
+
+export interface OrganizationSummary {
+  id: string;
+  name: string;
+  role: OrgRole;
+  createdAt: string;
+}
+
+export interface OrganizationMemberSummary {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  role: OrgRole;
+  joinedAt: string;
+}
+
+export interface OrganizationDetail {
+  id: string;
+  name: string;
+  role: OrgRole;
+  members: OrganizationMemberSummary[];
+  createdAt: string;
+}
+
+export interface OrganizationUsageSummary {
+  organizationId: string;
+  periodDays: number;
+  totalRequests: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  byMember: { userId: string; email: string; requests: number; inputTokens: number; outputTokens: number }[];
+}
+
+// ── Plugin marketplace (Phase 4, v1 — API.md §18, ARCHITECTURE.md §16) ────
+export const PluginStatuses = ["DRAFT", "IN_REVIEW", "PUBLISHED", "REJECTED", "SUSPENDED"] as const;
+export type PluginStatus = (typeof PluginStatuses)[number];
+
+// Deliberately narrow — v1 has no `permissions` grant beyond "none" (§16.5's
+// open question, left unresolved). Every plugin gets identical, minimal
+// capability: read one input string, one flat options bag, return one
+// output string.
+export const PluginManifestSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/, "lowercase letters, numbers, hyphens only"),
+  name: z.string().min(1).max(80),
+  version: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+$/, "must be semver (e.g. 1.0.0)"),
+  description: z.string().min(1).max(500),
+  author: z.string().min(1).max(120),
+});
+export type PluginManifest = z.infer<typeof PluginManifestSchema>;
+
+export const CreatePluginSchema = z.object({
+  slug: z
+    .string()
+    .min(1)
+    .max(60)
+    .regex(/^[a-z0-9-]+$/, "lowercase letters, numbers, hyphens only"),
+  name: z.string().min(1).max(80),
+  description: z.string().min(1).max(500),
+});
+export type CreatePluginDto = z.infer<typeof CreatePluginSchema>;
+
+const MAX_WASM_BASE64_LENGTH = Math.ceil((2 * 1024 * 1024 * 4) / 3); // ~2MB decoded
+
+export const SubmitPluginVersionSchema = z.object({
+  manifest: PluginManifestSchema,
+  wasmBase64: z.string().min(1).max(MAX_WASM_BASE64_LENGTH),
+});
+export type SubmitPluginVersionDto = z.infer<typeof SubmitPluginVersionSchema>;
+
+export const ReviewPluginVersionSchema = z.object({
+  decision: z.enum(["APPROVE", "REJECT"]),
+});
+export type ReviewPluginVersionDto = z.infer<typeof ReviewPluginVersionSchema>;
+
+export interface PluginSummary {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  status: PluginStatus;
+  authorEmail: string;
+  latestVersion: string | null;
+  createdAt: string;
+}
+
+export interface PluginVersionSummary {
+  id: string;
+  version: string;
+  manifest: PluginManifest;
+  checksumSha256: string;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface PluginDetail extends PluginSummary {
+  versions: PluginVersionSummary[];
+}
+
+// Fetched by the frontend PluginRunner to actually execute a plugin.
+// Publicly readable for PUBLISHED versions (anyone can run a published
+// plugin); DRAFT/IN_REVIEW versions are only returned to the plugin's own
+// author or an admin (so an author can preview before it's public, and a
+// reviewer can test it, without exposing unreviewed code to the world).
+export interface PluginRunPayload {
+  version: string;
+  wasmBase64: string;
+  checksumSha256: string;
 }
 
 // ── Standard API error shape (see API.md §1) ───────────────────────────────

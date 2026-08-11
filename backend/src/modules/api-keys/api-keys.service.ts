@@ -3,6 +3,7 @@ import { ForbiddenException, Injectable, NotFoundException, UnauthorizedExceptio
 import type { ApiKeyCreatedResult, ApiKeySummary } from "@devtoolbox/shared";
 import { PrismaService } from "../../database/prisma.service";
 import { hashToken } from "../../common/crypto/token-hash";
+import { resolveEffectivePlan } from "../../common/plan/effective-plan";
 
 const KEY_PREFIX = "dtb_live_";
 
@@ -89,7 +90,11 @@ export class ApiKeysService {
     if (!key || key.revokedAt) {
       throw new UnauthorizedException("Invalid or revoked API key.");
     }
-    if (key.user.plan !== "PRO" && key.user.plan !== "TEAM") {
+    // Effective plan (API.md §17) — a FREE-plan member of a TEAM-owner's
+    // organization can use the Public API too, same as they get the "pro"
+    // rate-limit tier from PlanThrottleGuard.
+    const effectivePlan = await resolveEffectivePlan(this.prisma, key.user.id, key.user.plan);
+    if (effectivePlan !== "PRO" && effectivePlan !== "TEAM") {
       throw new ForbiddenException("The Public API requires a PRO or TEAM plan.");
     }
 
@@ -97,6 +102,6 @@ export class ApiKeysService {
       // Best-effort — a failed lastUsedAt bump shouldn't fail the request.
     });
 
-    return { userId: key.user.id, email: key.user.email, plan: key.user.plan };
+    return { userId: key.user.id, email: key.user.email, plan: effectivePlan };
   }
 }

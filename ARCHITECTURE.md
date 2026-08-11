@@ -166,6 +166,7 @@ Full catalog, module breakdown, and prioritization lives in [FEATURE.md](./FEATU
 - **ORM/DB:** PostgreSQL via Prisma — strong typing, painless migrations, good fit for the relational shape of users/pipelines/shares.
 - **Caching/queues:** Redis for session/rate-limit state and BullMQ-backed background jobs (share-link expiry cleanup, usage aggregation, async large-file share processing).
 - **AI Gateway design:** thin orchestration layer — validates request shape, applies per-user/IP rate limits, selects model tier (Haiku for lightweight classification/detection tasks, Sonnet for explain/generate tasks), injects a task-specific system prompt, streams the response back. No raw user payload is persisted; only anonymized token/cost metrics are logged.
+- **Billing (`stripe` SDK, Phase 4):** the one approved payment-provider dependency — see §14.2. Webhook signature verification (`stripe.webhooks.constructEvent`, raw request body required for that one route only) is this codebase's first instance of that pattern; every other inbound-request surface (Module 8's webhook-inbox tool) just captures/displays, it doesn't authenticate the sender.
 
 ### 8.4 Privacy & data flow model
 
@@ -177,7 +178,7 @@ Three explicit data-handling tiers, always visible to the user:
 
 ### 8.5 Monorepo & build tooling
 
-- npm workspaces (or pnpm) monorepo: `frontend/`, `backend/`, plus a `packages/shared` package for types/schemas shared between the two (e.g., DTOs, Zod schemas for AI gateway requests) — avoids drift between frontend expectations and backend contracts. `packages/cli` (Phase 4) is the public-facing CLI, a thin HTTP client over the Public API (API.md §12) using `packages/shared`'s existing types for response shapes — it does not import backend or frontend code directly.
+- npm workspaces (or pnpm) monorepo: `frontend/`, `backend/`, plus a `packages/shared` package for types/schemas shared between the two (e.g., DTOs, Zod schemas for AI gateway requests) — avoids drift between frontend expectations and backend contracts. `packages/cli` (Phase 4) is the public-facing CLI, a thin HTTP client over the Public API (API.md §13) using `packages/shared`'s existing types for response shapes — it does not import backend or frontend code directly. `packages/extension` (Phase 4) is the Manifest V3 browser extension — self-contained, no dependency on `frontend`/`backend`/`packages/shared` at all, since a browser extension's build/runtime environment (service workers, content scripts, `chrome.*` APIs) doesn't share enough with either to make cross-importing worthwhile for a handful of small pure functions.
 - Turborepo for task orchestration/caching across the monorepo (`build`, `lint`, `test` fan out per-package with caching).
 
 ## 9. Security Considerations
@@ -236,6 +237,8 @@ Hard rule: **no tool, no transform, no core functionality is ever paywalled, rat
 
 1. **Non-intrusive, contextual ads** on content-adjacent surfaces only (e.g., below-the-fold on tool pages, never inside the tool UI itself, never interstitials) — optional and can be fully disabled without losing functionality if replaced by other revenue.
 2. **Pro tier (optional, for teams/power users):** higher AI usage quotas, team workspaces with shared pipelines/snippets, SSO, priority support, custom branding for shared links. The free tier's AI quota is generous enough for individual daily use; Pro removes the ceiling for heavy/team use, not the floor for individuals.
+   - **Team workspaces — implemented (Phase 4), MVP scope:** org CRUD, member roles (OWNER/ADMIN/MEMBER), shared snippets/pipelines (optional `organizationId`, additive to normal ownership — DATABASE.md §3), an org AI-usage dashboard, and TEAM-tier quota inheritance for members whenever the org's owner personally holds a TEAM plan (`resolveEffectivePlan()`, no separate org-level Stripe subscription — see DATABASE.md's Organization model note). **Deliberately deferred, not yet built:** SSO, custom branding for shared links, and an email-token invite/accept flow (members are added directly by email if they already have an account; see AUDIT_REPORT.md §17.2). API.md §17.
+   - **Implementation (Phase 4):** Stripe Checkout + Customer Portal (both Stripe-hosted — no custom card-collection UI in this codebase, so PCI scope stays minimal). PRO/TEAM prices are configured as Stripe Price IDs via env vars, not hardcoded dollar amounts in code, so pricing changes don't require a deploy. `User.plan` (already the single source of truth every plan check reads — `PlanThrottleGuard`, `ApiKeysService`, AI Gateway quotas) is kept in sync from Stripe subscription webhooks rather than trusted from the client at checkout time; a `Subscription` table (DATABASE.md §3) tracks the underlying Stripe subscription state for support/debugging, separate from the denormalized `User.plan` flag every other module already depends on.
 3. **API/CLI access tier:** programmatic access to select tools (e.g., batch JSON validation, hash generation) for CI pipelines — a natural extension for teams already relying on DevToolbox manually.
 4. **Sponsorship/"built by" placements:** tasteful, clearly labeled sponsor credits (e.g., "Network tools powered by X") rather than intrusive advertising, similar to open-source project sponsorship models.
 5. **Donations/GitHub Sponsors** for the open-source-adjacent goodwill segment, especially if the core tool engine is open-sourced (see §15).
@@ -244,11 +247,59 @@ Hard rule: **no tool, no transform, no core functionality is ever paywalled, rat
 
 - Open-source the client-side tool engine (`packages/shared` + tool modules) to build community trust and attract contributor-built tools (plugin architecture, versioned tool manifest).
 - Browser extension (right-click "Format with DevToolbox" on any selected text/JSON on any page).
+  - **Implementation (Phase 4):** Manifest V3, `packages/extension` — a curated context-menu subset (JSON Format, Base64/URL encode-decode, JWT Decode), same "select tools, not the whole catalog" scope as the Public API tier (§14.3). Each transform is a small, self-contained pure function inside the extension package rather than importing `frontend/src/modules/tools/*/transform.ts` directly — those files are pure by contract (CLAUDE.md rule 3) but live behind Next.js-specific path aliases/tooling not meant to cross into an unrelated build pipeline; same reasoning already applied to the Public API's hash/JSON-validate endpoints (AUDIT_REPORT.md §14.1). No network calls, no account/auth — the extension only ever touches the page's selected text and the clipboard.
 - CLI (`npx devtoolbox format json`) sharing the exact same pure-function core as the web tools.
 - VS Code extension wrapping the same tool engine for in-editor use.
-- Team workspaces: shared pipelines, shared snippet libraries, org-level AI usage dashboards.
+- Team workspaces: shared pipelines, shared snippet libraries, org-level AI usage dashboards. **✅ Shipped (MVP scope)** — see §14.2 above and API.md §17.
 - Public API with generous free tier for programmatic tool access.
-- Plugin marketplace for community-contributed tools reviewed against the security/sandboxing model (likely WASM-sandboxed for untrusted third-party tool code).
+- Plugin marketplace for community-contributed tools reviewed against the security/sandboxing model (likely WASM-sandboxed for untrusted third-party tool code). **✅ Shipped (v1)** — see §16.
+
+## 16. Plugin Marketplace (Phase 4, v1 — ✅ shipped)
+
+Flagged before implementation (CLAUDE.md rule 10: persists third-party executable content server-side by default; introduces untrusted code execution, a genuinely new architectural pattern) and confirmed by the user before any code was written. v1 shipped per the design below with the deviations logged in AUDIT_REPORT.md §18.2 — mainly: WASM stored as base64 text in Postgres rather than S3 (no object-storage infrastructure exists anywhere in this codebase to reuse), and static submission inspection is size + magic-number only, not a full WASM import-section parser (the sandbox itself, not static analysis, is the real security boundary — see §16.1).
+
+### 16.1 Execution model: client-side WASM in a double-isolated sandbox, not a server runtime
+
+Rule 1 ("client-side by default") applies to plugins too — a community tool should behave exactly like a first-party tool: no network call in its transform, nothing about running it touches the backend. That ruling also conveniently avoids the heaviest alternative: a server-side WASM runtime (`wasmtime`/`wasmer` or similar) would be a new top-level backend dependency, a new class of infrastructure (untrusted-code execution hosts, resource/CPU limits, DoS surface), and a genuinely different security model than anything in ARCHITECTURE.md §9 today.
+
+Instead, plugins execute **entirely in the browser**, in a sandbox with two independent layers:
+
+1. **Cross-origin isolation.** The plugin runner loads inside an `<iframe>` served from a dedicated, cookieless subdomain (e.g. `plugin-sandbox.devtoolbox.dev`) that shares no origin, no storage, and no auth cookies with the main app — the same pattern CodeSandbox/StackBlitz use for running arbitrary user code. Even a full sandbox-attribute escape can't reach `devtoolbox.dev`'s session or localStorage.
+2. **`iframe sandbox` attribute**, deliberately minimal: `sandbox="allow-scripts"` only — no `allow-same-origin`, no `allow-forms`, no `allow-popups`, no `allow-top-navigation`. The sandbox origin's own CSP additionally sets `connect-src 'none'; frame-src 'none'` so even a compromised or malicious plugin has no network egress path — no `fetch`, no `WebSocket`, no image-beacon exfiltration.
+3. **Protocol.** Parent ↔ iframe communication is one `postMessage` RPC shape: `{ input: string, options: Record<string, string | number | boolean> } → { output: string } | { error: string }`. Input/output size-capped (matches the existing per-tool size caps used elsewhere in the app). A 3-second execution timeout; on timeout the iframe is destroyed and recreated (never reused after a hang — no way to distinguish "slow" from "stuck/hostile" from outside the sandbox).
+4. **Inside the sandbox**, the loaded WASM module gets the narrowest possible import surface: a single `abort(msg)` host function for panics, nothing else — no WASI `fd_write`/`fd_read`/`path_open`, no clock, no random beyond what the module brings compiled in. A plugin's `transform` export takes and returns only linear-memory strings; the runner marshals the postMessage payload in/out.
+
+This means the actual novel *dependency* surface is small: no new backend package at all, and on the frontend just the browser's native `WebAssembly` object plus a small hand-written runner (no plugin-runtime library needed). The dependency-shaped decision that does need a call is what plugin **authors** compile from — Rust+`wasm-bindgen` or AssemblyScript are the two realistic options; DevToolbox itself doesn't depend on either, it would only document one as the recommended toolchain in a new `PLUGIN_AUTHORING.md` guide (docs-only, no repo dependency).
+
+### 16.2 Submission & review pipeline — never auto-publish
+
+Defense in depth: even though the sandbox above should contain a hostile plugin at runtime, nothing gets listed in the marketplace without a human reviewing it first. Automated gates run before a submission ever reaches a human queue:
+
+1. Manifest schema validation (Zod, same as every other input boundary — CLAUDE.md rule 5): `id`, `name`, `version` (semver), `description`, `author`, declared `permissions` (in v1, always `[]` — no permission grants exist yet; the field is reserved for a future, even-narrower capability model rather than designed in speculatively now).
+2. Static WASM inspection: reject on any imported function outside the `abort`-only allowlist (§16.1.4), reject over a size cap (2 MB), reject if the module declares a `start` function that isn't the expected `transform` export shape.
+3. Checksum (`sha256`) computed and stored alongside the binary — same hashed-integrity habit as `ApiKey.keyHash`/`Session.refreshTokenHash`, applied here to detect any post-review tampering with the stored artifact rather than to keep the artifact secret.
+4. ~~Binary stored in object storage (S3-compatible), not Postgres~~ — **v1 deviation:** `ShareLink.objectStorageKey`'s "precedent" turned out to be unimplemented (no S3 client exists anywhere in this codebase); rather than build object-storage infrastructure for this pass, v1 stores the base64-encoded WASM module directly on `PluginVersion` in Postgres, capped at 2MB decoded. See AUDIT_REPORT.md §18.2.
+5. Human review queue (`Plugin.status: IN_REVIEW`) — a reviewer runs the plugin against a fixed adversarial test-input set (oversized input, malformed UTF-8, deeply nested/recursive structures where relevant) before flipping to `PUBLISHED`. This step has no code in v1 — it's a documented manual process, tracked the same honest way "priority support" was noted as a process commitment rather than a code surface in §17.2's team-workspaces write-up.
+6. Post-publish, a plugin can be moved to `SUSPENDED` (hidden from listings/search, existing installs stop resolving new runs) if a problem surfaces later — rows are never deleted, matching this codebase's general soft-delete/audit-trail habit (DATABASE.md §1).
+
+### 16.3 Data model sketch (for DATABASE.md, once implementation starts)
+
+```text
+Plugin        (id, slug, name, authorUserId, description, status: DRAFT|IN_REVIEW|PUBLISHED|REJECTED|SUSPENDED, createdAt)
+PluginVersion (id, pluginId, version, objectStorageKey, manifestJson, checksumSha256, publishedAt, reviewedByUserId?)
+```
+
+Implemented as designed — see DATABASE.md §3 for the authoritative Prisma model and migration `20260811160000_add_plugin_marketplace`.
+
+### 16.4 Frontend integration shape
+
+Published plugins get a tool page like any first-party tool (`/tools/plugin-<slug>`), but instead of a bespoke `ToolView.tsx`, they render through one shared `PluginRunner` component that owns the iframe lifecycle and the postMessage protocol — every plugin gets the same generic input/output UI (`OptionsPanel`/`OutputPane`, reused per CLAUDE.md rule 4), not custom layout. This is deliberately narrower than the full 5-file tool contract (DEVELOPMENT_GUIDE.md §5), the same "curated, not a mirror of the full contract" posture already used for the Public API tier (§14.3) and the browser extension (§15's implementation note) — a community plugin trades UI flexibility for running at all.
+
+### 16.5 Open questions before implementation can start
+
+- Who reviews submissions, and what's the SLA — a real operational question, not a code one, and worth answering before building the review-queue UI.
+- Whether `permissions: []` in the manifest ever needs to grow (e.g. a plugin that legitimately wants to read a second input field) — left unresolved rather than guessed at.
+- Monetization interaction: is marketplace publishing free for everyone (consistent with §14's "never paywall a core tool," though a plugin isn't quite a core tool) or a PRO/TEAM-only publishing privilege — undecided.
 
 ---
 See [FEATURE.md](./FEATURE.md) for the detailed tool catalog and prioritization, and [AUDIT_REPORT.md](./AUDIT_REPORT.md) for the log of key decisions made during this planning phase.

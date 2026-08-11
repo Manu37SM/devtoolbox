@@ -1,6 +1,6 @@
 # @devtoolbox/cli
 
-Command-line client for the [DevToolbox Public API](../../API.md#12-public-api-phase-4--api-key-auth-proteam-only) — a small, deliberately curated set of tools (hashing, batch JSON validation) for CI pipelines and scripts, per ARCHITECTURE.md §14.3. Requires a PRO or TEAM plan.
+Command-line client for the [DevToolbox Public API](../../API.md#13-public-api-phase-4--api-key-auth-proteam-only) — a small, deliberately curated set of tools (hashing, batch JSON validation) for CI pipelines and scripts, per ARCHITECTURE.md §14.3. Requires a PRO or TEAM plan.
 
 ## Setup
 

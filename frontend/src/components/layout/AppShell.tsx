@@ -39,6 +39,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/pipelines" className="hover:text-text-primary">
             Pipelines
           </Link>
+          <Link href="/plugins" className="hover:text-text-primary">
+            Plugins
+          </Link>
           {isAuthenticated && (
             <Link href="/snippets" className="hover:text-text-primary">
               Snippets

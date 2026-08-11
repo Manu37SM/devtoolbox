@@ -159,10 +159,10 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 | Cross-device sync (history, favorites, pipelines) | P2 | ✅ Shipped Phase 3 — favorites are set-union merged, history is append-only (no conflict case), pipelines are last-write-wins with a user-visible confirm prompt (see DATABASE.md §7) |
 | Shareable tool state (short links) | P2 | ✅ Shipped Phase 3 — Share Links module |
 | Pipeline sharing | P2 | ✅ Shipped Phase 3 — via Share Links |
-| Team workspaces | P3 | |
+| Team workspaces | P3 | ✅ Shipped Phase 4 (MVP scope) — org CRUD, member roles (OWNER/ADMIN/MEMBER), shared snippets/pipelines, org AI-usage dashboard, TEAM-tier quota inheritance for members of a TEAM-owner's org. No SSO/custom branding/email-invite flow yet. See AUDIT_REPORT.md §17. |
 | Public API / CLI | P3 | |
-| Browser extension | P3 | |
-| Plugin system for community tools | P3 | |
+| Browser extension | P3 | ✅ Shipped Phase 4 — Manifest V3, right-click "Format with DevToolbox" on selected text; curated to JSON Format/Base64 encode-decode/URL encode-decode/JWT Decode (not the full catalog, same scoping precedent as the Public API tier). See AUDIT_REPORT.md §16. |
+| Plugin system for community tools | P3 | ✅ Shipped Phase 4 (v1) — client-side WASM sandbox (opaque-origin `srcdoc` iframe, `sandbox="allow-scripts"` only, `connect-src 'none'` CSP, no server runtime dependency), submission/review pipeline (never auto-published), `devtoolbox plugin publish` CLI command. WASM stored in Postgres (no object storage exists in this codebase to reuse); static inspection is size + magic-number only. See ARCHITECTURE.md §16, AUDIT_REPORT.md §18. |
 
 ## Phased Roadmap
 
@@ -185,14 +185,15 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 
 - Optional accounts, cross-device sync, share links. **✅ shipped (wave 1)** — email/password + GitHub/Google OAuth auth (rotating refresh tokens, reuse detection), account profile/export/delete, Favorites + History sync (AES-256-GCM at rest), Snippets, server-synced Pipelines (+ duplicate), Share Links. First Postgres/Prisma-backed surface in the app; see AUDIT_REPORT.md for deviations from the original DATABASE.md spec (VerificationToken table, UUIDv4 not v7, single-key history encryption).
 - AI Gateway backend + first AI tools (Explain This, NL→Cron, NL→Regex, AI JSON Repair, AI Diff Summary). **✅ shipped** — task-specific `/ai/*` endpoints (never a generic chat passthrough, per ARCHITECTURE.md §8.3), Haiku for explain/generate, Sonnet for diff-summary, deterministic-first JSON repair, deterministic cron/regex validation after generation, per-plan-tier rate limits, GET /ai/usage. See AUDIT_REPORT.md §12.
-- Pro tier groundwork (usage quotas, billing integration). Not started.
+- Pro tier groundwork (usage quotas, billing integration). **✅ Shipped Phase 4** — Stripe Checkout + Customer Portal (hosted, no card data touches this backend), `User.plan` synced from subscription webhooks, `/account` shows plan status and upgrade/manage-billing actions. Usage quotas (`PlanThrottleGuard`, AI Gateway `AI_HOURLY_QUOTA`) already existed from earlier phases and needed no changes — this closes the "how does a user actually become PRO/TEAM" gap those quotas were waiting on. See AUDIT_REPORT.md §15.
 
 ### Phase 4 — Enterprise/ecosystem
 
-- Team workspaces, org AI quotas/admin dashboard.
+- Team workspaces, org AI quotas/admin dashboard. **✅ Shipped (MVP scope)** — activated the previously-unused `Organization`/`OrganizationMember` scaffolding: org CRUD, member roles, shared snippets/pipelines (`organizationId`, additive to normal ownership), an org AI-usage dashboard, and TEAM-tier quota inheritance via `resolveEffectivePlan()`. No separate org-level Stripe subscription — an org is "active" purely because its owner personally holds a TEAM plan. Deliberately deferred: SSO, custom branding for shared links, email-token invite/accept flow (members added directly by email if they already have an account). See AUDIT_REPORT.md §17.
+- Pro tier / billing. **✅ Shipped** — Stripe Checkout + Customer Portal, `User.plan` synced from webhooks. See AUDIT_REPORT.md §15.
 - Public API + CLI. **✅ Groundwork shipped** — API keys (create/list/revoke, session-authed), a curated PRO/TEAM-only `/v1/public/*` surface (hash generation, batch JSON validation, per ARCHITECTURE.md §14.3's own examples), and `@devtoolbox/cli` (a thin `fetch`-based client, zero new dependencies). Not a mirror of every web tool — deliberately scoped to the two ARCHITECTURE.md examples; more public-API tools can be added incrementally. See AUDIT_REPORT.md §14.
-- Browser extension, VS Code extension.
-- Plugin marketplace (WASM-sandboxed community tools).
+- Browser extension. **✅ Shipped (curated MVP)** — see the Cross-Cutting Platform Features table above and AUDIT_REPORT.md §16. VS Code extension not started.
+- Plugin marketplace (WASM-sandboxed community tools). **✅ Shipped (v1)** — flagged and confirmed before implementation (new untrusted-code-execution architecture + server-persisted third-party binaries, both explicit CLAUDE.md flag criteria), then built to the confirmed design. See ARCHITECTURE.md §16, AUDIT_REPORT.md §18.
 - Remaining P2/P3 tools and AI features.
 
 ## Prioritization Rationale

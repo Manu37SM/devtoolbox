@@ -119,7 +119,27 @@ Common `code` values: `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `FORBID
 { "slug": "k3f9zQ2pLm7a", "url": "https://devtoolbox.dev/s/k3f9zQ2pLm7a", "expiresAt": "2026-08-29T00:00:00Z" }
 ```
 
-## 9. AI Gateway
+## 9. Billing (Phase 4 — Stripe)
+
+Stripe-hosted Checkout and Customer Portal — no card data ever reaches this backend. `POST /billing/webhook` is the one route in this entire API that is neither session- nor API-key-authed; it's authenticated instead by verifying Stripe's request signature (`Stripe-Signature` header, `stripe.webhooks.constructEvent`) against the raw request body, and must never be placed behind the global JSON body-parsing middleware that touches every other route (the signature is computed over the exact raw bytes Stripe sent).
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| POST | `/billing/checkout-session` | `{ plan: "PRO"\|"TEAM" }` → `{ url }`, a Stripe Checkout redirect URL. Creates a Stripe customer for the user on first use (stored as `User.stripeCustomerId`) | access token |
+| POST | `/billing/portal-session` | `{}` → `{ url }`, a Stripe Customer Portal redirect URL (manage payment method, cancel, view invoices) | access token, must have a `stripeCustomerId` |
+| GET | `/billing/subscription` | Current subscription summary (plan, status, `currentPeriodEnd`, `cancelAtPeriodEnd`) or `null` if none | access token |
+| POST | `/billing/webhook` | Stripe webhook receiver — handles `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`; updates `User.plan` and the `Subscription` row | Stripe signature (raw body) |
+
+**Example — `POST /billing/checkout-session`**
+```json
+// Request
+{ "plan": "PRO" }
+
+// Response 200
+{ "url": "https://checkout.stripe.com/c/pay/cs_test_..." }
+```
+
+## 10. AI Gateway
 
 All AI endpoints share: request-shape validation, per-user/IP rate limiting, a server-side system prompt (never client-supplied), and a preflight `dataSentPreview` echoed back so the frontend can show "here's what will be sent" before first use (FR6). Responses may be streamed via SSE (`Accept: text/event-stream`).
 
@@ -148,7 +168,7 @@ All AI endpoints share: request-shape validation, per-user/IP rate limiting, a s
 }
 ```
 
-## 10. Network Tool Proxies (server-assisted, non-persistent)
+## 11. Network Tool Proxies (server-assisted, non-persistent)
 
 These exist because the underlying operation cannot run client-side (CORS, DNS resolution, IP disclosure) — see ARCHITECTURE.md §8.3/Module 8 in FEATURE.md. No payload is persisted beyond transient abuse-prevention logs.
 
@@ -161,9 +181,9 @@ These exist because the underlying operation cannot run client-side (CORS, DNS r
 | GET | `/net/webhook-inbox/:id/events` | Poll captured webhook events for an inbox |
 | POST | `/net/url-preview` | Fetches a URL server-side and extracts Open Graph/meta tags for the previewer tool |
 
-## 11. API Keys (manage Public API access — session auth)
+## 12. API Keys (manage Public API access — session auth)
 
-Lets a signed-in user create/list/revoke the keys their scripts/CI/CLI use to call §12's Public API. Managed via the normal session (`Authorization: Bearer <accessToken>`), not the API key itself.
+Lets a signed-in user create/list/revoke the keys their scripts/CI/CLI use to call §13's Public API. Managed via the normal session (`Authorization: Bearer <accessToken>`), not the API key itself.
 
 | Method | Path | Description | Auth |
 |---|---|---|---|
@@ -171,9 +191,9 @@ Lets a signed-in user create/list/revoke the keys their scripts/CI/CLI use to ca
 | GET | `/api-keys` | List the caller's keys — `{ id, name, keyPrefix, lastUsedAt, revokedAt, createdAt }[]`, never the raw key | access token |
 | DELETE | `/api-keys/:id` | Revoke a key (sets `revokedAt`; row kept for audit, not deleted) | access token |
 
-## 12. Public API (Phase 4 — API-key auth, PRO/TEAM only)
+## 13. Public API (Phase 4 — API-key auth, PRO/TEAM only)
 
-Programmatic access to a small, deliberately curated subset of tools for CI/scripting use, per ARCHITECTURE.md §14.3 — not a mirror of every web tool. Auth via `Authorization: Bearer <api key>` (a key created through §11, distinct from the session access token used everywhere else); `FORBIDDEN` (403) if the caller's plan isn't PRO/TEAM, `UNAUTHENTICATED` (401) if the key is missing/invalid/revoked.
+Programmatic access to a small, deliberately curated subset of tools for CI/scripting use, per ARCHITECTURE.md §14.3 — not a mirror of every web tool. Auth via `Authorization: Bearer <api key>` (a key created through §12, distinct from the session access token used everywhere else); `FORBIDDEN` (403) if the caller's plan isn't PRO/TEAM, `UNAUTHENTICATED` (401) if the key is missing/invalid/revoked.
 
 | Method | Path | Description |
 |---|---|---|
@@ -191,7 +211,7 @@ curl -X POST https://api.devtoolbox.dev/v1/public/hash \
 { "digest": "b94d27b9934d3e08a52e52d7da7dacefac1a3ce9c3adbcf0002d0f30b3d6c1c" }
 ```
 
-## 13. Admin (internal, `role: admin` only)
+## 14. Admin (internal, `role: admin` only)
 
 | Method | Path | Description |
 |---|---|---|
@@ -199,7 +219,7 @@ curl -X POST https://api.devtoolbox.dev/v1/public/hash \
 | GET | `/admin/users?query=` | User lookup/support |
 | POST | `/admin/users/:id/plan` | Manually adjust a user's plan (support/comp scenarios) |
 
-## 14. Rate Limits (default, per plan)
+## 15. Rate Limits (default, per plan)
 
 | Surface | Anonymous | Free (signed-in) | Pro |
 |---|---|---|---|
@@ -209,10 +229,69 @@ curl -X POST https://api.devtoolbox.dev/v1/public/hash \
 | `/net/http-request` | 10/hour/IP | 60/hour/user | 500/hour/user |
 | `/api-keys` | — | 30/hour/user | 30/hour/user |
 | `/v1/public/*` | — (no anonymous access) | — (PRO/TEAM only) | 5000/hour/user |
+| `/billing/checkout-session`, `/billing/portal-session` | — | 10/hour/user | 10/hour/user |
+| `/billing/webhook` | not applicable — Stripe-signature-authed, not plan-gated; a generous flat `100/min` global limit guards against replay/abuse | | |
+| `/organizations/*` | — | 60/hour/user | 60/hour/user |
 | All other CRUD | 300/min/user | 300/min/user | 300/min/user |
 
-Rate-limit responses include `Retry-After` and `X-RateLimit-Remaining` headers. `/v1/public/*`'s limit is shared across all of a user's API keys (not one budget per key) — reuses `PlanThrottleGuard`'s existing per-user identity resolution rather than adding a new per-key rate-limit dimension; a user with multiple keys (e.g. one per CI pipeline) shares one budget across them, same as any other authenticated surface in this table.
+Rate-limit responses include `Retry-After` and `X-RateLimit-Remaining` headers. `/v1/public/*`'s limit is shared across all of a user's API keys (not one budget per key) — reuses `PlanThrottleGuard`'s existing per-user identity resolution rather than adding a new per-key rate-limit dimension; a user with multiple keys (e.g. one per CI pipeline) shares one budget across them, same as any other authenticated surface in this table. The "Pro" column now also covers any user whose *effective* plan resolves to TEAM via §17's org-owner-plan inheritance, not just `User.plan` directly — see AUDIT_REPORT.md §17.1's `resolveEffectivePlan` note.
 
-## 15. Versioning
+## 16. Versioning
 
 - URL-versioned (`/v1`). Breaking changes ship as `/v2`; `/v1` supported for a minimum 12 months after `/v2` GA, per CHANGELOG.md deprecation notices.
+
+## 17. Team Workspaces (Phase 4)
+
+MVP scope only — see ARCHITECTURE.md §14.2's narrowed team-workspaces note and AUDIT_REPORT.md §17 for what's deliberately deferred (SSO, custom branding, org-level Stripe billing, email-token invites). An organization's members get TEAM-tier rate limits/AI quota (§15's "Pro" column) whenever the organization's owner has `User.plan === "TEAM"` — there is no separate org-level subscription; the owner's existing personal billing (§9) is what makes an org "active."
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| POST | `/organizations` | `{ name }` → creates an org, caller becomes `OWNER` | access token |
+| GET | `/organizations` | List orgs the caller belongs to, with their role in each | access token |
+| GET | `/organizations/:id` | Org detail + member list (`OWNER`/`ADMIN`: full; `MEMBER`: names/roles only, no usage figures) | access token, must be a member |
+| PATCH | `/organizations/:id` | Rename | access token, `OWNER` only |
+| DELETE | `/organizations/:id` | Delete org (members keep their own snippets/pipelines; org-shared ones are deleted) | access token, `OWNER` only |
+| POST | `/organizations/:id/members` | `{ email }` → adds an **existing** DevToolbox user as `MEMBER` immediately (no invite-accept step in this pass — see AUDIT_REPORT.md §17.2). 404 if no account exists for that email. | access token, `OWNER`/`ADMIN` |
+| PATCH | `/organizations/:id/members/:userId` | `{ role: "ADMIN"\|"MEMBER" }` — change a member's role (cannot demote the last `OWNER`) | access token, `OWNER` only |
+| DELETE | `/organizations/:id/members/:userId` | Remove a member (or leave, if `:userId` is the caller and not the last `OWNER`) | access token, `OWNER`/`ADMIN`, or self |
+| GET | `/organizations/:id/usage` | Aggregate AI usage (tokens, request counts) across all members, last 30 days — same underlying `AiUsageEvent` rows as the personal `/ai/usage` endpoint, joined via membership, never raw prompt/response content (CLAUDE.md rule 8) | access token, `OWNER`/`ADMIN` |
+
+Shared snippets/pipelines: `POST /snippets` and `POST /pipelines` (§6, §7) accept an optional `organizationId` — when set, the caller must be a member, and any org member can view/duplicate it; only the creator or an `OWNER`/`ADMIN` can edit/delete it. Two new read routes list what's shared into an org: `GET /snippets/organization/:organizationId`, `GET /pipelines/organization/:organizationId` (both access-token-authed, caller must be a member).
+
+**Example — `POST /organizations`**
+```json
+// Request
+{ "name": "Acme Platform Team" }
+
+// Response 201
+{ "id": "9f2a...", "name": "Acme Platform Team", "role": "OWNER", "createdAt": "2026-08-11T00:00:00Z" }
+```
+
+## 18. Plugin Marketplace (Phase 4 — v1)
+
+Community-submitted tools, executed entirely client-side in a sandboxed iframe (ARCHITECTURE.md §16) — these routes only ever move a manifest + a WASM binary + review metadata; the actual plugin execution never touches this backend. Listing/running is public; creating a plugin and submitting versions requires a signed-in user (any plan — publishing isn't paywalled); review-queue actions require `User.isAdmin`.
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| POST | `/plugins` | `{ slug, name, description }` → creates a `DRAFT` plugin owned by the caller | access token |
+| GET | `/plugins` | List `PUBLISHED` plugins | none |
+| GET | `/plugins/:slug` | Detail — `PUBLISHED` to anyone, other statuses to the owner/an admin only (404 otherwise, same "don't confirm existence" posture as §6's private snippets) | optional |
+| POST | `/plugins/:id/versions` | `{ manifest, wasmBase64 }` → validates (size ≤2MB decoded, WASM magic number), stores the version, and moves the plugin back to `IN_REVIEW` — every version goes through review, not just the first | access token, must own the plugin |
+| GET | `/plugins/:slug/run` | `{ version, wasmBase64, checksumSha256 }` for the latest version — what the frontend `PluginRunner` fetches to execute a plugin. Same visibility rule as detail: `PUBLISHED` to anyone, other statuses to the owner/an admin | optional |
+| GET | `/plugins/review-queue` | List `IN_REVIEW` plugins, oldest-updated first | access token, admin only |
+| POST | `/plugins/:id/review` | `{ decision: "APPROVE" \| "REJECT" }` → `PUBLISHED` or `REJECTED` | access token, admin only |
+| POST | `/plugins/:id/suspend` | Hides a `PUBLISHED` plugin from listings without deleting it | access token, admin only |
+
+**v1 scope notes** (AUDIT_REPORT.md §18.2 has the full list): WASM stored as base64 text on `PluginVersion` (no S3/object storage — that infrastructure doesn't exist anywhere in this codebase yet); static submission inspection is size + magic-number only, not a full import-section allowlist parser; `User.isAdmin` is a new boolean field, the first real implementation of the "admin" concept §14 already referenced.
+
+**Example — `POST /plugins/:id/versions`**
+```json
+// Request
+{
+  "manifest": { "id": "my-tool", "name": "My Tool", "version": "1.0.0", "description": "...", "author": "..." },
+  "wasmBase64": "AGFzbQEAAAA..."
+}
+
+// Response 201
+{ "id": "...", "version": "1.0.0", "manifest": { ... }, "checksumSha256": "...", "reviewedAt": null, "createdAt": "2026-08-11T00:00:00Z" }
+```

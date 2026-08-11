@@ -9,7 +9,12 @@ import { GlobalExceptionFilter } from "./common/filters/global-exception.filter"
  * DEVELOPMENT_GUIDE.md §3 for the full folder structure.
  */
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // `rawBody: true` preserves the exact request bytes on `req.rawBody`
+  // alongside Nest's normal JSON body parsing (every other route is
+  // unaffected) — POST /billing/webhook needs those exact bytes to verify
+  // Stripe's signature (API.md §9); parsed-then-reserialized JSON wouldn't
+  // byte-match what Stripe signed. See BillingController.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.use(helmet());
   app.use(cookieParser());

@@ -29,6 +29,13 @@ export class PipelinesController {
     return this.pipelinesService.create(user.userId, dto as Parameters<PipelinesService["create"]>[1]);
   }
 
+  // Two path segments, so it never collides with the single-segment ":id" route below.
+  @UseGuards(JwtAuthGuard)
+  @Get("organization/:organizationId")
+  async listForOrganization(@CurrentUser() user: AuthenticatedUser, @Param("organizationId") organizationId: string) {
+    return this.pipelinesService.listForOrganization(user.userId, organizationId);
+  }
+
   @UseGuards(OptionalJwtAuthGuard)
   @Get(":id")
   async getOne(@CurrentUser() user: AuthenticatedUser | undefined, @Param("id") id: string) {

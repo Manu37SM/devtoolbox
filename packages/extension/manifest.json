@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "DevToolbox",
+  "short_name": "DevToolbox",
+  "description": "Right-click selected text to run a DevToolbox tool (JSON Format, Base64, URL encode/decode, JWT Decode) — result copied to your clipboard.",
+  "version": "0.1.0",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": ["contextMenus", "activeTab", "scripting"],
+  "minimum_chrome_version": "110"
+}

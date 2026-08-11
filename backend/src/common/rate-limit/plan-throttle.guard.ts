@@ -6,6 +6,7 @@ import { REDIS_CLIENT } from "../redis/redis.module";
 import { PrismaService } from "../../database/prisma.service";
 import { PLAN_THROTTLE_KEY, type PlanThrottleConfig } from "./plan-throttle.decorator";
 import type { AuthenticatedUser } from "../../modules/auth/decorators/current-user.decorator";
+import { resolveEffectivePlan } from "../plan/effective-plan";
 
 /**
  * Fixed-window rate limiter keyed by (route, identity), where identity is
@@ -79,7 +80,11 @@ export class PlanThrottleGuard implements CanActivate {
     // 15-minute-old) access token, since an upgrade shouldn't require the
     // user to log out/in again to see the higher limit take effect.
     const user = await this.prisma.user.findUnique({ where: { id: req.user.userId }, select: { plan: true } });
-    const tier = user?.plan === "PRO" || user?.plan === "TEAM" ? "pro" : "free";
+    // resolveEffectivePlan() also grants "pro" tier to FREE-plan members of
+    // a TEAM-owner's organization (API.md §17) — a plain `user?.plan` check
+    // would miss that inherited benefit.
+    const effectivePlan = await resolveEffectivePlan(this.prisma, req.user.userId, user?.plan ?? "FREE");
+    const tier = effectivePlan === "PRO" || effectivePlan === "TEAM" ? "pro" : "free";
     return { tier, identity: req.user.userId };
   }
 }

@@ -67,9 +67,12 @@ describe("PlanThrottleGuard", () => {
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it("looks up the user's plan and uses the free tier for a FREE-plan user", async () => {
+  it("looks up the user's plan and uses the free tier for a FREE-plan user with no TEAM org", async () => {
     const redis = makeRedis();
-    const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ plan: "FREE" }) } };
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ plan: "FREE" }) },
+      organizationMember: { findFirst: jest.fn().mockResolvedValue(null) },
+    };
     const guard = new PlanThrottleGuard(makeReflector(CONFIG), prisma as never, redis as never);
     const { context } = makeContext({ user: { userId: "user-1" } });
 
@@ -80,13 +83,32 @@ describe("PlanThrottleGuard", () => {
 
   it("uses the pro tier for PRO and TEAM plans", async () => {
     const redis = makeRedis();
-    const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ plan: "TEAM" }) } };
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ plan: "TEAM" }) },
+      organizationMember: { findFirst: jest.fn() },
+    };
     const guard = new PlanThrottleGuard(makeReflector(CONFIG), prisma as never, redis as never);
     const { context } = makeContext({ user: { userId: "user-2" } });
 
     await guard.canActivate(context);
 
     expect(redis.incr).toHaveBeenCalledWith(expect.stringContaining("pro:user-2"));
+    // Own plan is already TEAM — no need to spend a query checking org membership.
+    expect(prisma.organizationMember.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("uses the pro tier for a FREE-plan user who belongs to a TEAM-owner's organization", async () => {
+    const redis = makeRedis();
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ plan: "FREE" }) },
+      organizationMember: { findFirst: jest.fn().mockResolvedValue({ id: "membership-1" }) },
+    };
+    const guard = new PlanThrottleGuard(makeReflector(CONFIG), prisma as never, redis as never);
+    const { context } = makeContext({ user: { userId: "user-3" } });
+
+    await guard.canActivate(context);
+
+    expect(redis.incr).toHaveBeenCalledWith(expect.stringContaining("pro:user-3"));
   });
 
   it("throws a 429 once the tier's limit is exceeded, with Retry-After/X-RateLimit-Remaining headers", async () => {

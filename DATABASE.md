@@ -23,10 +23,13 @@ User ──1:N── Pipeline ──1:N── PipelineStep
 User ──1:N── ShareLink
 User ──1:N── Favorite
 User ──1:N── HistoryEntry (only if sync enabled; otherwise local IndexedDB only)
-User ──N:1── Organization (nullable; Phase 4 team workspaces)
+User ──N:1── Organization (nullable; Phase 4 team workspaces — ✅ shipped, API.md §17)
 Organization ──1:N── OrganizationMember (join: User × Organization, role)
+Organization ──1:N── Snippet, Pipeline (nullable organizationId; org-shared, additive to userId ownership)
 User ──1:N── AiUsageEvent (aggregate counters, not payload content)
 User ──1:N── ApiKey (Phase 4 public API/CLI access)
+User ──1:1── Subscription (Phase 4 billing; nullable — free users have none)
+User ──1:N── Plugin (as author) ──1:N── PluginVersion (Phase 4 plugin marketplace — ✅ shipped v1, API.md §18)
 ShareLink ──N:1── Tool (by slug, not FK — tool registry lives in code, not DB)
 ```
 
@@ -41,6 +44,9 @@ model User {
   avatarUrl     String?
   plan          Plan      @default(FREE)
   emailVerified Boolean   @default(false)
+  // Phase 4 plugin marketplace (API.md §18) — first real implementation of
+  // the "admin" concept API.md §14's Admin routes already assumed existed.
+  isAdmin       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -54,6 +60,7 @@ model User {
   aiUsageEvents AiUsageEvent[]
   oauthAccounts OAuthAccount[]
   memberships   OrganizationMember[]
+  plugins       Plugin[]
 
   @@index([email])
 }
@@ -117,9 +124,16 @@ model HistoryEntry {
 }
 
 model Snippet {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Phase 4 team workspaces (API.md §17): when set, any member of this org
+  // can view/duplicate the snippet; only the creator or an org OWNER/ADMIN
+  // can edit/delete it. Ownership check in the service layer, same pattern
+  // as every other userId-scoped table (Design Principle 2) — this is an
+  // additive visibility grant, not a replacement for it.
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   toolSlug    String
   title       String
   content     String   @db.Text
@@ -129,12 +143,15 @@ model Snippet {
   deletedAt   DateTime?
 
   @@index([userId])
+  @@index([organizationId])
 }
 
 model Pipeline {
-  id          String         @id @default(uuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?        // same org-shared-visibility model as Snippet.organizationId above
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   name        String
   description String?
   isPublic    Boolean        @default(false)
@@ -144,6 +161,7 @@ model Pipeline {
   deletedAt   DateTime?
 
   @@index([userId])
+  @@index([organizationId])
 }
 
 model PipelineStep {
@@ -187,6 +205,16 @@ model AiUsageEvent {
   @@index([userId, createdAt])
 }
 
+// Activated Phase 4 (API.md §17) — these two tables existed as unused
+// planning-phase scaffolding before this pass. `Organization.plan` is
+// **not** authoritative and not read by any plan check; kept only as a
+// display label. The actual gate is `resolveEffectivePlan()`
+// (backend/src/common/plan/effective-plan.ts): a member's effective plan is
+// TEAM whenever they belong to an org whose OWNER has `User.plan === TEAM`.
+// There is no separate org-level Stripe subscription in this pass — an org
+// "goes TEAM" purely because its owner personally subscribed via the
+// existing billing flow (§9/AUDIT_REPORT.md §15). This keeps billing a
+// single well-tested code path instead of adding a second one for orgs.
 model Organization {
   id        String   @id @default(uuid())
   name      String
@@ -195,6 +223,8 @@ model Organization {
   updatedAt DateTime @updatedAt
 
   members   OrganizationMember[]
+  snippets  Snippet[]
+  pipelines Pipeline[]
 }
 
 model OrganizationMember {
@@ -213,6 +243,54 @@ enum OrgRole {
   OWNER
   ADMIN
   MEMBER
+}
+
+// Plugin marketplace v1 (Phase 4 — API.md §18, ARCHITECTURE.md §16). WASM
+// stored as base64 text directly on PluginVersion, not S3-compatible
+// object storage — that infrastructure is referenced elsewhere in this doc
+// (ShareLink.objectStorageKey) but was never actually built, and adding an
+// S3 SDK dependency for a feature already capped at 2MB felt like the
+// wrong tradeoff. See AUDIT_REPORT.md §18.2.
+enum PluginStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  REJECTED
+  SUSPENDED
+}
+
+model Plugin {
+  id           String       @id @default(uuid())
+  slug         String       @unique
+  name         String
+  description  String
+  authorUserId String
+  author       User         @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  status       PluginStatus @default(DRAFT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  versions PluginVersion[]
+
+  @@index([authorUserId])
+  @@index([status])
+}
+
+model PluginVersion {
+  id             String    @id @default(uuid())
+  pluginId       String
+  plugin         Plugin    @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+  version        String
+  manifestJson   Json
+  wasmBase64     String    @db.Text
+  checksumSha256 String
+  reviewedById   String?
+  reviewedBy     User?     @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@unique([pluginId, version])
+  @@index([pluginId])
 }
 
 // Added during Phase 3 implementation — not in the original ERD above.
@@ -257,6 +335,41 @@ model ApiKey {
 
   @@index([userId])
 }
+
+// Added during Phase 4 implementation — not in the original ERD above.
+// Backs billing (ARCHITECTURE.md §14.2). NOT what plan checks read —
+// User.plan (existing field, now also gets a `stripeCustomerId` sibling)
+// stays the single denormalized value every other module already checks
+// (PlanThrottleGuard, ApiKeysService, AI Gateway quotas); this table exists
+// so support/debugging can see the underlying Stripe state and so a
+// webhook-delivery failure (User.plan out of sync with Stripe) is
+// detectable instead of silent. Status values mirror Stripe's own
+// subscription.status strings 1:1 — no lossy translation to invent/maintain.
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  UNPAID
+}
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String             @unique
+  stripePriceId        String
+  plan                 Plan
+  status               SubscriptionStatus
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([userId])
+}
 ```
 
 **Implementation notes (Phase 3):**
@@ -283,6 +396,12 @@ model ApiKey {
   §14.3's "API/CLI access tier." A revoked key's row is kept (`revokedAt` set,
   not deleted) so past usage can still be audited; `ApiKeyAuthGuard` rejects
   any key with `revokedAt` set regardless of `keyHash` validity.
+- `Subscription` + `User.stripeCustomerId` added to back billing
+  (ARCHITECTURE.md §14.2). `User.plan` is updated by the Stripe webhook
+  handler on every `customer.subscription.*` event — it's a cache of
+  Stripe's state, not the other way around; if the two ever disagree,
+  Stripe is authoritative and `Subscription` (kept in sync from the same
+  webhook) is what a support/debug flow would compare against.
 
 ## 4. Data Retention & Privacy Notes
 
@@ -294,6 +413,7 @@ model ApiKey {
 | `AiUsageEvent` | No — token counts only, never prompt/response content | Retained for billing/analytics, aggregated after 90 days |
 | `Session` | No | Refresh token stored as hash only; purged on logout/expiry |
 | `ApiKey` | No | Raw key shown once at creation, never stored; `keyHash` retained (and revoked rows kept, not deleted) for audit until the user deletes their account |
+| `Subscription` | No — Stripe IDs and status only, no payment/card data (that lives entirely in Stripe, never touches this DB) | Kept in sync with Stripe via webhook. Account deletion does not yet cancel the underlying Stripe subscription automatically — tracked as a follow-up, see AUDIT_REPORT.md §15 |
 
 ## 5. Indexing Strategy
 

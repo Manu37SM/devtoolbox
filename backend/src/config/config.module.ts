@@ -40,6 +40,15 @@ const envSchema = z.object({
   // treatment as the OAuth pairs above.
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+  // Billing: optional in dev — BillingService returns a clear 503 from any
+  // route that actually needs Stripe, same "degrade, don't fail boot"
+  // treatment as the other optional-integration keys above. Price IDs (not
+  // dollar amounts) so pricing changes are a Stripe-dashboard + env change,
+  // never a code change.
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_ID_PRO: z.string().optional(),
+  STRIPE_PRICE_ID_TEAM: z.string().optional(),
 });
 
 @Module({

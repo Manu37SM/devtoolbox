@@ -3,7 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { ApiKeyCreatedResult, ApiKeySummary, LinkedOAuthAccount, UserProfile } from "@devtoolbox/shared";
+import type {
+  ApiKeyCreatedResult,
+  ApiKeySummary,
+  BillablePlan,
+  CheckoutSessionResult,
+  LinkedOAuthAccount,
+  PortalSessionResult,
+  SubscriptionSummary,
+  UserProfile,
+} from "@devtoolbox/shared";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
@@ -32,6 +41,9 @@ export default function AccountPage() {
   const [creatingKey, setCreatingKey] = useState(false);
   const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
   const [justCreatedKey, setJustCreatedKey] = useState<ApiKeyCreatedResult | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [billingActionPlan, setBillingActionPlan] = useState<BillablePlan | "portal" | null>(null);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -83,6 +95,37 @@ export default function AccountPage() {
       setApiKeyError(err instanceof ApiClientError ? err.message : "Couldn't revoke this key. Please try again.");
     } finally {
       setRevokingKeyId(null);
+    }
+  }
+
+  useEffect(() => {
+    if (status !== "authenticated" || user?.plan === "FREE") return;
+    apiGet<SubscriptionSummary | null>("/billing/subscription", { authenticated: true })
+      .then(setSubscription)
+      .catch(() => setSubscription(null));
+  }, [status, user?.plan]);
+
+  async function onUpgrade(plan: BillablePlan) {
+    setBillingError(null);
+    setBillingActionPlan(plan);
+    try {
+      const { url } = await apiPost<CheckoutSessionResult>("/billing/checkout-session", { plan }, { authenticated: true });
+      window.location.href = url;
+    } catch (err) {
+      setBillingError(err instanceof ApiClientError ? err.message : "Couldn't start checkout. Please try again.");
+      setBillingActionPlan(null);
+    }
+  }
+
+  async function onManageBilling() {
+    setBillingError(null);
+    setBillingActionPlan("portal");
+    try {
+      const { url } = await apiPost<PortalSessionResult>("/billing/portal-session", {}, { authenticated: true });
+      window.location.href = url;
+    } catch (err) {
+      setBillingError(err instanceof ApiClientError ? err.message : "Couldn't open the billing portal. Please try again.");
+      setBillingActionPlan(null);
     }
   }
 
@@ -177,6 +220,32 @@ export default function AccountPage() {
       </div>
 
       <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-text-primary">Plan & billing</h2>
+        <p className="text-sm text-text-secondary">
+          {user.plan === "FREE"
+            ? "Free covers every tool, no ceiling — PRO/TEAM add higher AI usage quotas and Public API/CLI access (see the API keys section below)."
+            : subscription
+              ? `${subscription.cancelAtPeriodEnd ? "Cancels" : "Renews"} on ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}.`
+              : "Loading subscription details…"}
+        </p>
+        {billingError && <p className="text-sm text-danger">{billingError}</p>}
+        {user.plan === "FREE" ? (
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => onUpgrade("PRO")} disabled={billingActionPlan !== null}>
+              {billingActionPlan === "PRO" ? "Redirecting…" : "Upgrade to PRO"}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => onUpgrade("TEAM")} disabled={billingActionPlan !== null}>
+              {billingActionPlan === "TEAM" ? "Redirecting…" : "Upgrade to TEAM"}
+            </Button>
+          </div>
+        ) : (
+          <Button variant="secondary" size="sm" className="self-start" onClick={onManageBilling} disabled={billingActionPlan !== null}>
+            {billingActionPlan === "portal" ? "Redirecting…" : "Manage billing"}
+          </Button>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium text-text-primary">Profile</h2>
         <label className="flex flex-col gap-1.5 text-sm text-text-primary">
           Display name
@@ -247,6 +316,18 @@ export default function AccountPage() {
             Log out
           </Button>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-text-primary">Team workspaces</h2>
+        <p className="text-sm text-text-secondary">
+          Shared snippets/pipelines and a pooled AI-usage dashboard for your team (API.md §17).
+        </p>
+        <Link href="/account/organizations" className="self-start">
+          <Button variant="secondary" size="sm">
+            Manage organizations
+          </Button>
+        </Link>
       </section>
 
       <section className="flex flex-col gap-3">

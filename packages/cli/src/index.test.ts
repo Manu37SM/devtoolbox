@@ -31,3 +31,16 @@ test("hash with an unsupported algorithm exits 1", async () => {
 test("json-validate with no file argument exits 1", async () => {
   assert.equal(await main(["json-validate"]), 1);
 });
+
+test("plugin with an unknown subcommand exits 1", async () => {
+  assert.equal(await main(["plugin", "bogus"]), 1);
+});
+
+test("plugin publish with missing arguments exits 1", async () => {
+  assert.equal(await main(["plugin", "publish"]), 1);
+  assert.equal(await main(["plugin", "publish", "manifest.json"]), 1);
+});
+
+test("plugin publish with an unreadable manifest path exits 1", async () => {
+  assert.equal(await main(["plugin", "publish", "/nonexistent/manifest.json", "/nonexistent/module.wasm"]), 1);
+});

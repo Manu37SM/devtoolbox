@@ -33,16 +33,25 @@ enum VerificationTokenType {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String?
-  displayName   String?
-  avatarUrl     String?
-  plan          Plan      @default(FREE)
-  emailVerified Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String?
+  displayName      String?
+  avatarUrl        String?
+  plan             Plan      @default(FREE)
+  emailVerified    Boolean   @default(false)
+  stripeCustomerId String?   @unique
+  // First concrete implementation of the "role: admin" concept API.md §14
+  // (Admin routes) already assumed existed — that module was an empty
+  // stub with no actual gating (AUDIT_REPORT.md). Added here because the
+  // plugin marketplace's human review queue (§18) is the first thing that
+  // actually needs it. Deliberately a single boolean, not a role enum —
+  // there's exactly one privilege tier to gate (review-queue actions), and
+  // introducing a full role system for that would be speculative.
+  isAdmin          Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
 
   sessions            Session[]
   snippets            Snippet[]
@@ -55,6 +64,9 @@ model User {
   memberships         OrganizationMember[]
   verificationTokens  VerificationToken[]
   apiKeys             ApiKey[]
+  subscription        Subscription?
+  plugins             Plugin[]
+  reviewedPluginVersions PluginVersion[]
 
   @@index([email])
 }
@@ -122,9 +134,15 @@ model HistoryEntry {
 }
 
 model Snippet {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Phase 4 team workspaces (API.md §17) — additive to userId ownership,
+  // never a replacement for it. Org members can view/duplicate; only the
+  // creator or an org OWNER/ADMIN can edit/delete (enforced in the service
+  // layer, DATABASE.md Design Principle 2).
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   toolSlug  String
   title     String
   content   String    @db.Text
@@ -134,12 +152,15 @@ model Snippet {
   deletedAt DateTime?
 
   @@index([userId])
+  @@index([organizationId])
 }
 
 model Pipeline {
-  id          String         @id @default(uuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   name        String
   description String?
   isPublic    Boolean        @default(false)
@@ -149,6 +170,7 @@ model Pipeline {
   deletedAt   DateTime?
 
   @@index([userId])
+  @@index([organizationId])
 }
 
 model PipelineStep {
@@ -192,6 +214,11 @@ model AiUsageEvent {
   @@index([userId, createdAt])
 }
 
+// Activated Phase 4 (API.md §17) — previously unused planning-phase
+// scaffolding. `plan` is a display label only, not authoritative for any
+// plan check; see resolveEffectivePlan() in
+// backend/src/common/plan/effective-plan.ts and DATABASE.md's Organization
+// note for why (no separate org-level Stripe subscription in this pass).
 model Organization {
   id        String   @id @default(uuid())
   name      String
@@ -199,7 +226,9 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members OrganizationMember[]
+  members   OrganizationMember[]
+  snippets  Snippet[]
+  pipelines Pipeline[]
 }
 
 model OrganizationMember {
@@ -232,4 +261,96 @@ model ApiKey {
   createdAt  DateTime  @default(now())
 
   @@index([userId])
+}
+
+// Billing (Phase 4 — ARCHITECTURE.md §14.2). Mirrors Stripe's own status
+// values rather than inventing a coarser enum — the webhook handler passes
+// Stripe's `subscription.status` straight through, so there's no lossy
+// translation step that could drift from what Stripe actually reports.
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  UNPAID
+}
+
+// One row per user with a Stripe subscription — NOT the source of truth
+// plan checks read (that's still the denormalized User.plan, unchanged, so
+// PlanThrottleGuard/ApiKeysService/AI Gateway quota checks needed zero
+// changes). This table exists for support/debugging visibility into the
+// underlying Stripe state and to detect a user with a Stripe subscription
+// whose User.plan has drifted out of sync (webhook delivery failure,
+// retried job, etc.) — see AUDIT_REPORT.md §15.
+model Subscription {
+  id                   String             @id @default(uuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String             @unique
+  stripePriceId        String
+  plan                 Plan
+  status               SubscriptionStatus
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+// Plugin marketplace (Phase 4 — ARCHITECTURE.md §16, design-then-build
+// pass; flagged before implementation per CLAUDE.md rule 10 since it's the
+// first untrusted-third-party-code surface in this codebase). v1
+// deviations from the original §16 design sketch, both documented in
+// AUDIT_REPORT.md §18: the WASM binary is stored as base64 text directly
+// on PluginVersion rather than in S3-compatible object storage (that
+// infrastructure doesn't actually exist anywhere in this codebase yet —
+// ShareLink.objectStorageKey is itself unimplemented — and adding an S3
+// SDK would be a new top-level dependency for a feature already gated
+// behind a 2MB size cap, where Postgres storage is genuinely fine).
+enum PluginStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  REJECTED
+  SUSPENDED
+}
+
+model Plugin {
+  id           String       @id @default(uuid())
+  slug         String       @unique
+  name         String
+  description  String
+  authorUserId String
+  author       User         @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  status       PluginStatus @default(DRAFT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  versions PluginVersion[]
+
+  @@index([authorUserId])
+  @@index([status])
+}
+
+model PluginVersion {
+  id             String    @id @default(uuid())
+  pluginId       String
+  plugin         Plugin    @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+  version        String // semver, e.g. "1.0.0"
+  manifestJson   Json
+  // Base64-encoded WASM module — see the model-group comment above for why
+  // this is inline rather than object storage. Capped at ~2MB decoded
+  // (enforced in PluginsService, not the DB layer).
+  wasmBase64     String    @db.Text
+  checksumSha256 String
+  reviewedById   String?
+  reviewedBy     User?     @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@unique([pluginId, version])
+  @@index([pluginId])
 }

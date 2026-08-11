@@ -38,10 +38,23 @@ export class PipelinesService {
     return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
   }
 
+  /** Pipelines shared into an org the caller belongs to (API.md §17) —
+   * separate from `list()`, same split as SnippetsService.listForOrganization. */
+  async listForOrganization(userId: string, organizationId: string) {
+    await this.assertMember(userId, organizationId);
+    return this.prisma.pipeline.findMany({
+      where: { organizationId, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      include: { steps: { orderBy: { order: "asc" } } },
+    });
+  }
+
   async create(userId: string, dto: CreateSyncedPipelineDto) {
+    if (dto.organizationId) await this.assertMember(userId, dto.organizationId);
     return this.prisma.pipeline.create({
       data: {
         userId,
+        organizationId: dto.organizationId,
         name: dto.name,
         description: dto.description,
         steps: {
@@ -63,12 +76,19 @@ export class PipelinesService {
     });
     if (!pipeline || pipeline.deletedAt) throw new NotFoundException("Pipeline not found.");
     if (pipeline.isPublic || pipeline.userId === requesterUserId) return pipeline;
+    if (
+      pipeline.organizationId &&
+      requesterUserId &&
+      (await this.isMember(requesterUserId, pipeline.organizationId))
+    ) {
+      return pipeline;
+    }
     throw new ForbiddenException("This pipeline is private.");
   }
 
   /** Full replace of the steps array, per API.md §7's PATCH note. */
   async update(userId: string, id: string, dto: UpdateSyncedPipelineDto) {
-    await this.getOwned(userId, id);
+    await this.getEditable(userId, id);
 
     return this.prisma.$transaction(async (tx) => {
       if (dto.steps) {
@@ -97,7 +117,7 @@ export class PipelinesService {
   }
 
   async softDelete(userId: string, id: string) {
-    await this.getOwned(userId, id);
+    await this.getEditable(userId, id);
     await this.prisma.pipeline.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
@@ -122,10 +142,32 @@ export class PipelinesService {
     });
   }
 
-  private async getOwned(userId: string, id: string) {
+  /** Editable by the creator, or by an OWNER/ADMIN of the org it's shared into. */
+  private async getEditable(userId: string, id: string) {
     const pipeline = await this.prisma.pipeline.findUnique({ where: { id } });
     if (!pipeline || pipeline.deletedAt) throw new NotFoundException("Pipeline not found.");
-    if (pipeline.userId !== userId) throw new ForbiddenException("You don't own this pipeline.");
-    return pipeline;
+    if (pipeline.userId === userId) return pipeline;
+    if (pipeline.organizationId && (await this.isOrgAdmin(userId, pipeline.organizationId))) return pipeline;
+    throw new ForbiddenException("You don't have permission to edit this pipeline.");
+  }
+
+  private async isMember(userId: string, organizationId: string): Promise<boolean> {
+    const membership = await this.prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId, userId } },
+    });
+    return membership !== null;
+  }
+
+  private async isOrgAdmin(userId: string, organizationId: string): Promise<boolean> {
+    const membership = await this.prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId, userId } },
+    });
+    return membership?.role === "OWNER" || membership?.role === "ADMIN";
+  }
+
+  private async assertMember(userId: string, organizationId: string): Promise<void> {
+    if (!(await this.isMember(userId, organizationId))) {
+      throw new ForbiddenException("You're not a member of this organization.");
+    }
   }
 }

@@ -1,0 +1,18 @@
+{
+  "name": "@devtoolbox/extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DevToolbox browser extension (Manifest V3) — right-click 'Format with DevToolbox' on selected text. ARCHITECTURE.md §15.",
+  "scripts": {
+    "build": "node build.mjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/**/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

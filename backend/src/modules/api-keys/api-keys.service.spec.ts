@@ -12,6 +12,9 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
       findUnique: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({}),
     },
+    organizationMember: {
+      findFirst: jest.fn().mockResolvedValue(null),
+    },
     ...overrides,
   };
 }
@@ -139,6 +142,23 @@ describe("ApiKeysService", () => {
     const service = new ApiKeysService(prisma as never);
 
     await expect(service.validateKey("dtb_live_x")).rejects.toThrow(ForbiddenException);
+  });
+
+  it("validateKey allows a FREE-plan key owner who belongs to a TEAM-owner's organization", async () => {
+    const prisma = makePrisma({
+      apiKey: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: "key-1", revokedAt: null, user: { id: "user-1", email: "a@b.com", plan: "FREE" } }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      organizationMember: { findFirst: jest.fn().mockResolvedValue({ id: "membership-1" }) },
+    });
+    const service = new ApiKeysService(prisma as never);
+
+    const principal = await service.validateKey("dtb_live_x");
+
+    expect(principal).toEqual({ userId: "user-1", email: "a@b.com", plan: "TEAM" });
   });
 
   it("validateKey returns the principal and bumps lastUsedAt for a valid PRO-plan key", async () => {
