@@ -4,6 +4,15 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (Phase 4 — Public API + CLI groundwork)
+
+- **`ApiKey` model + key management** (API.md §11): `POST/GET/DELETE /api-keys` (session-authed) let a signed-in user create, list, and revoke keys for the Public API. Raw key shown once at creation, only its SHA-256 hash (`ApiKeysService`, reusing the existing `token-hash.ts` convention) is ever stored; revoked rows are kept, not deleted, for audit. New migration `20260811120000_add_api_key`.
+- **Public API** (API.md §12, `backend/src/modules/public-api/`): `POST /v1/public/hash` and `/v1/public/json-validate` — the two example tools ARCHITECTURE.md §14.3 names for this tier ("batch JSON validation, hash generation"), deliberately not a mirror of every web tool. Guarded by a new `ApiKeyAuthGuard` (validates the hashed key, enforces PRO/TEAM plan, composes with the existing `PlanThrottleGuard` exactly like session-authed routes do) rather than the session JWT.
+- **`@devtoolbox/cli`** (`packages/cli/`): a `devtoolbox` CLI (`hash`, `json-validate` commands) — a thin `fetch`-based client over the Public API using `packages/shared`'s DTOs, zero new dependencies (Node 22's built-in `fetch`; manual argv parsing instead of adding a CLI-parsing library; `node:test` instead of adding a test framework to this package).
+- **Frontend:** new "API keys" section on `/account` (PRO/TEAM only) to create/list/revoke keys, showing the raw key exactly once.
+- `DATABASE.md`, `API.md`, `ARCHITECTURE.md` updated in the same pass per CLAUDE.md rule 10 (new DB table, new route surface, new package all documented alongside the code that introduces them).
+- **Scope note:** this is groundwork, not the full Phase 4 item — only two tools are exposed publicly so far; billing/plan-upgrade flow for actually becoming PRO/TEAM still doesn't exist (tracked separately, FEATURE.md's "Pro tier groundwork" line). See AUDIT_REPORT.md §14.
+
 ### Added (Phase 3 — AI Gateway + first 5 AI tools)
 
 - **AI Gateway backend** (`backend/src/modules/ai-gateway/`): `POST /ai/explain`, `/ai/generate`, `/ai/diff-summary`, `/ai/json-repair`, and `GET /ai/usage` per API.md §9, wired to the previously-unused `@anthropic-ai/sdk` dependency. Task-specific system prompts explicitly frame user content as data, never instructions (CLAUDE.md rule 7). Model routing: Haiku for explain/generate, Sonnet for diff-summary, both env-configurable (`AI_MODEL_HAIKU`/`AI_MODEL_SONNET`). Deterministic-first JSON repair (trailing commas, unquoted keys, single quotes, comments) only falls back to AI when that fails; generated cron/regex results are deterministically validated after the AI call, never trusted on their own. Rate-limited via the existing `PlanThrottleGuard` (5/60/1000 per hour anonymous/free/pro, one shared `/ai/*` budget per API.md §12). No raw request/response content persisted — only anonymized token counts via the existing `AiUsageEvent` table.

@@ -161,7 +161,37 @@ These exist because the underlying operation cannot run client-side (CORS, DNS r
 | GET | `/net/webhook-inbox/:id/events` | Poll captured webhook events for an inbox |
 | POST | `/net/url-preview` | Fetches a URL server-side and extracts Open Graph/meta tags for the previewer tool |
 
-## 11. Admin (internal, `role: admin` only)
+## 11. API Keys (manage Public API access — session auth)
+
+Lets a signed-in user create/list/revoke the keys their scripts/CI/CLI use to call §12's Public API. Managed via the normal session (`Authorization: Bearer <accessToken>`), not the API key itself.
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| POST | `/api-keys` | `{ name }` → `{ id, name, key, keyPrefix, createdAt }` — **`key` (the raw secret) is returned only this once and never retrievable again** | access token |
+| GET | `/api-keys` | List the caller's keys — `{ id, name, keyPrefix, lastUsedAt, revokedAt, createdAt }[]`, never the raw key | access token |
+| DELETE | `/api-keys/:id` | Revoke a key (sets `revokedAt`; row kept for audit, not deleted) | access token |
+
+## 12. Public API (Phase 4 — API-key auth, PRO/TEAM only)
+
+Programmatic access to a small, deliberately curated subset of tools for CI/scripting use, per ARCHITECTURE.md §14.3 — not a mirror of every web tool. Auth via `Authorization: Bearer <api key>` (a key created through §11, distinct from the session access token used everywhere else); `FORBIDDEN` (403) if the caller's plan isn't PRO/TEAM, `UNAUTHENTICATED` (401) if the key is missing/invalid/revoked.
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/v1/public/hash` | `{ input, algorithm: "md5"\|"sha1"\|"sha256"\|"sha512" }` → `{ digest }` |
+| POST | `/v1/public/json-validate` | `{ input }` → `{ valid: boolean, error?: string }` — batch-friendly JSON validation for CI pipelines |
+
+**Example — `POST /v1/public/hash`**
+```bash
+curl -X POST https://api.devtoolbox.dev/v1/public/hash \
+  -H "Authorization: Bearer dtb_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"input": "hello world", "algorithm": "sha256"}'
+```
+```json
+{ "digest": "b94d27b9934d3e08a52e52d7da7dacefac1a3ce9c3adbcf0002d0f30b3d6c1c" }
+```
+
+## 13. Admin (internal, `role: admin` only)
 
 | Method | Path | Description |
 |---|---|---|
@@ -169,7 +199,7 @@ These exist because the underlying operation cannot run client-side (CORS, DNS r
 | GET | `/admin/users?query=` | User lookup/support |
 | POST | `/admin/users/:id/plan` | Manually adjust a user's plan (support/comp scenarios) |
 
-## 12. Rate Limits (default, per plan)
+## 14. Rate Limits (default, per plan)
 
 | Surface | Anonymous | Free (signed-in) | Pro |
 |---|---|---|---|
@@ -177,10 +207,12 @@ These exist because the underlying operation cannot run client-side (CORS, DNS r
 | `/shares` create | 20/hour/IP | 100/hour/user | 1000/hour/user |
 | `/ai/*` | 5/hour/IP | 60/hour/user | 1000/hour/user |
 | `/net/http-request` | 10/hour/IP | 60/hour/user | 500/hour/user |
+| `/api-keys` | — | 30/hour/user | 30/hour/user |
+| `/v1/public/*` | — (no anonymous access) | — (PRO/TEAM only) | 5000/hour/user |
 | All other CRUD | 300/min/user | 300/min/user | 300/min/user |
 
-Rate-limit responses include `Retry-After` and `X-RateLimit-Remaining` headers.
+Rate-limit responses include `Retry-After` and `X-RateLimit-Remaining` headers. `/v1/public/*`'s limit is shared across all of a user's API keys (not one budget per key) — reuses `PlanThrottleGuard`'s existing per-user identity resolution rather than adding a new per-key rate-limit dimension; a user with multiple keys (e.g. one per CI pipeline) shares one budget across them, same as any other authenticated surface in this table.
 
-## 13. Versioning
+## 15. Versioning
 
 - URL-versioned (`/v1`). Breaking changes ship as `/v2`; `/v1` supported for a minimum 12 months after `/v2` GA, per CHANGELOG.md deprecation notices.

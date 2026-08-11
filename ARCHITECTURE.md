@@ -161,7 +161,7 @@ Full catalog, module breakdown, and prioritization lives in [FEATURE.md](./FEATU
 ### 8.3 Backend architecture
 
 - **Framework:** NestJS (TypeScript) — modular, DI-driven, good fit for a system with clearly separable domains (auth, sync, share, AI gateway, analytics) and strong typing parity with the frontend.
-- **Module boundaries:** `auth`, `users`, `sync` (history/favorites/pipelines), `share`, `ai-gateway`, `analytics`, `admin`. Each is a NestJS module with its own controller/service/DTO layer; no cross-module direct DB access — only through service interfaces.
+- **Module boundaries:** `auth`, `users`, `sync` (history/favorites/pipelines), `share`, `ai-gateway`, `analytics`, `admin`, `api-keys` (Public API key management, Phase 4), `public-api` (the API-key-authed tool surface itself, deliberately separate from `api-keys` so key management stays on session auth while the tool surface stays on API-key auth). Each is a NestJS module with its own controller/service/DTO layer; no cross-module direct DB access — only through service interfaces.
 - **API style:** REST (see API.md) for CRUD-shaped resources (auth, sync, share); a single AI gateway endpoint proxies structured requests to the Claude API with server-side prompt templates, so API keys never reach the client and requests can be rate-limited/sanitized centrally.
 - **ORM/DB:** PostgreSQL via Prisma — strong typing, painless migrations, good fit for the relational shape of users/pipelines/shares.
 - **Caching/queues:** Redis for session/rate-limit state and BullMQ-backed background jobs (share-link expiry cleanup, usage aggregation, async large-file share processing).
@@ -177,7 +177,7 @@ Three explicit data-handling tiers, always visible to the user:
 
 ### 8.5 Monorepo & build tooling
 
-- npm workspaces (or pnpm) monorepo: `frontend/`, `backend/`, plus a `packages/shared` package for types/schemas shared between the two (e.g., DTOs, Zod schemas for AI gateway requests) — avoids drift between frontend expectations and backend contracts.
+- npm workspaces (or pnpm) monorepo: `frontend/`, `backend/`, plus a `packages/shared` package for types/schemas shared between the two (e.g., DTOs, Zod schemas for AI gateway requests) — avoids drift between frontend expectations and backend contracts. `packages/cli` (Phase 4) is the public-facing CLI, a thin HTTP client over the Public API (API.md §12) using `packages/shared`'s existing types for response shapes — it does not import backend or frontend code directly.
 - Turborepo for task orchestration/caching across the monorepo (`build`, `lint`, `test` fan out per-package with caching).
 
 ## 9. Security Considerations

@@ -26,6 +26,7 @@ User ──1:N── HistoryEntry (only if sync enabled; otherwise local Indexed
 User ──N:1── Organization (nullable; Phase 4 team workspaces)
 Organization ──1:N── OrganizationMember (join: User × Organization, role)
 User ──1:N── AiUsageEvent (aggregate counters, not payload content)
+User ──1:N── ApiKey (Phase 4 public API/CLI access)
 ShareLink ──N:1── Tool (by slug, not FK — tool registry lives in code, not DB)
 ```
 
@@ -235,6 +236,27 @@ model VerificationToken {
 
   @@index([userId, type])
 }
+
+// Added during Phase 4 implementation — not in the original ERD above.
+// Backs Public API/CLI access (ARCHITECTURE.md §14.3, §15). Same
+// hashed-secret pattern as Session.refreshTokenHash/VerificationToken.tokenHash
+// — `keyHash` is a SHA-256 hash, the raw key is shown to the user exactly
+// once (at creation) and never stored or recoverable. `keyPrefix` is the raw
+// key's first 8 characters kept in plaintext solely so the key-management UI
+// can show "dtb_live_ab12…" to distinguish keys without exposing the rest.
+model ApiKey {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  keyPrefix  String
+  keyHash    String    @unique
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
 ```
 
 **Implementation notes (Phase 3):**
@@ -254,6 +276,14 @@ model VerificationToken {
   does mean a leaked derived key only ever exposes one user's history, not
   everyone's.
 
+**Implementation notes (Phase 4):**
+
+- `ApiKey` added to back Public API/CLI access. Keys are gated to `PRO`/`TEAM`
+  plans at the service layer (not a DB constraint) — matches ARCHITECTURE.md
+  §14.3's "API/CLI access tier." A revoked key's row is kept (`revokedAt` set,
+  not deleted) so past usage can still be audited; `ApiKeyAuthGuard` rejects
+  any key with `revokedAt` set regardless of `keyHash` validity.
+
 ## 4. Data Retention & Privacy Notes
 
 | Table | Contains user content? | Retention |
@@ -263,6 +293,7 @@ model VerificationToken {
 | `ShareLink` | Yes (explicit share) | Default 30-day expiry, hard-deleted by scheduled job after expiry |
 | `AiUsageEvent` | No — token counts only, never prompt/response content | Retained for billing/analytics, aggregated after 90 days |
 | `Session` | No | Refresh token stored as hash only; purged on logout/expiry |
+| `ApiKey` | No | Raw key shown once at creation, never stored; `keyHash` retained (and revoked rows kept, not deleted) for audit until the user deletes their account |
 
 ## 5. Indexing Strategy
 

@@ -432,6 +432,54 @@ export interface AiUsageSummary {
   quota: number;
 }
 
+// ── Public API / CLI (Phase 4 — API.md §11/§12) ────────────────────────────
+export const CreateApiKeySchema = z.object({
+  name: z.string().min(1).max(60),
+});
+export type CreateApiKeyDto = z.infer<typeof CreateApiKeySchema>;
+
+/** Returned only once, at creation — `key` (the raw secret) is never
+ * retrievable again afterward. Every later listing uses ApiKeySummary. */
+export interface ApiKeyCreatedResult {
+  id: string;
+  name: string;
+  key: string;
+  keyPrefix: string;
+  createdAt: string;
+}
+
+export interface ApiKeySummary {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+export const PublicHashAlgorithms = ["md5", "sha1", "sha256", "sha512"] as const;
+export type PublicHashAlgorithm = (typeof PublicHashAlgorithms)[number];
+
+export const PublicHashSchema = z.object({
+  input: z.string().min(1).max(100_000),
+  algorithm: z.enum(PublicHashAlgorithms),
+});
+export type PublicHashDto = z.infer<typeof PublicHashSchema>;
+
+export interface PublicHashResult {
+  digest: string;
+}
+
+export const PublicJsonValidateSchema = z.object({
+  input: z.string().min(1).max(1_000_000),
+});
+export type PublicJsonValidateDto = z.infer<typeof PublicJsonValidateSchema>;
+
+export interface PublicJsonValidateResult {
+  valid: boolean;
+  error?: string;
+}
+
 // ── Standard API error shape (see API.md §1) ───────────────────────────────
 export interface ApiErrorBody {
   error: {

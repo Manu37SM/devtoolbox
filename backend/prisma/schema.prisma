@@ -54,6 +54,7 @@ model User {
   oauthAccounts       OAuthAccount[]
   memberships         OrganizationMember[]
   verificationTokens  VerificationToken[]
+  apiKeys             ApiKey[]
 
   @@index([email])
 }
@@ -211,4 +212,24 @@ model OrganizationMember {
   joinedAt       DateTime     @default(now())
 
   @@unique([organizationId, userId])
+}
+
+// Public API / CLI access (Phase 4 — ARCHITECTURE.md §14.3, §15). Not in the
+// original DATABASE.md ERD, added alongside the Public API surface — same
+// hashed-secret pattern as Session.refreshTokenHash/VerificationToken.tokenHash,
+// never store the raw key. `keyPrefix` is the raw key's first 8 characters,
+// kept in plaintext purely so the UI can show "dtb_live_ab12…" for the user
+// to identify which key is which without ever being able to recover the rest.
+model ApiKey {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  keyPrefix  String
+  keyHash    String    @unique
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
 }

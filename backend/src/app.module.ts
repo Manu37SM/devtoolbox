@@ -11,6 +11,8 @@ import { AdminModule } from "./modules/admin/admin.module";
 import { NetModule } from "./modules/net/net.module";
 import { SnippetsModule } from "./modules/snippets/snippets.module";
 import { PipelinesModule } from "./modules/pipelines/pipelines.module";
+import { ApiKeysModule } from "./modules/api-keys/api-keys.module";
+import { PublicApiModule } from "./modules/public-api/public-api.module";
 import { ConfigModule } from "./config/config.module";
 import { PrismaModule } from "./database/prisma.module";
 
@@ -35,6 +37,8 @@ import { PrismaModule } from "./database/prisma.module";
     AnalyticsModule,
     AdminModule,
     NetModule,
+    ApiKeysModule,
+    PublicApiModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

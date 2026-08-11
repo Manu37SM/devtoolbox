@@ -190,7 +190,7 @@ All AI tools: clearly labeled, show data-sent preview before first use, determin
 ### Phase 4 — Enterprise/ecosystem
 
 - Team workspaces, org AI quotas/admin dashboard.
-- Public API + CLI.
+- Public API + CLI. **✅ Groundwork shipped** — API keys (create/list/revoke, session-authed), a curated PRO/TEAM-only `/v1/public/*` surface (hash generation, batch JSON validation, per ARCHITECTURE.md §14.3's own examples), and `@devtoolbox/cli` (a thin `fetch`-based client, zero new dependencies). Not a mirror of every web tool — deliberately scoped to the two ARCHITECTURE.md examples; more public-API tools can be added incrementally. See AUDIT_REPORT.md §14.
 - Browser extension, VS Code extension.
 - Plugin marketplace (WASM-sandboxed community tools).
 - Remaining P2/P3 tools and AI features.

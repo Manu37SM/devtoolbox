@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { LinkedOAuthAccount, UserProfile } from "@devtoolbox/shared";
+import type { ApiKeyCreatedResult, ApiKeySummary, LinkedOAuthAccount, UserProfile } from "@devtoolbox/shared";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
@@ -26,6 +26,12 @@ export default function AccountPage() {
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedOAuthAccount[] | null>(null);
   const [linkedError, setLinkedError] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const [apiKeys, setApiKeys] = useState<ApiKeySummary[] | null>(null);
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
+  const [justCreatedKey, setJustCreatedKey] = useState<ApiKeyCreatedResult | null>(null);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -41,6 +47,44 @@ export default function AccountPage() {
       .then((res) => setLinkedAccounts(res.accounts))
       .catch(() => setLinkedAccounts([]));
   }, [status]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || user?.plan === "FREE") return;
+    apiGet<ApiKeySummary[]>("/api-keys", { authenticated: true })
+      .then(setApiKeys)
+      .catch(() => setApiKeys([]));
+  }, [status, user?.plan]);
+
+  async function onCreateApiKey() {
+    setApiKeyError(null);
+    setCreatingKey(true);
+    try {
+      const created = await apiPost<ApiKeyCreatedResult>("/api-keys", { name: newKeyName }, { authenticated: true });
+      setJustCreatedKey(created);
+      setNewKeyName("");
+      setApiKeys((prev) => [
+        { id: created.id, name: created.name, keyPrefix: created.keyPrefix, lastUsedAt: null, revokedAt: null, createdAt: created.createdAt },
+        ...(prev ?? []),
+      ]);
+    } catch (err) {
+      setApiKeyError(err instanceof ApiClientError ? err.message : "Couldn't create a key. Please try again.");
+    } finally {
+      setCreatingKey(false);
+    }
+  }
+
+  async function onRevokeApiKey(id: string) {
+    setApiKeyError(null);
+    setRevokingKeyId(id);
+    try {
+      await apiDelete(`/api-keys/${id}`, { authenticated: true });
+      setApiKeys((prev) => (prev ? prev.map((k) => (k.id === id ? { ...k, revokedAt: new Date().toISOString() } : k)) : prev));
+    } catch (err) {
+      setApiKeyError(err instanceof ApiClientError ? err.message : "Couldn't revoke this key. Please try again.");
+    } finally {
+      setRevokingKeyId(null);
+    }
+  }
 
   async function onDisconnect(provider: string) {
     setLinkedError(null);
@@ -203,6 +247,78 @@ export default function AccountPage() {
             Log out
           </Button>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-text-primary">API keys</h2>
+        {user.plan === "FREE" ? (
+          <p className="text-sm text-text-secondary">
+            The Public API (for CI/scripting use — see the CLI docs) requires a PRO or TEAM plan.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-text-secondary">
+              Used by the DevToolbox CLI and any scripts calling the Public API directly. A key&apos;s full value is
+              shown only once, right after you create it.
+            </p>
+            {justCreatedKey && (
+              <div className="flex flex-col gap-1 rounded-md border border-accent/40 bg-accent/5 p-3 text-sm">
+                <span className="text-text-secondary">
+                  Copy this now — it won&apos;t be shown again: <strong>{justCreatedKey.name}</strong>
+                </span>
+                <code className="break-all rounded-sm bg-bg-raised px-2 py-1 font-mono text-xs">{justCreatedKey.key}</code>
+                <Button variant="ghost" size="sm" className="self-start" onClick={() => setJustCreatedKey(null)}>
+                  Done
+                </Button>
+              </div>
+            )}
+            {apiKeys === null ? (
+              <p className="text-sm text-text-secondary">Loading…</p>
+            ) : (
+              <>
+                {apiKeys.length > 0 && (
+                  <ul className="flex flex-col gap-2">
+                    {apiKeys.map((key) => (
+                      <li
+                        key={key.id}
+                        className="flex items-center justify-between rounded-md border border-border-default px-3 py-2 text-sm"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-text-primary">{key.name}</span>
+                          <span className="font-mono text-xs text-text-muted">
+                            {key.keyPrefix}… {key.revokedAt && <Badge variant="neutral">Revoked</Badge>}
+                          </span>
+                        </div>
+                        {!key.revokedAt && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onRevokeApiKey(key.id)}
+                            disabled={revokingKeyId === key.id}
+                          >
+                            {revokingKeyId === key.id ? "Revoking…" : "Revoke"}
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {apiKeyError && <p className="text-sm text-danger">{apiKeyError}</p>}
+                <div className="flex gap-2">
+                  <Input
+                    value={newKeyName}
+                    onChange={(e) => setNewKeyName(e.target.value)}
+                    placeholder="Key name (e.g. CI pipeline)"
+                    className="max-w-56"
+                  />
+                  <Button size="sm" onClick={onCreateApiKey} disabled={creatingKey || !newKeyName.trim()}>
+                    {creatingKey ? "Creating…" : "Create key"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </>
+        )}
       </section>
 
       <section className="flex flex-col gap-3 border-t border-border-default pt-6">
