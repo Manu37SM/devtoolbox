@@ -35,13 +35,22 @@ export class SnippetsService {
 
   /** Snippets shared into an org the caller belongs to — separate from
    * `list()` (the caller's own snippets) since the two have different
-   * visibility rules and are shown in different UI sections. */
-  async listForOrganization(userId: string, organizationId: string) {
+   * visibility rules and are shown in different UI sections. Same
+   * cursor/limit pagination as `list()` — this originally ran an unbounded
+   * `findMany`, flagged in this session's audit-hardening pass
+   * (AUDIT_REPORT.md §19) as a low-cost DoS lever for a large org. */
+  async listForOrganization(userId: string, organizationId: string, opts: CursorQueryDto = {}) {
     await this.assertMember(userId, organizationId);
-    return this.prisma.snippet.findMany({
+    const limit = Math.min(opts.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
+    const rows = await this.prisma.snippet.findMany({
       where: { organizationId, deletedAt: null },
       orderBy: { createdAt: "desc" },
+      take: limit + 1,
+      ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
     });
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
   }
 
   async create(userId: string, dto: CreateSnippetDto) {
@@ -49,6 +58,12 @@ export class SnippetsService {
     return this.prisma.snippet.create({ data: { userId, ...dto } });
   }
 
+  // Returns the same 404 for "doesn't exist" and "exists but you can't see
+  // it" — same convention as ApiKeysService.revokeKey. Originally returned
+  // 403 for the private-and-not-mine case, which let an authenticated
+  // caller distinguish "exists but private" from "doesn't exist" for any
+  // guessed UUID; flagged in this session's audit-hardening pass
+  // (AUDIT_REPORT.md §19) and unified here.
   async getOne(id: string, requesterUserId: string | undefined) {
     const snippet = await this.prisma.snippet.findUnique({ where: { id } });
     if (!snippet || snippet.deletedAt) throw new NotFoundException("Snippet not found.");
@@ -56,7 +71,7 @@ export class SnippetsService {
     if (snippet.organizationId && requesterUserId && (await this.isMember(requesterUserId, snippet.organizationId))) {
       return snippet;
     }
-    throw new ForbiddenException("This snippet is private.");
+    throw new NotFoundException("Snippet not found.");
   }
 
   async update(userId: string, id: string, dto: UpdateSnippetDto) {

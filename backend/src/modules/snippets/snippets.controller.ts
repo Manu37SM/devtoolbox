@@ -33,8 +33,16 @@ export class SnippetsController {
   // collides with the single-segment ":id" route below.
   @UseGuards(JwtAuthGuard)
   @Get("organization/:organizationId")
-  async listForOrganization(@CurrentUser() user: AuthenticatedUser, @Param("organizationId") organizationId: string) {
-    return this.snippetsService.listForOrganization(user.userId, organizationId);
+  async listForOrganization(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("organizationId") organizationId: string,
+    @Query(new ZodValidationPipe(CursorQuerySchema)) query: unknown,
+  ) {
+    return this.snippetsService.listForOrganization(
+      user.userId,
+      organizationId,
+      query as Parameters<SnippetsService["listForOrganization"]>[2],
+    );
   }
 
   // Owner or, if isPublic, anyone — hence the optional (not required) guard.

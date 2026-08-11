@@ -30,6 +30,7 @@ function makePrisma(overrides: {
     },
     aiUsageEvent: {
       findMany: jest.fn().mockResolvedValue([]),
+      groupBy: jest.fn().mockResolvedValue([]),
       ...overrides.aiUsageEvent,
     },
   };
@@ -233,10 +234,9 @@ describe("OrganizationsService", () => {
           ]),
         },
         aiUsageEvent: {
-          findMany: jest.fn().mockResolvedValue([
-            { userId: "user-1", inputTokens: 100, outputTokens: 50 },
-            { userId: "user-1", inputTokens: 20, outputTokens: 10 },
-            { userId: "user-2", inputTokens: 5, outputTokens: 5 },
+          groupBy: jest.fn().mockResolvedValue([
+            { userId: "user-1", _count: { _all: 2 }, _sum: { inputTokens: 120, outputTokens: 60 } },
+            { userId: "user-2", _count: { _all: 1 }, _sum: { inputTokens: 5, outputTokens: 5 } },
           ]),
         },
       });

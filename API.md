@@ -87,7 +87,7 @@ Common `code` values: `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `FORBID
 |---|---|---|
 | GET | `/snippets?toolSlug=&cursor=&limit=` | List own snippets |
 | POST | `/snippets` | Create `{ toolSlug, title, content, isPublic? }` |
-| GET | `/snippets/:id` | Get one (owner or, if `isPublic`, anyone) |
+| GET | `/snippets/:id` | Get one (owner, an org member if org-shared, or if `isPublic` anyone) — 404 for both "doesn't exist" and "exists but you can't see it," never 403, so resource existence isn't disclosed to a caller who shouldn't know (AUDIT_REPORT.md §19) |
 | PATCH | `/snippets/:id` | Update |
 | DELETE | `/snippets/:id` | Soft-delete |
 
@@ -97,7 +97,7 @@ Common `code` values: `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `FORBID
 |---|---|---|
 | GET | `/pipelines` | List own pipelines |
 | POST | `/pipelines` | Create `{ name, description?, steps: [{ toolSlug, optionsJson }] }` |
-| GET | `/pipelines/:id` | Get one |
+| GET | `/pipelines/:id` | Get one (owner, an org member if org-shared, or if `isPublic` anyone) — 404, not 403, for the not-visible case (same reasoning as §6's snippet GET) |
 | PATCH | `/pipelines/:id` | Update (name/description/steps, full replace of steps array) |
 | DELETE | `/pipelines/:id` | Soft-delete |
 | POST | `/pipelines/:id/duplicate` | Clone a pipeline (own or a public one) into the current user's account |

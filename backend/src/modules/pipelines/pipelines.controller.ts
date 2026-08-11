@@ -32,8 +32,16 @@ export class PipelinesController {
   // Two path segments, so it never collides with the single-segment ":id" route below.
   @UseGuards(JwtAuthGuard)
   @Get("organization/:organizationId")
-  async listForOrganization(@CurrentUser() user: AuthenticatedUser, @Param("organizationId") organizationId: string) {
-    return this.pipelinesService.listForOrganization(user.userId, organizationId);
+  async listForOrganization(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("organizationId") organizationId: string,
+    @Query(new ZodValidationPipe(CursorQuerySchema)) query: unknown,
+  ) {
+    return this.pipelinesService.listForOrganization(
+      user.userId,
+      organizationId,
+      query as Parameters<PipelinesService["listForOrganization"]>[2],
+    );
   }
 
   @UseGuards(OptionalJwtAuthGuard)

@@ -39,14 +39,22 @@ export class PipelinesService {
   }
 
   /** Pipelines shared into an org the caller belongs to (API.md §17) —
-   * separate from `list()`, same split as SnippetsService.listForOrganization. */
-  async listForOrganization(userId: string, organizationId: string) {
+   * separate from `list()`, same split as SnippetsService.listForOrganization.
+   * Paginated the same way `list()` is — originally an unbounded `findMany`,
+   * flagged in this session's audit-hardening pass (AUDIT_REPORT.md §19). */
+  async listForOrganization(userId: string, organizationId: string, opts: CursorQueryDto = {}) {
     await this.assertMember(userId, organizationId);
-    return this.prisma.pipeline.findMany({
+    const limit = Math.min(opts.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
+    const rows = await this.prisma.pipeline.findMany({
       where: { organizationId, deletedAt: null },
       orderBy: { createdAt: "desc" },
+      take: limit + 1,
       include: { steps: { orderBy: { order: "asc" } } },
+      ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
     });
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
   }
 
   async create(userId: string, dto: CreateSyncedPipelineDto) {
@@ -69,6 +77,9 @@ export class PipelinesService {
     });
   }
 
+  // Returns the same 404 for "doesn't exist" and "exists but you can't see
+  // it" — see SnippetsService.getOne's identical comment/fix
+  // (AUDIT_REPORT.md §19).
   async getOne(id: string, requesterUserId: string | undefined) {
     const pipeline = await this.prisma.pipeline.findUnique({
       where: { id },
@@ -83,7 +94,7 @@ export class PipelinesService {
     ) {
       return pipeline;
     }
-    throw new ForbiddenException("This pipeline is private.");
+    throw new NotFoundException("Pipeline not found.");
   }
 
   /** Full replace of the steps array, per API.md §7's PATCH note. */

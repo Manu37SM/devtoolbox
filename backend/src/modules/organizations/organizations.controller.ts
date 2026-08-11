@@ -12,19 +12,34 @@ import { CurrentUser, type AuthenticatedUser } from "../auth/decorators/current-
 import { PlanThrottle } from "../../common/rate-limit/plan-throttle.decorator";
 import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 
-/** Team workspaces — API.md §17. Every route requires a signed-in user;
- * there's no anonymous or API-key-authed access to org management. */
-@PlanThrottle({
+// One shared 60/hour budget across every route on this controller (API.md
+// §17's "/organizations/*" rate limit row) — every method below reuses this
+// exact same `route` string so they all key into one Redis counter, rather
+// than each getting an independent budget.
+const ORG_THROTTLE = {
   route: "organizations",
   anonymous: { limit: 1, ttlSeconds: 3_600 }, // unreachable — JwtAuthGuard blocks anonymous callers first
   free: { limit: 60, ttlSeconds: 3_600 },
   pro: { limit: 60, ttlSeconds: 3_600 },
-})
-@UseGuards(JwtAuthGuard, PlanThrottleGuard)
+} as const;
+
+/** Team workspaces — API.md §17. Every route requires a signed-in user;
+ * there's no anonymous or API-key-authed access to org management.
+ *
+ * `@PlanThrottle` is applied per-method here, not per-class: `PlanThrottleGuard`
+ * reads its config off `context.getHandler()` only (see plan-throttle.guard.ts),
+ * so a class-level `@PlanThrottle` — what this controller originally had — is
+ * silently never read. Caught in this session's audit-hardening pass
+ * (AUDIT_REPORT.md §19); every method now carries its own `@PlanThrottle`
+ * (all sharing `ORG_THROTTLE`'s `route` string, preserving the single shared
+ * budget this was always meant to have) instead of relying on the class-level
+ * decorator that never actually took effect. */
 @Controller("organizations")
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Post()
   @HttpCode(201)
   async create(
@@ -34,16 +49,22 @@ export class OrganizationsController {
     return this.organizationsService.create(user.userId, dto as Parameters<OrganizationsService["create"]>[1]);
   }
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Get()
   async list(@CurrentUser() user: AuthenticatedUser) {
     return this.organizationsService.listForUser(user.userId);
   }
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Get(":id")
   async getOne(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.organizationsService.getDetail(user.userId, id);
   }
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Patch(":id")
   async rename(
     @CurrentUser() user: AuthenticatedUser,
@@ -53,12 +74,16 @@ export class OrganizationsController {
     return this.organizationsService.rename(user.userId, id, dto as Parameters<OrganizationsService["rename"]>[2]);
   }
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Delete(":id")
   @HttpCode(204)
   async remove(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     await this.organizationsService.delete(user.userId, id);
   }
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Post(":id/members")
   @HttpCode(201)
   async addMember(
@@ -73,6 +98,8 @@ export class OrganizationsController {
     );
   }
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Patch(":id/members/:userId")
   async updateMemberRole(
     @CurrentUser() user: AuthenticatedUser,
@@ -88,6 +115,8 @@ export class OrganizationsController {
     );
   }
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Delete(":id/members/:userId")
   @HttpCode(204)
   async removeMember(
@@ -98,6 +127,8 @@ export class OrganizationsController {
     await this.organizationsService.removeMember(user.userId, id, targetUserId);
   }
 
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Get(":id/usage")
   async getUsage(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.organizationsService.getUsage(user.userId, id);

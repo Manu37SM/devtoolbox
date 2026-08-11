@@ -4,6 +4,13 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Fixed (Audit-hardening pass, post-Phase-4)
+
+- **`@PlanThrottle` was applied at the class level on `OrganizationsController` and `PluginsController`, silently never taking effect** — `PlanThrottleGuard` only reads throttle config off the route handler, not the class, so neither controller had any per-plan rate limiting beyond the app-wide flat baseline. Fixed by moving `@PlanThrottle` onto every individual route; `OrganizationsController`'s routes share one budget (as originally intended), `PluginsController`'s routes get per-route limits, with `POST /plugins/:id/versions` (the one route that can move up to 2MB/call) dropped to 10/hour — this also closes a separate storage-exhaustion finding from the same review. See AUDIT_REPORT.md §19.1.
+- **Unbounded queries** in `SnippetsService`/`PipelinesService.listForOrganization` (no pagination) and `OrganizationsService.getUsage` (pulled every `AiUsageEvent` row into Node and reduced in JS) — both now paginated/aggregated in the database (`groupBy` for usage), same as every other list method in this codebase.
+- **403-vs-404 disclosure** on private snippets/pipelines — `getOne` now returns 404 (not 403) for a resource that exists but isn't visible to the caller, matching `ApiKeysService.revokeKey`'s existing "same 404 either way" convention.
+- Full findings, including one accepted-as-known-limitation item (a plugin's synchronous infinite loop isn't preemptible by `PluginRunner`'s timeout — containment still holds, reliability doesn't), are in AUDIT_REPORT.md §19.
+
 ### Added (Phase 4 — Plugin marketplace, v1)
 
 - **Flagged before implementation, confirmed, then built.** ARCHITECTURE.md §16 designed a client-side WASM execution model (no server-side WASM runtime dependency, consistent with CLAUDE.md rule 1) — the user confirmed proceeding, since it introduces untrusted code execution and server-persisted third-party binaries, both explicit CLAUDE.md flag criteria.

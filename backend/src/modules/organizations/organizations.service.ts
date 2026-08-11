@@ -11,6 +11,7 @@ import type {
 import { PrismaService } from "../../database/prisma.service";
 
 const USAGE_PERIOD_DAYS = 30;
+const MAX_MEMBERS_FOR_USAGE = 500;
 
 /**
  * Team workspaces (API.md §17, Phase 4 MVP scope). Deliberately narrow —
@@ -163,39 +164,51 @@ export class OrganizationsService {
   /** Aggregate AI usage across every member, last 30 days — same
    * underlying AiUsageEvent rows as the personal /ai/usage endpoint
    * (ai-gateway.service.ts's getUsage), never raw prompt/response content
-   * (CLAUDE.md rule 8). OWNER/ADMIN only. */
+   * (CLAUDE.md rule 8). OWNER/ADMIN only.
+   *
+   * Aggregated in the database (`groupBy`), not by pulling every event row
+   * into Node and reducing in memory — the original version did the latter
+   * with no limit on either the member list or the event rows fetched,
+   * flagged as a low-cost DoS lever for a large/active org in this
+   * session's audit-hardening pass (AUDIT_REPORT.md §19). `MAX_MEMBERS_FOR_USAGE`
+   * caps the member list defensively even though real orgs are unlikely to
+   * approach it yet. */
   async getUsage(userId: string, organizationId: string): Promise<OrganizationUsageSummary> {
     await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
 
     const members = await this.prisma.organizationMember.findMany({
       where: { organizationId },
       include: { user: { select: { id: true, email: true } } },
+      take: MAX_MEMBERS_FOR_USAGE,
     });
     const memberIds = members.map((m) => m.userId);
 
     const periodStart = new Date();
     periodStart.setDate(periodStart.getDate() - USAGE_PERIOD_DAYS);
 
-    const events = await this.prisma.aiUsageEvent.findMany({
+    const grouped = await this.prisma.aiUsageEvent.groupBy({
+      by: ["userId"],
       where: { userId: { in: memberIds }, createdAt: { gte: periodStart } },
-      select: { userId: true, inputTokens: true, outputTokens: true },
+      _count: { _all: true },
+      _sum: { inputTokens: true, outputTokens: true },
     });
+    const byUserId = new Map(grouped.map((g) => [g.userId, g]));
 
     const byMember = members.map((m) => {
-      const owned = events.filter((e) => e.userId === m.userId);
+      const g = byUserId.get(m.userId);
       return {
         userId: m.userId,
         email: m.user.email,
-        requests: owned.length,
-        inputTokens: owned.reduce((sum, e) => sum + e.inputTokens, 0),
-        outputTokens: owned.reduce((sum, e) => sum + e.outputTokens, 0),
+        requests: g?._count._all ?? 0,
+        inputTokens: g?._sum.inputTokens ?? 0,
+        outputTokens: g?._sum.outputTokens ?? 0,
       };
     });
 
     return {
       organizationId,
       periodDays: USAGE_PERIOD_DAYS,
-      totalRequests: events.length,
+      totalRequests: byMember.reduce((sum, m) => sum + m.requests, 0),
       totalInputTokens: byMember.reduce((sum, m) => sum + m.inputTokens, 0),
       totalOutputTokens: byMember.reduce((sum, m) => sum + m.outputTokens, 0),
       byMember,
