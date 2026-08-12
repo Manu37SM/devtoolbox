@@ -484,31 +484,52 @@ export interface PublicJsonValidateResult {
   error?: string;
 }
 
-// ── Billing (Phase 4 — API.md §9) ──────────────────────────────────────────
+// ── Billing (Phase 4 — API.md §9; migrated Stripe → Razorpay, see
+// AUDIT_REPORT.md §20 for rationale — Stripe billing isn't available for
+// this business's country of operation) ────────────────────────────────────
 export const BillablePlans = ["PRO", "TEAM"] as const;
 export type BillablePlan = (typeof BillablePlans)[number];
 
-export const CreateCheckoutSessionSchema = z.object({
+export const CreateSubscriptionSchema = z.object({
   plan: z.enum(BillablePlans),
 });
-export type CreateCheckoutSessionDto = z.infer<typeof CreateCheckoutSessionSchema>;
+export type CreateSubscriptionDto = z.infer<typeof CreateSubscriptionSchema>;
 
-export interface CheckoutSessionResult {
-  url: string;
+// Razorpay has no hosted Checkout page like Stripe's — the frontend opens
+// Razorpay's Checkout.js modal client-side using these fields (API.md §9).
+export interface CreateSubscriptionResult {
+  razorpaySubscriptionId: string;
+  razorpayKeyId: string;
+  plan: BillablePlan;
 }
 
-export interface PortalSessionResult {
-  url: string;
+// Razorpay Checkout.js's success handler returns these three fields to the
+// frontend; they're POSTed here so the backend can verify the HMAC
+// signature before trusting the payment (never trust a client-reported
+// "it worked" without verifying it server-side).
+export const VerifyPaymentSchema = z.object({
+  razorpay_payment_id: z.string().min(1),
+  razorpay_subscription_id: z.string().min(1),
+  razorpay_signature: z.string().min(1),
+});
+export type VerifyPaymentDto = z.infer<typeof VerifyPaymentSchema>;
+
+// Razorpay has no self-serve billing portal equivalent to Stripe's Customer
+// Portal (AUDIT_REPORT.md §20 deviation note) — cancellation is a direct
+// API call the account page triggers instead of a redirect.
+export interface CancelSubscriptionResult {
+  cancelled: boolean;
 }
 
 export const SubscriptionStatuses = [
+  "CREATED",
+  "AUTHENTICATED",
   "ACTIVE",
-  "PAST_DUE",
-  "CANCELED",
-  "INCOMPLETE",
-  "INCOMPLETE_EXPIRED",
-  "TRIALING",
-  "UNPAID",
+  "PENDING",
+  "HALTED",
+  "CANCELLED",
+  "COMPLETED",
+  "EXPIRED",
 ] as const;
 export type SubscriptionStatus = (typeof SubscriptionStatuses)[number];
 
@@ -573,6 +594,34 @@ export interface OrganizationUsageSummary {
   totalInputTokens: number;
   totalOutputTokens: number;
   byMember: { userId: string; email: string; requests: number; inputTokens: number; outputTokens: number }[];
+}
+
+// ── Team workspace invites (email-token flow — API.md §17.4;
+// AUDIT_REPORT.md §17.2 originally deferred this, shipped here) ────────────
+// `POST /organizations/:id/invites` reuses AddOrganizationMemberSchema's
+// `{ email }` shape — if an account already exists for that email it's
+// added immediately (unchanged behavior), otherwise a pending invite is
+// created and emailed instead of the old 404 "they'll need to sign up
+// first." Same MEMBER-only scope as the existing immediate-add path — no
+// role is exposed to invite as ADMIN/OWNER directly, matching
+// `updateMemberRole`'s existing promote-after-joining pattern.
+export interface OrganizationInviteSummary {
+  id: string;
+  email: string;
+  role: OrgRole;
+  invitedByEmail: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export type AddOrganizationMemberResult =
+  | { status: "added"; member: OrganizationMemberSummary }
+  | { status: "invited"; invite: OrganizationInviteSummary };
+
+export interface AcceptOrganizationInviteResult {
+  organizationId: string;
+  organizationName: string;
+  role: OrgRole;
 }
 
 // ── Plugin marketplace (Phase 4, v1 — API.md §18, ARCHITECTURE.md §16) ────

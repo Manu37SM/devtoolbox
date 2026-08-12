@@ -40,7 +40,10 @@ model User {
   avatarUrl        String?
   plan             Plan      @default(FREE)
   emailVerified    Boolean   @default(false)
-  stripeCustomerId String?   @unique
+  // Migrated off Stripe (which doesn't support Indian export-of-services
+  // billing for this business) to Razorpay — see AUDIT_REPORT.md §20 for
+  // the full rationale and deviation notes (CLAUDE.md rule 10).
+  razorpayCustomerId String?   @unique
   // First concrete implementation of the "role: admin" concept API.md §14
   // (Admin routes) already assumed existed — that module was an empty
   // stub with no actual gating (AUDIT_REPORT.md). Added here because the
@@ -67,6 +70,7 @@ model User {
   subscription        Subscription?
   plugins             Plugin[]
   reviewedPluginVersions PluginVersion[]
+  sentOrganizationInvites OrganizationInvite[]
 
   @@index([email])
 }
@@ -229,6 +233,7 @@ model Organization {
   members   OrganizationMember[]
   snippets  Snippet[]
   pipelines Pipeline[]
+  invites   OrganizationInvite[]
 }
 
 model OrganizationMember {
@@ -241,6 +246,34 @@ model OrganizationMember {
   joinedAt       DateTime     @default(now())
 
   @@unique([organizationId, userId])
+}
+
+// Email-token org invites (Phase 4 follow-up — originally deferred in the
+// team workspaces MVP pass, AUDIT_REPORT.md §17.2; shipped in §21). Same
+// hashed-opaque-token pattern as VerificationToken (generateOpaqueToken()/
+// hashToken(), never store the raw token) rather than a new pattern — this
+// is a token-in-an-email-link flow just like email-verify/password-reset,
+// so it reuses that shape instead of inventing a parallel one. A separate
+// table rather than folding into VerificationToken because an invite is
+// scoped to an (organization, email) pair, not a userId — the invited
+// person may not have an account yet, so there's no User row to attach a
+// VerificationToken to until they accept.
+model OrganizationInvite {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           OrgRole      @default(MEMBER)
+  tokenHash      String       @unique
+  invitedByUserId String
+  invitedByUser  User         @relation(fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([email])
 }
 
 // Public API / CLI access (Phase 4 — ARCHITECTURE.md §14.3, §15). Not in the
@@ -263,39 +296,44 @@ model ApiKey {
   @@index([userId])
 }
 
-// Billing (Phase 4 — ARCHITECTURE.md §14.2). Mirrors Stripe's own status
-// values rather than inventing a coarser enum — the webhook handler passes
-// Stripe's `subscription.status` straight through, so there's no lossy
-// translation step that could drift from what Stripe actually reports.
+// Billing (Phase 4 — ARCHITECTURE.md §14.2; migrated Stripe → Razorpay,
+// AUDIT_REPORT.md §20). Mirrors Razorpay's own subscription status values
+// rather than inventing a coarser enum — same rationale as the original
+// Stripe design: the webhook handler passes Razorpay's `subscription.status`
+// straight through, so there's no lossy translation step that could drift
+// from what Razorpay actually reports. Razorpay's status set is shaped
+// differently from Stripe's (e.g. `AUTHENTICATED`/`HALTED` have no direct
+// Stripe equivalent) — see https://razorpay.com/docs/payments/subscriptions/states/.
 enum SubscriptionStatus {
+  CREATED
+  AUTHENTICATED
   ACTIVE
-  PAST_DUE
-  CANCELED
-  INCOMPLETE
-  INCOMPLETE_EXPIRED
-  TRIALING
-  UNPAID
+  PENDING
+  HALTED
+  CANCELLED
+  COMPLETED
+  EXPIRED
 }
 
-// One row per user with a Stripe subscription — NOT the source of truth
+// One row per user with a Razorpay subscription — NOT the source of truth
 // plan checks read (that's still the denormalized User.plan, unchanged, so
 // PlanThrottleGuard/ApiKeysService/AI Gateway quota checks needed zero
 // changes). This table exists for support/debugging visibility into the
-// underlying Stripe state and to detect a user with a Stripe subscription
-// whose User.plan has drifted out of sync (webhook delivery failure,
-// retried job, etc.) — see AUDIT_REPORT.md §15.
+// underlying Razorpay state and to detect a user with a Razorpay
+// subscription whose User.plan has drifted out of sync (webhook delivery
+// failure, retried job, etc.) — see AUDIT_REPORT.md §15/§20.
 model Subscription {
-  id                   String             @id @default(uuid())
-  userId               String             @unique
-  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stripeSubscriptionId String             @unique
-  stripePriceId        String
-  plan                 Plan
-  status               SubscriptionStatus
-  currentPeriodEnd     DateTime
-  cancelAtPeriodEnd    Boolean            @default(false)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                     String             @id @default(uuid())
+  userId                 String             @unique
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpaySubscriptionId String             @unique
+  razorpayPlanId         String
+  plan                   Plan
+  status                 SubscriptionStatus
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean            @default(false)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   @@index([userId])
 }

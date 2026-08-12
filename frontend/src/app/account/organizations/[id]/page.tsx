@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { OrganizationDetail, OrganizationUsageSummary } from "@devtoolbox/shared";
+import type { AddOrganizationMemberResult, OrganizationDetail, OrganizationInviteSummary, OrganizationUsageSummary } from "@devtoolbox/shared";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,9 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   const [memberActionUserId, setMemberActionUserId] = useState<string | null>(null);
   const [usage, setUsage] = useState<OrganizationUsageSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [invites, setInvites] = useState<OrganizationInviteSummary[]>([]);
+  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
+  const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -60,6 +63,20 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
       .catch(() => setUsage(null));
   }, [org, id]);
 
+  async function loadInvites() {
+    try {
+      setInvites(await apiGet<OrganizationInviteSummary[]>(`/organizations/${id}/invites`, { authenticated: true }));
+    } catch {
+      setInvites([]);
+    }
+  }
+
+  useEffect(() => {
+    if (!org || (org.role !== "OWNER" && org.role !== "ADMIN")) return;
+    void loadInvites();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [org, id]);
+
   async function onRename() {
     setError(null);
     setRenaming(true);
@@ -73,17 +90,43 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
     }
   }
 
+  // No account with this email yet? Falls back to an email-token invite
+  // instead of erroring — the backend decides which happened, this just
+  // reflects it back (AUDIT_REPORT.md §21).
   async function onAddMember() {
     setError(null);
+    setInviteMessage(null);
     setAddingMember(true);
     try {
-      await apiPost(`/organizations/${id}/members`, { email: newMemberEmail }, { authenticated: true });
+      const result = await apiPost<AddOrganizationMemberResult>(
+        `/organizations/${id}/members`,
+        { email: newMemberEmail },
+        { authenticated: true },
+      );
       setNewMemberEmail("");
-      await load();
+      if (result.status === "invited") {
+        setInviteMessage(`Invite sent to ${result.invite.email} — expires ${new Date(result.invite.expiresAt).toLocaleDateString()}.`);
+        await loadInvites();
+      } else {
+        await load();
+      }
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Couldn't add that member. Please try again.");
     } finally {
       setAddingMember(false);
+    }
+  }
+
+  async function onRevokeInvite(inviteId: string) {
+    setError(null);
+    setRevokingInviteId(inviteId);
+    try {
+      await apiDelete(`/organizations/${id}/invites/${inviteId}`, { authenticated: true });
+      await loadInvites();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Couldn't revoke that invite.");
+    } finally {
+      setRevokingInviteId(null);
     }
   }
 
@@ -209,16 +252,51 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
         </ul>
 
         {canManage && (
-          <div className="flex gap-2">
-            <Input
-              value={newMemberEmail}
-              onChange={(e) => setNewMemberEmail(e.target.value)}
-              placeholder="Add by email (must already have an account)"
-              className="max-w-64"
-            />
-            <Button size="sm" onClick={onAddMember} disabled={addingMember || !newMemberEmail.trim()}>
-              {addingMember ? "Adding…" : "Add"}
-            </Button>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <Input
+                value={newMemberEmail}
+                onChange={(e) => setNewMemberEmail(e.target.value)}
+                placeholder="Add by email"
+                className="max-w-64"
+              />
+              <Button size="sm" onClick={onAddMember} disabled={addingMember || !newMemberEmail.trim()}>
+                {addingMember ? "Adding…" : "Add"}
+              </Button>
+            </div>
+            <p className="text-xs text-text-muted">
+              Already has an account? They&apos;re added right away. Otherwise we&apos;ll email them an invite link.
+            </p>
+            {inviteMessage && <p className="text-sm text-text-secondary">{inviteMessage}</p>}
+          </div>
+        )}
+
+        {canManage && invites.length > 0 && (
+          <div className="flex flex-col gap-2 pt-2">
+            <h3 className="text-xs font-medium uppercase text-text-muted">Pending invites</h3>
+            <ul className="flex flex-col gap-2">
+              {invites.map((invite) => (
+                <li
+                  key={invite.id}
+                  className="flex items-center justify-between rounded-md border border-border-default px-3 py-2 text-sm"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-text-primary">{invite.email}</span>
+                    <span className="text-xs text-text-muted">
+                      Invited by {invite.invitedByEmail} · expires {new Date(invite.expiresAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onRevokeInvite(invite.id)}
+                    disabled={revokingInviteId === invite.id}
+                  >
+                    {revokingInviteId === invite.id ? "Revoking…" : "Revoke"}
+                  </Button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </section>

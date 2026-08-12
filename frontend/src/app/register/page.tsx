@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthTokenResponse } from "@devtoolbox/shared";
 import { apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
@@ -12,7 +12,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Same `next` convention as /login — see that page's comment.
+  const next = searchParams.get("next");
+  const redirectTo = next && next.startsWith("/") && !next.startsWith("//") ? next : "/account";
   const setSession = useAuthStore((s) => s.setSession);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,7 +44,7 @@ export default function RegisterPage() {
       });
       setSession(res.accessToken, res.user);
       void syncFavoritesOnSignIn();
-      router.push("/account");
+      router.push(redirectTo);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -80,7 +92,7 @@ export default function RegisterPage() {
 
       <p className="text-sm text-text-secondary">
         Already have an account?{" "}
-        <Link href="/login" className="text-accent hover:underline">
+        <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="text-accent hover:underline">
           Log in
         </Link>
       </p>

@@ -119,24 +119,40 @@ Common `code` values: `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `FORBID
 { "slug": "k3f9zQ2pLm7a", "url": "https://devtoolbox.dev/s/k3f9zQ2pLm7a", "expiresAt": "2026-08-29T00:00:00Z" }
 ```
 
-## 9. Billing (Phase 4 — Stripe)
+## 9. Billing (Phase 4 — Razorpay)
 
-Stripe-hosted Checkout and Customer Portal — no card data ever reaches this backend. `POST /billing/webhook` is the one route in this entire API that is neither session- nor API-key-authed; it's authenticated instead by verifying Stripe's request signature (`Stripe-Signature` header, `stripe.webhooks.constructEvent`) against the raw request body, and must never be placed behind the global JSON body-parsing middleware that touches every other route (the signature is computed over the exact raw bytes Stripe sent).
+Migrated off Stripe (AUDIT_REPORT.md §20 — Stripe doesn't support billing for this business from India). No card/UPI data ever reaches this backend; the frontend opens Razorpay's Checkout.js modal client-side with a subscription id this API creates. `POST /billing/webhook` is the one route in this entire API that is neither session- nor API-key-authed; it's authenticated instead by verifying Razorpay's request signature (`X-Razorpay-Signature` header, HMAC-SHA256 of the raw body keyed by the webhook secret) against the raw request body, and must never be placed behind the global JSON body-parsing middleware that touches every other route (the signature is computed over the exact raw bytes Razorpay sent).
+
+Razorpay has no hosted equivalents of Stripe's Checkout page or Customer Portal (AUDIT_REPORT.md §20 deviation notes) — `POST /billing/subscription` returns IDs for a client-side modal instead of a redirect URL, `POST /billing/verify-payment` replaces the old post-redirect success flow, and `POST /billing/cancel-subscription` replaces the portal redirect for self-serve cancellation.
 
 | Method | Path | Description | Auth |
 |---|---|---|---|
-| POST | `/billing/checkout-session` | `{ plan: "PRO"\|"TEAM" }` → `{ url }`, a Stripe Checkout redirect URL. Creates a Stripe customer for the user on first use (stored as `User.stripeCustomerId`) | access token |
-| POST | `/billing/portal-session` | `{}` → `{ url }`, a Stripe Customer Portal redirect URL (manage payment method, cancel, view invoices) | access token, must have a `stripeCustomerId` |
+| POST | `/billing/subscription` | `{ plan: "PRO"\|"TEAM" }` → `{ razorpaySubscriptionId, razorpayKeyId, plan }` for the frontend to open Razorpay Checkout.js with. Creates a Razorpay customer for the user on first use (stored as `User.razorpayCustomerId`) | access token |
+| POST | `/billing/verify-payment` | `{ razorpay_payment_id, razorpay_subscription_id, razorpay_signature }` (as returned by Checkout.js's success handler) → current `SubscriptionSummary`. Verifies the HMAC signature server-side before syncing `User.plan` | access token |
+| POST | `/billing/cancel-subscription` | `{}` → `{ cancelled: true }`. Cancels at the end of the current billing cycle (`cancel_at_cycle_end`), same "keep access through what's already paid for" behavior as the old Stripe portal flow | access token, must have an active subscription |
 | GET | `/billing/subscription` | Current subscription summary (plan, status, `currentPeriodEnd`, `cancelAtPeriodEnd`) or `null` if none | access token |
-| POST | `/billing/webhook` | Stripe webhook receiver — handles `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`; updates `User.plan` and the `Subscription` row | Stripe signature (raw body) |
+| POST | `/billing/webhook` | Razorpay webhook receiver — handles `subscription.activated`, `subscription.charged`, `subscription.pending`, `subscription.halted`, `subscription.cancelled`, `subscription.completed`; updates `User.plan` and the `Subscription` row | Razorpay signature (raw body) |
 
-**Example — `POST /billing/checkout-session`**
+**Example — `POST /billing/subscription`**
 ```json
 // Request
 { "plan": "PRO" }
 
 // Response 200
-{ "url": "https://checkout.stripe.com/c/pay/cs_test_..." }
+{ "razorpaySubscriptionId": "sub_Nc...", "razorpayKeyId": "rzp_live_...", "plan": "PRO" }
+```
+
+**Example — `POST /billing/verify-payment`**
+```json
+// Request
+{
+  "razorpay_payment_id": "pay_Nc...",
+  "razorpay_subscription_id": "sub_Nc...",
+  "razorpay_signature": "b8a2...ef01"
+}
+
+// Response 200
+{ "plan": "PRO", "status": "ACTIVE", "currentPeriodEnd": "2026-09-12T00:00:00.000Z", "cancelAtPeriodEnd": false }
 ```
 
 ## 10. AI Gateway
@@ -229,8 +245,8 @@ curl -X POST https://api.devtoolbox.dev/v1/public/hash \
 | `/net/http-request` | 10/hour/IP | 60/hour/user | 500/hour/user |
 | `/api-keys` | — | 30/hour/user | 30/hour/user |
 | `/v1/public/*` | — (no anonymous access) | — (PRO/TEAM only) | 5000/hour/user |
-| `/billing/checkout-session`, `/billing/portal-session` | — | 10/hour/user | 10/hour/user |
-| `/billing/webhook` | not applicable — Stripe-signature-authed, not plan-gated; a generous flat `100/min` global limit guards against replay/abuse | | |
+| `/billing/subscription` (POST), `/billing/verify-payment`, `/billing/cancel-subscription` | — | 10/hour/user | 10/hour/user |
+| `/billing/webhook` | not applicable — Razorpay-signature-authed, not plan-gated; a generous flat `100/min` global limit guards against replay/abuse | | |
 | `/organizations/*` | — | 60/hour/user | 60/hour/user |
 | All other CRUD | 300/min/user | 300/min/user | 300/min/user |
 
@@ -242,7 +258,7 @@ Rate-limit responses include `Retry-After` and `X-RateLimit-Remaining` headers. 
 
 ## 17. Team Workspaces (Phase 4)
 
-MVP scope only — see ARCHITECTURE.md §14.2's narrowed team-workspaces note and AUDIT_REPORT.md §17 for what's deliberately deferred (SSO, custom branding, org-level Stripe billing, email-token invites). An organization's members get TEAM-tier rate limits/AI quota (§15's "Pro" column) whenever the organization's owner has `User.plan === "TEAM"` — there is no separate org-level subscription; the owner's existing personal billing (§9) is what makes an org "active."
+MVP scope, since extended with email-token invites (§17.1) — see ARCHITECTURE.md §14.2's narrowed team-workspaces note and AUDIT_REPORT.md §17/§21 for what's still deliberately deferred (SSO, custom branding, org-level Razorpay billing). An organization's members get TEAM-tier rate limits/AI quota (§15's "Pro" column) whenever the organization's owner has `User.plan === "TEAM"` — there is no separate org-level subscription; the owner's existing personal billing (§9) is what makes an org "active."
 
 | Method | Path | Description | Auth |
 |---|---|---|---|
@@ -251,12 +267,38 @@ MVP scope only — see ARCHITECTURE.md §14.2's narrowed team-workspaces note an
 | GET | `/organizations/:id` | Org detail + member list (`OWNER`/`ADMIN`: full; `MEMBER`: names/roles only, no usage figures) | access token, must be a member |
 | PATCH | `/organizations/:id` | Rename | access token, `OWNER` only |
 | DELETE | `/organizations/:id` | Delete org (members keep their own snippets/pipelines; org-shared ones are deleted) | access token, `OWNER` only |
-| POST | `/organizations/:id/members` | `{ email }` → adds an **existing** DevToolbox user as `MEMBER` immediately (no invite-accept step in this pass — see AUDIT_REPORT.md §17.2). 404 if no account exists for that email. | access token, `OWNER`/`ADMIN` |
+| POST | `/organizations/:id/members` | `{ email }` → `{ status: "added", member }` if an account already exists for that email (added immediately), or `{ status: "invited", invite }` otherwise — creates/refreshes a 7-day email-token invite and sends it (AUDIT_REPORT.md §21) instead of the old 404 | access token, `OWNER`/`ADMIN` |
 | PATCH | `/organizations/:id/members/:userId` | `{ role: "ADMIN"\|"MEMBER" }` — change a member's role (cannot demote the last `OWNER`) | access token, `OWNER` only |
 | DELETE | `/organizations/:id/members/:userId` | Remove a member (or leave, if `:userId` is the caller and not the last `OWNER`) | access token, `OWNER`/`ADMIN`, or self |
 | GET | `/organizations/:id/usage` | Aggregate AI usage (tokens, request counts) across all members, last 30 days — same underlying `AiUsageEvent` rows as the personal `/ai/usage` endpoint, joined via membership, never raw prompt/response content (CLAUDE.md rule 8) | access token, `OWNER`/`ADMIN` |
+| GET | `/organizations/:id/invites` | List pending (not accepted/revoked/expired) invites for the org | access token, `OWNER`/`ADMIN` |
+| DELETE | `/organizations/:id/invites/:inviteId` | Revoke a pending invite (409 if it's already been accepted) | access token, `OWNER`/`ADMIN` |
+| POST | `/organizations/invites/:token/accept` | Accepts an invite — the invite's email must match the caller's account email (case-insensitive), else 403. Idempotent if the caller already joined some other way. | access token |
 
 Shared snippets/pipelines: `POST /snippets` and `POST /pipelines` (§6, §7) accept an optional `organizationId` — when set, the caller must be a member, and any org member can view/duplicate it; only the creator or an `OWNER`/`ADMIN` can edit/delete it. Two new read routes list what's shared into an org: `GET /snippets/organization/:organizationId`, `GET /pipelines/organization/:organizationId` (both access-token-authed, caller must be a member).
+
+### 17.1 Email-token invites (AUDIT_REPORT.md §21)
+
+Same hashed-opaque-token pattern as email-verify/password-reset (§2) — the raw token only ever appears in the invite link (`{FRONTEND_URL}/invites/{token}`, sent by email), never persisted or logged; the backend stores only its SHA-256 hash. Invites expire after 7 days. Accepting requires being signed in with the exact email address the invite was sent to; the frontend's `/invites/:token` page sends an unauthenticated visitor to `/login?next=/invites/:token` or `/register?next=/invites/:token` first, then retries the accept call once they're signed in.
+
+**Example — `POST /organizations/:id/members` (no account exists yet)**
+```json
+// Request
+{ "email": "new-hire@example.com" }
+
+// Response 201
+{
+  "status": "invited",
+  "invite": {
+    "id": "8b1e...",
+    "email": "new-hire@example.com",
+    "role": "MEMBER",
+    "invitedByEmail": "owner@acme.com",
+    "createdAt": "2026-08-12T00:00:00Z",
+    "expiresAt": "2026-08-19T00:00:00Z"
+  }
+}
+```
 
 **Example — `POST /organizations`**
 ```json

@@ -4,12 +4,27 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (Team workspaces — email-token invites)
+
+- **`addMember` no longer 404s when no account exists for an invited email** — it now creates (or refreshes) a 7-day email-token invite and sends it, same hashed-opaque-token pattern as email-verify/password-reset. New `OrganizationInvite` model (migration `20260812150000_add_org_invites`), new endpoints `GET /organizations/:id/invites`, `DELETE /organizations/:id/invites/:inviteId`, `POST /organizations/invites/:token/accept`.
+- **New frontend page `/invites/:token`** — accepts an invite once signed in; sends an anonymous visitor to `/login`/`/register` with a `?next=` redirect back to the same invite link. `/account/organizations/:id` now shows pending invites with a revoke action, and the "add member" form reports whether the target was added immediately or invited.
+- Full details in AUDIT_REPORT.md §21.
+
+### Changed (Payment provider migration: Stripe → Razorpay)
+
+- **Billing moved off Stripe to Razorpay** — Stripe doesn't support billing for this business from India. Migrated before any production subscription existed: schema fields renamed (`User.stripeCustomerId` → `razorpayCustomerId`, `Subscription.stripeSubscriptionId`/`stripePriceId` → `razorpaySubscriptionId`/`razorpayPlanId`), `SubscriptionStatus` enum replaced with Razorpay's own status vocabulary, `backend/src/modules/billing/` rewritten against the `razorpay` SDK.
+- **Checkout is now a client-side modal, not a redirect** — Razorpay has no hosted Checkout page like Stripe's. `POST /billing/subscription` creates a Razorpay subscription and returns IDs for the frontend to open Razorpay's Checkout.js modal with; `POST /billing/verify-payment` verifies the modal's success-handler payload (HMAC-SHA256 signature) before syncing `User.plan`.
+- **Cancellation is now a direct API call, not a portal redirect** — Razorpay has no hosted Customer Portal. `POST /billing/cancel-subscription` replaces the old portal-session flow; the account page's "Manage billing" button is now "Cancel subscription."
+- **New environment variables**: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_PLAN_ID_PRO`, `RAZORPAY_PLAN_ID_TEAM` replace the `STRIPE_*` set. New migration: `20260812120000_stripe_to_razorpay`.
+- Full details, including the two structural deviations from the original Stripe design, are in AUDIT_REPORT.md §20. **Requires a local `npm install && npx prisma generate && npx prisma migrate dev` before `typecheck`/`test`/`build` will pass** — the sandbox this was built in has no network access to install the new `razorpay` package or regenerate the Prisma client.
+
 ### Fixed (Audit-hardening pass, post-Phase-4)
 
 - **`@PlanThrottle` was applied at the class level on `OrganizationsController` and `PluginsController`, silently never taking effect** — `PlanThrottleGuard` only reads throttle config off the route handler, not the class, so neither controller had any per-plan rate limiting beyond the app-wide flat baseline. Fixed by moving `@PlanThrottle` onto every individual route; `OrganizationsController`'s routes share one budget (as originally intended), `PluginsController`'s routes get per-route limits, with `POST /plugins/:id/versions` (the one route that can move up to 2MB/call) dropped to 10/hour — this also closes a separate storage-exhaustion finding from the same review. See AUDIT_REPORT.md §19.1.
 - **Unbounded queries** in `SnippetsService`/`PipelinesService.listForOrganization` (no pagination) and `OrganizationsService.getUsage` (pulled every `AiUsageEvent` row into Node and reduced in JS) — both now paginated/aggregated in the database (`groupBy` for usage), same as every other list method in this codebase.
 - **403-vs-404 disclosure** on private snippets/pipelines — `getOne` now returns 404 (not 403) for a resource that exists but isn't visible to the caller, matching `ApiKeysService.revokeKey`'s existing "same 404 either way" convention.
-- Full findings, including one accepted-as-known-limitation item (a plugin's synchronous infinite loop isn't preemptible by `PluginRunner`'s timeout — containment still holds, reliability doesn't), are in AUDIT_REPORT.md §19.
+- **`PluginRunner`'s execution timeout couldn't preempt a synchronous infinite loop in a plugin's WASM** — reloading the sandboxed iframe abandoned the hung thread without stopping it. Fixed by moving WASM execution into a `Worker` spawned inside the sandboxed frame; on timeout the parent now posts a `cancel` message instead of reloading, and the frame calls `worker.terminate()` for an immediate, forcible stop.
+- Full findings are in AUDIT_REPORT.md §19.
 
 ### Added (Phase 4 — Plugin marketplace, v1)
 

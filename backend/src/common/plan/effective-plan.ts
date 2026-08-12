@@ -4,7 +4,7 @@ import type { PrismaService } from "../../database/prisma.service";
  * A user's *effective* plan for rate-limiting/quota purposes: their own
  * `User.plan`, OR TEAM if they're a member of an organization whose OWNER
  * personally holds a TEAM plan (API.md §17, DATABASE.md's Organization
- * note). There is no separate org-level Stripe subscription in this pass —
+ * note). There is no separate org-level Razorpay subscription in this pass —
  * an org "goes TEAM" purely because its owner subscribed via the existing
  * personal billing flow (§9). This keeps `User.plan` the single source of
  * truth billing writes to, while still fulfilling the "org-level AI quotas"

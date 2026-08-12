@@ -28,6 +28,9 @@ import { OAuthService } from "./oauth.service";
   ],
   controllers: [AuthController, OAuthController],
   providers: [AuthService, OAuthService, EmailService, JwtAccessStrategy],
-  exports: [AuthService],
+  // EmailService exported so other modules with their own transactional
+  // email needs (OrganizationsModule's invite emails) reuse this one
+  // Resend-backed instance instead of standing up a second one.
+  exports: [AuthService, EmailService],
 })
 export class AuthModule {}

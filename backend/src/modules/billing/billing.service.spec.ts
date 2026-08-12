@@ -1,31 +1,40 @@
+import { createHmac } from "node:crypto";
 import { BadRequestException, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { BillingService } from "./billing.service";
 
-const mockCheckoutCreate = jest.fn();
-const mockPortalCreate = jest.fn();
+const mockSubscriptionsCreate = jest.fn();
+const mockSubscriptionsFetch = jest.fn();
+const mockSubscriptionsCancel = jest.fn();
 const mockCustomersCreate = jest.fn();
-const mockSubscriptionsRetrieve = jest.fn();
-const mockConstructEvent = jest.fn();
 
-jest.mock("stripe", () => {
+jest.mock("razorpay", () => {
   return {
     __esModule: true,
     default: jest.fn().mockImplementation(() => ({
-      checkout: { sessions: { create: mockCheckoutCreate } },
-      billingPortal: { sessions: { create: mockPortalCreate } },
+      subscriptions: { create: mockSubscriptionsCreate, fetch: mockSubscriptionsFetch, cancel: mockSubscriptionsCancel },
       customers: { create: mockCustomersCreate },
-      subscriptions: { retrieve: mockSubscriptionsRetrieve },
-      webhooks: { constructEvent: mockConstructEvent },
     })),
   };
 });
 
+const WEBHOOK_SECRET = "whsec_test_123";
+const KEY_SECRET = "key_secret_test_123";
+
+function signWebhook(body: string, secret = WEBHOOK_SECRET): string {
+  return createHmac("sha256", secret).update(body).digest("hex");
+}
+
+function signPayment(paymentId: string, subscriptionId: string, secret = KEY_SECRET): string {
+  return createHmac("sha256", secret).update(`${paymentId}|${subscriptionId}`).digest("hex");
+}
+
 function makeConfig(overrides: Record<string, string | undefined> = {}) {
   const values: Record<string, string | undefined> = {
-    STRIPE_SECRET_KEY: "sk_test_123",
-    STRIPE_WEBHOOK_SECRET: "whsec_123",
-    STRIPE_PRICE_ID_PRO: "price_pro",
-    STRIPE_PRICE_ID_TEAM: "price_team",
+    RAZORPAY_KEY_ID: "rzp_test_123",
+    RAZORPAY_KEY_SECRET: KEY_SECRET,
+    RAZORPAY_WEBHOOK_SECRET: WEBHOOK_SECRET,
+    RAZORPAY_PLAN_ID_PRO: "plan_pro",
+    RAZORPAY_PLAN_ID_TEAM: "plan_team",
     FRONTEND_URL: "https://devtoolbox.dev",
     ...overrides,
   };
@@ -42,7 +51,7 @@ function makeConfig(overrides: Record<string, string | undefined> = {}) {
 function makePrisma(overrides: { user?: Record<string, unknown>; subscription?: Record<string, unknown> } = {}) {
   return {
     user: {
-      findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", email: "a@b.com", stripeCustomerId: null }),
+      findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", email: "a@b.com", razorpayCustomerId: null }),
       findUnique: jest.fn().mockResolvedValue({ id: "user-1", email: "a@b.com" }),
       update: jest.fn().mockResolvedValue({}),
       ...overrides.user,
@@ -50,107 +59,145 @@ function makePrisma(overrides: { user?: Record<string, unknown>; subscription?: 
     subscription: {
       findUnique: jest.fn().mockResolvedValue(null),
       upsert: jest.fn().mockResolvedValue({}),
+      update: jest.fn().mockResolvedValue({}),
       ...overrides.subscription,
     },
     $transaction: jest.fn((ops: unknown[]) => Promise.all(ops as Promise<unknown>[])),
   };
 }
 
-function fakeSubscription(overrides: Record<string, unknown> = {}) {
+function fakeSubscriptionEntity(overrides: Record<string, unknown> = {}) {
   return {
     id: "sub_123",
-    customer: "cus_123",
+    plan_id: "plan_pro",
     status: "active",
-    cancel_at_period_end: false,
-    current_period_end: 1_800_000_000,
-    items: { data: [{ price: { id: "price_pro" } }] },
+    current_end: 1_800_000_000,
+    cancel_at_cycle_end: false,
+    notes: { userId: "user-1" },
     ...overrides,
   };
 }
 
 describe("BillingService", () => {
   beforeEach(() => {
-    mockCheckoutCreate.mockReset();
-    mockPortalCreate.mockReset();
+    mockSubscriptionsCreate.mockReset();
+    mockSubscriptionsFetch.mockReset();
+    mockSubscriptionsCancel.mockReset();
     mockCustomersCreate.mockReset();
-    mockSubscriptionsRetrieve.mockReset();
-    mockConstructEvent.mockReset();
   });
 
-  describe("createCheckoutSession", () => {
-    it("creates a Stripe customer on first use and returns the checkout URL", async () => {
+  describe("createSubscription", () => {
+    it("creates a Razorpay customer on first use and returns the subscription id + key id", async () => {
       const prisma = makePrisma();
-      mockCustomersCreate.mockResolvedValue({ id: "cus_new" });
-      mockCheckoutCreate.mockResolvedValue({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" });
+      mockCustomersCreate.mockResolvedValue({ id: "cust_new" });
+      mockSubscriptionsCreate.mockResolvedValue({ id: "sub_new" });
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      const result = await service.createCheckoutSession("user-1", { plan: "PRO" });
+      const result = await service.createSubscription("user-1", { plan: "PRO" });
 
-      expect(mockCustomersCreate).toHaveBeenCalledWith({ email: "a@b.com", metadata: { userId: "user-1" } });
-      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { stripeCustomerId: "cus_new" } });
-      expect(mockCheckoutCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ mode: "subscription", customer: "cus_new", client_reference_id: "user-1" }),
+      expect(mockCustomersCreate).toHaveBeenCalledWith({ email: "a@b.com", notes: { userId: "user-1" } });
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { razorpayCustomerId: "cust_new" } });
+      expect(mockSubscriptionsCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ plan_id: "plan_pro", notes: { userId: "user-1" } }),
       );
-      expect(result.url).toBe("https://checkout.stripe.com/c/pay/cs_test_abc");
+      expect(result).toEqual({ razorpaySubscriptionId: "sub_new", razorpayKeyId: "rzp_test_123", plan: "PRO" });
     });
 
-    it("reuses an existing Stripe customer instead of creating a new one", async () => {
+    it("reuses an existing Razorpay customer instead of creating a new one", async () => {
       const prisma = makePrisma({
-        user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", email: "a@b.com", stripeCustomerId: "cus_existing" }) },
+        user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", email: "a@b.com", razorpayCustomerId: "cust_existing" }) },
       });
-      mockCheckoutCreate.mockResolvedValue({ url: "https://checkout.stripe.com/c/pay/cs_test_xyz" });
+      mockSubscriptionsCreate.mockResolvedValue({ id: "sub_new" });
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      await service.createCheckoutSession("user-1", { plan: "TEAM" });
+      await service.createSubscription("user-1", { plan: "TEAM" });
 
       expect(mockCustomersCreate).not.toHaveBeenCalled();
-      expect(mockCheckoutCreate).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_existing" }));
+      expect(mockSubscriptionsCreate).toHaveBeenCalledWith(expect.objectContaining({ plan_id: "plan_team" }));
     });
 
-    it("throws ServiceUnavailableException when no plan price ID is configured", async () => {
+    it("throws ServiceUnavailableException when no plan id is configured", async () => {
       const prisma = makePrisma();
-      const service = new BillingService(prisma as never, makeConfig({ STRIPE_PRICE_ID_PRO: undefined }) as never);
+      const service = new BillingService(prisma as never, makeConfig({ RAZORPAY_PLAN_ID_PRO: undefined }) as never);
 
-      await expect(service.createCheckoutSession("user-1", { plan: "PRO" })).rejects.toThrow(ServiceUnavailableException);
+      await expect(service.createSubscription("user-1", { plan: "PRO" })).rejects.toThrow(ServiceUnavailableException);
     });
 
-    it("throws ServiceUnavailableException when Stripe isn't configured at all", async () => {
+    it("throws ServiceUnavailableException when Razorpay isn't configured at all", async () => {
       const prisma = makePrisma();
-      const service = new BillingService(prisma as never, makeConfig({ STRIPE_SECRET_KEY: undefined }) as never);
+      const service = new BillingService(prisma as never, makeConfig({ RAZORPAY_KEY_ID: undefined, RAZORPAY_KEY_SECRET: undefined }) as never);
 
-      await expect(service.createCheckoutSession("user-1", { plan: "PRO" })).rejects.toThrow(ServiceUnavailableException);
-    });
-
-    it("throws BadRequestException if Stripe doesn't return a checkout URL", async () => {
-      const prisma = makePrisma({
-        user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", email: "a@b.com", stripeCustomerId: "cus_1" }) },
-      });
-      mockCheckoutCreate.mockResolvedValue({ url: null });
-      const service = new BillingService(prisma as never, makeConfig() as never);
-
-      await expect(service.createCheckoutSession("user-1", { plan: "PRO" })).rejects.toThrow(BadRequestException);
+      await expect(service.createSubscription("user-1", { plan: "PRO" })).rejects.toThrow(ServiceUnavailableException);
     });
   });
 
-  describe("createPortalSession", () => {
-    it("throws NotFoundException when the user has no Stripe customer yet", async () => {
-      const prisma = makePrisma({ user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", stripeCustomerId: null }) } });
+  describe("verifyPayment", () => {
+    it("throws BadRequestException on an invalid signature", async () => {
+      const prisma = makePrisma();
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      await expect(service.createPortalSession("user-1")).rejects.toThrow(NotFoundException);
+      await expect(
+        service.verifyPayment("user-1", {
+          razorpay_payment_id: "pay_1",
+          razorpay_subscription_id: "sub_1",
+          razorpay_signature: "not-the-right-signature",
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
 
-    it("returns the portal URL for an existing customer", async () => {
+    it("syncs plan+subscription on a valid signature", async () => {
       const prisma = makePrisma({
-        user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", stripeCustomerId: "cus_1" }) },
+        user: {
+          findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", email: "a@b.com", razorpayCustomerId: "cust_1" }),
+          findUnique: jest.fn().mockResolvedValue({ id: "user-1", razorpayCustomerId: "cust_1" }),
+        },
+        subscription: {
+          findUnique: jest.fn().mockResolvedValue({
+            plan: "PRO",
+            status: "ACTIVE",
+            currentPeriodEnd: new Date("2026-09-01T00:00:00Z"),
+            cancelAtPeriodEnd: false,
+          }),
+        },
       });
-      mockPortalCreate.mockResolvedValue({ url: "https://billing.stripe.com/p/session_abc" });
+      mockSubscriptionsFetch.mockResolvedValue(fakeSubscriptionEntity());
+      const service = new BillingService(prisma as never, makeConfig() as never);
+      const signature = signPayment("pay_1", "sub_123");
+
+      const result = await service.verifyPayment("user-1", {
+        razorpay_payment_id: "pay_1",
+        razorpay_subscription_id: "sub_123",
+        razorpay_signature: signature,
+      });
+
+      expect(mockSubscriptionsFetch).toHaveBeenCalledWith("sub_123");
+      expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: "user-1" }, create: expect.objectContaining({ plan: "PRO", status: "ACTIVE" }) }),
+      );
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { plan: "PRO" } });
+      expect(result).toEqual({ plan: "PRO", status: "ACTIVE", currentPeriodEnd: "2026-09-01T00:00:00.000Z", cancelAtPeriodEnd: false });
+    });
+  });
+
+  describe("cancelSubscription", () => {
+    it("throws NotFoundException when there's no local subscription row", async () => {
+      const prisma = makePrisma();
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      const result = await service.createPortalSession("user-1");
+      await expect(service.cancelSubscription("user-1")).rejects.toThrow(NotFoundException);
+    });
 
-      expect(mockPortalCreate).toHaveBeenCalledWith({ customer: "cus_1", return_url: "https://devtoolbox.dev/account" });
-      expect(result.url).toBe("https://billing.stripe.com/p/session_abc");
+    it("cancels at cycle end and marks cancelAtPeriodEnd", async () => {
+      const prisma = makePrisma({
+        subscription: { findUnique: jest.fn().mockResolvedValue({ userId: "user-1", razorpaySubscriptionId: "sub_123" }) },
+      });
+      const service = new BillingService(prisma as never, makeConfig() as never);
+
+      const result = await service.cancelSubscription("user-1");
+
+      expect(mockSubscriptionsCancel).toHaveBeenCalledWith("sub_123", true);
+      expect(prisma.subscription.update).toHaveBeenCalledWith({ where: { userId: "user-1" }, data: { cancelAtPeriodEnd: true } });
+      expect(result).toEqual({ cancelled: true });
     });
   });
 
@@ -187,9 +234,6 @@ describe("BillingService", () => {
   describe("handleWebhookEvent", () => {
     it("throws BadRequestException on an invalid signature", async () => {
       const prisma = makePrisma();
-      mockConstructEvent.mockImplementation(() => {
-        throw new Error("bad signature");
-      });
       const service = new BillingService(prisma as never, makeConfig() as never);
 
       await expect(service.handleWebhookEvent(Buffer.from("{}"), "bad-sig")).rejects.toThrow(BadRequestException);
@@ -197,84 +241,76 @@ describe("BillingService", () => {
 
     it("throws ServiceUnavailableException when no webhook secret is configured", async () => {
       const prisma = makePrisma();
-      const service = new BillingService(prisma as never, makeConfig({ STRIPE_WEBHOOK_SECRET: undefined }) as never);
+      const service = new BillingService(prisma as never, makeConfig({ RAZORPAY_WEBHOOK_SECRET: undefined }) as never);
 
       await expect(service.handleWebhookEvent(Buffer.from("{}"), "sig")).rejects.toThrow(ServiceUnavailableException);
     });
 
-    it("syncs plan+subscription on checkout.session.completed", async () => {
+    it("syncs plan+subscription on subscription.activated", async () => {
       const prisma = makePrisma({
-        user: { findUnique: jest.fn().mockResolvedValue({ id: "user-1" }) },
+        user: { findUnique: jest.fn().mockResolvedValue({ id: "user-1", razorpayCustomerId: "cust_1" }) },
       });
-      mockConstructEvent.mockReturnValue({
-        type: "checkout.session.completed",
-        data: { object: { subscription: "sub_123", customer: "cus_123" } },
-      });
-      mockSubscriptionsRetrieve.mockResolvedValue(fakeSubscription());
+      const body = JSON.stringify({ event: "subscription.activated", payload: { subscription: { entity: fakeSubscriptionEntity() } } });
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      await service.handleWebhookEvent(Buffer.from("{}"), "sig");
+      await service.handleWebhookEvent(Buffer.from(body), signWebhook(body));
 
-      expect(mockSubscriptionsRetrieve).toHaveBeenCalledWith("sub_123");
       expect(prisma.subscription.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { userId: "user-1" },
-          create: expect.objectContaining({ plan: "PRO", status: "ACTIVE" }),
-        }),
+        expect.objectContaining({ where: { userId: "user-1" }, create: expect.objectContaining({ plan: "PRO", status: "ACTIVE" }) }),
       );
       expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { plan: "PRO" } });
     });
 
-    it("downgrades to FREE on customer.subscription.deleted", async () => {
+    it("downgrades to FREE on subscription.cancelled", async () => {
       const prisma = makePrisma({
-        user: { findUnique: jest.fn().mockResolvedValue({ id: "user-1" }) },
+        user: { findUnique: jest.fn().mockResolvedValue({ id: "user-1", razorpayCustomerId: "cust_1" }) },
       });
-      mockConstructEvent.mockReturnValue({
-        type: "customer.subscription.deleted",
-        data: { object: fakeSubscription({ status: "canceled" }) },
+      const body = JSON.stringify({
+        event: "subscription.cancelled",
+        payload: { subscription: { entity: fakeSubscriptionEntity({ status: "cancelled" }) } },
       });
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      await service.handleWebhookEvent(Buffer.from("{}"), "sig");
+      await service.handleWebhookEvent(Buffer.from(body), signWebhook(body));
 
       expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { plan: "FREE" } });
     });
 
-    it("downgrades to FREE on customer.subscription.updated with status past_due", async () => {
+    it("downgrades to FREE on subscription.halted", async () => {
       const prisma = makePrisma({
-        user: { findUnique: jest.fn().mockResolvedValue({ id: "user-1" }) },
+        user: { findUnique: jest.fn().mockResolvedValue({ id: "user-1", razorpayCustomerId: "cust_1" }) },
       });
-      mockConstructEvent.mockReturnValue({
-        type: "customer.subscription.updated",
-        data: { object: fakeSubscription({ status: "past_due" }) },
+      const body = JSON.stringify({
+        event: "subscription.halted",
+        payload: { subscription: { entity: fakeSubscriptionEntity({ status: "halted" }) } },
       });
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      await service.handleWebhookEvent(Buffer.from("{}"), "sig");
+      await service.handleWebhookEvent(Buffer.from(body), signWebhook(body));
 
       expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { plan: "FREE" } });
     });
 
     it("ignores unrecognized event types without touching the database", async () => {
       const prisma = makePrisma();
-      mockConstructEvent.mockReturnValue({ type: "invoice.paid", data: { object: {} } });
+      const body = JSON.stringify({ event: "payment.failed", payload: {} });
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      await service.handleWebhookEvent(Buffer.from("{}"), "sig");
+      await service.handleWebhookEvent(Buffer.from(body), signWebhook(body));
 
       expect(prisma.user.update).not.toHaveBeenCalled();
       expect(prisma.subscription.upsert).not.toHaveBeenCalled();
     });
 
-    it("no-ops when the Stripe customer isn't linked to any known user", async () => {
+    it("no-ops when the subscription's notes don't map to a known user", async () => {
       const prisma = makePrisma({ user: { findUnique: jest.fn().mockResolvedValue(null) } });
-      mockConstructEvent.mockReturnValue({
-        type: "customer.subscription.updated",
-        data: { object: fakeSubscription() },
+      const body = JSON.stringify({
+        event: "subscription.activated",
+        payload: { subscription: { entity: fakeSubscriptionEntity({ notes: { userId: "user-missing" } }) } },
       });
       const service = new BillingService(prisma as never, makeConfig() as never);
 
-      await service.handleWebhookEvent(Buffer.from("{}"), "sig");
+      await service.handleWebhookEvent(Buffer.from(body), signWebhook(body));
 
       expect(prisma.user.update).not.toHaveBeenCalled();
     });

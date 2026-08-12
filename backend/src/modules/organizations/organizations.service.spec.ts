@@ -4,6 +4,7 @@ import { OrganizationsService } from "./organizations.service";
 function makePrisma(overrides: {
   organization?: Record<string, unknown>;
   organizationMember?: Record<string, unknown>;
+  organizationInvite?: Record<string, unknown>;
   user?: Record<string, unknown>;
   aiUsageEvent?: Record<string, unknown>;
 } = {}) {
@@ -11,6 +12,7 @@ function makePrisma(overrides: {
     organization: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
       ...overrides.organization,
@@ -24,8 +26,17 @@ function makePrisma(overrides: {
       count: jest.fn(),
       ...overrides.organizationMember,
     },
+    organizationInvite: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+      update: jest.fn(),
+      ...overrides.organizationInvite,
+    },
     user: {
       findUnique: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
       ...overrides.user,
     },
     aiUsageEvent: {
@@ -33,7 +44,17 @@ function makePrisma(overrides: {
       groupBy: jest.fn().mockResolvedValue([]),
       ...overrides.aiUsageEvent,
     },
+    $transaction: jest.fn((ops: unknown[]) => Promise.all(ops as Promise<unknown>[])),
   };
+}
+
+function makeConfig(overrides: Record<string, string | undefined> = {}) {
+  const values: Record<string, string | undefined> = { FRONTEND_URL: "https://devtoolbox.dev", ...overrides };
+  return { get: jest.fn((key: string) => values[key]) };
+}
+
+function makeEmail() {
+  return { sendOrgInviteEmail: jest.fn().mockResolvedValue(undefined) };
 }
 
 describe("OrganizationsService", () => {
@@ -46,7 +67,7 @@ describe("OrganizationsService", () => {
             .mockResolvedValue({ id: "org-1", name: "Acme", createdAt: new Date("2026-01-01T00:00:00Z") }),
         },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       const result = await service.create("user-1", { name: "Acme" });
 
@@ -60,7 +81,7 @@ describe("OrganizationsService", () => {
   describe("rename / delete — role gating", () => {
     it("rename throws ForbiddenException for a non-member", async () => {
       const prisma = makePrisma({ organizationMember: { findUnique: jest.fn().mockResolvedValue(null) } });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await expect(service.rename("user-1", "org-1", { name: "New name" })).rejects.toThrow(ForbiddenException);
     });
@@ -69,7 +90,7 @@ describe("OrganizationsService", () => {
       const prisma = makePrisma({
         organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "MEMBER" }) },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await expect(service.rename("user-1", "org-1", { name: "New name" })).rejects.toThrow(ForbiddenException);
     });
@@ -83,7 +104,7 @@ describe("OrganizationsService", () => {
             .mockResolvedValue({ id: "org-1", name: "New name", createdAt: new Date("2026-01-01T00:00:00Z") }),
         },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       const result = await service.rename("user-1", "org-1", { name: "New name" });
 
@@ -94,22 +115,42 @@ describe("OrganizationsService", () => {
       const prisma = makePrisma({
         organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "ADMIN" }) },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await expect(service.delete("user-1", "org-1")).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe("addMember", () => {
-    it("throws NotFoundException when no account exists for that email", async () => {
+    it("creates a pending invite and emails it when no account exists for that email", async () => {
+      const email = makeEmail();
       const prisma = makePrisma({
         organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "OWNER" }) },
         user: { findUnique: jest.fn().mockResolvedValue(null) },
+        organization: {
+          findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "org-1", name: "Acme" }),
+        },
+        organizationInvite: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({
+            id: "invite-1",
+            email: "nobody@example.com",
+            role: "MEMBER",
+            createdAt: new Date("2026-01-01T00:00:00Z"),
+            expiresAt: new Date("2026-01-08T00:00:00Z"),
+            invitedByUser: { email: "owner@acme.com" },
+          }),
+        },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, email as never);
 
-      await expect(service.addMember("user-1", "org-1", { email: "nobody@example.com" })).rejects.toThrow(
-        NotFoundException,
+      const result = await service.addMember("user-1", "org-1", { email: "nobody@example.com" });
+
+      expect(result.status).toBe("invited");
+      expect(email.sendOrgInviteEmail).toHaveBeenCalledWith(
+        "nobody@example.com",
+        "Acme",
+        expect.stringContaining("https://devtoolbox.dev/invites/"),
       );
     });
 
@@ -117,7 +158,7 @@ describe("OrganizationsService", () => {
       const prisma = makePrisma({
         organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "MEMBER" }) },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await expect(service.addMember("user-1", "org-1", { email: "a@b.com" })).rejects.toThrow(ForbiddenException);
     });
@@ -132,7 +173,7 @@ describe("OrganizationsService", () => {
         },
         user: { findUnique: jest.fn().mockResolvedValue({ id: "user-2", email: "a@b.com", displayName: null }) },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await expect(service.addMember("user-1", "org-1", { email: "a@b.com" })).rejects.toThrow(ConflictException);
     });
@@ -150,16 +191,19 @@ describe("OrganizationsService", () => {
         },
         user: { findUnique: jest.fn().mockResolvedValue({ id: "user-2", email: "a@b.com", displayName: "Alice" }) },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       const result = await service.addMember("user-1", "org-1", { email: "a@b.com" });
 
       expect(result).toEqual({
-        userId: "user-2",
-        email: "a@b.com",
-        displayName: "Alice",
-        role: "MEMBER",
-        joinedAt: "2026-01-01T00:00:00.000Z",
+        status: "added",
+        member: {
+          userId: "user-2",
+          email: "a@b.com",
+          displayName: "Alice",
+          role: "MEMBER",
+          joinedAt: "2026-01-01T00:00:00.000Z",
+        },
       });
     });
   });
@@ -175,7 +219,7 @@ describe("OrganizationsService", () => {
           count: jest.fn().mockResolvedValue(1),
         },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await expect(service.removeMember("user-1", "org-1", "user-1")).rejects.toThrow(ConflictException);
     });
@@ -189,7 +233,7 @@ describe("OrganizationsService", () => {
             .mockResolvedValueOnce({ role: "MEMBER" }), // target membership
         },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await service.removeMember("user-1", "org-1", "user-1");
 
@@ -206,7 +250,7 @@ describe("OrganizationsService", () => {
           count: jest.fn().mockResolvedValue(1),
         },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await expect(service.updateMemberRole("user-1", "org-1", "user-1", { role: "MEMBER" })).rejects.toThrow(
         ConflictException,
@@ -219,7 +263,7 @@ describe("OrganizationsService", () => {
       const prisma = makePrisma({
         organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "MEMBER" }) },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       await expect(service.getUsage("user-1", "org-1")).rejects.toThrow(ForbiddenException);
     });
@@ -240,7 +284,7 @@ describe("OrganizationsService", () => {
           ]),
         },
       });
-      const service = new OrganizationsService(prisma as never);
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       const usage = await service.getUsage("user-1", "org-1");
 
@@ -251,6 +295,160 @@ describe("OrganizationsService", () => {
         { userId: "user-1", email: "a@b.com", requests: 2, inputTokens: 120, outputTokens: 60 },
         { userId: "user-2", email: "c@d.com", requests: 1, inputTokens: 5, outputTokens: 5 },
       ]);
+    });
+  });
+
+  describe("invites", () => {
+    it("listInvites throws ForbiddenException for a plain MEMBER", async () => {
+      const prisma = makePrisma({
+        organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "MEMBER" }) },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      await expect(service.listInvites("user-1", "org-1")).rejects.toThrow(ForbiddenException);
+    });
+
+    it("listInvites maps pending invite rows for an OWNER", async () => {
+      const prisma = makePrisma({
+        organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "OWNER" }) },
+        organizationInvite: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: "invite-1",
+              email: "nobody@example.com",
+              role: "MEMBER",
+              createdAt: new Date("2026-01-01T00:00:00Z"),
+              expiresAt: new Date("2026-01-08T00:00:00Z"),
+              invitedByUser: { email: "owner@acme.com" },
+            },
+          ]),
+        },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      const invites = await service.listInvites("user-1", "org-1");
+
+      expect(invites).toEqual([
+        {
+          id: "invite-1",
+          email: "nobody@example.com",
+          role: "MEMBER",
+          invitedByEmail: "owner@acme.com",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          expiresAt: "2026-01-08T00:00:00.000Z",
+        },
+      ]);
+    });
+
+    it("revokeInvite throws NotFoundException for an invite from a different org", async () => {
+      const prisma = makePrisma({
+        organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "OWNER" }) },
+        organizationInvite: {
+          findUnique: jest.fn().mockResolvedValue({ id: "invite-1", organizationId: "org-other", acceptedAt: null, revokedAt: null }),
+        },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      await expect(service.revokeInvite("user-1", "org-1", "invite-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("revokeInvite throws ConflictException for an already-accepted invite", async () => {
+      const prisma = makePrisma({
+        organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "OWNER" }) },
+        organizationInvite: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({ id: "invite-1", organizationId: "org-1", acceptedAt: new Date(), revokedAt: null }),
+        },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      await expect(service.revokeInvite("user-1", "org-1", "invite-1")).rejects.toThrow(ConflictException);
+    });
+
+    it("revokeInvite marks a pending invite revoked", async () => {
+      const prisma = makePrisma({
+        organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "OWNER" }) },
+        organizationInvite: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({ id: "invite-1", organizationId: "org-1", acceptedAt: null, revokedAt: null }),
+        },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      await service.revokeInvite("user-1", "org-1", "invite-1");
+
+      expect(prisma.organizationInvite.update).toHaveBeenCalledWith({
+        where: { id: "invite-1" },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+
+    it("acceptInvite throws UnauthorizedException for an expired invite", async () => {
+      const prisma = makePrisma({
+        organizationInvite: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: "invite-1",
+            organizationId: "org-1",
+            email: "a@b.com",
+            role: "MEMBER",
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: new Date("2020-01-01T00:00:00Z"),
+            organization: { name: "Acme" },
+          }),
+        },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      await expect(service.acceptInvite("user-1", "raw-token")).rejects.toThrow();
+    });
+
+    it("acceptInvite throws ForbiddenException when the caller's email doesn't match the invite", async () => {
+      const prisma = makePrisma({
+        organizationInvite: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: "invite-1",
+            organizationId: "org-1",
+            email: "invited@example.com",
+            role: "MEMBER",
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: new Date(Date.now() + 60_000),
+            organization: { name: "Acme" },
+          }),
+        },
+        user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", email: "someone-else@example.com" }) },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      await expect(service.acceptInvite("user-1", "raw-token")).rejects.toThrow(ForbiddenException);
+    });
+
+    it("acceptInvite creates the membership and marks the invite accepted on success", async () => {
+      const prisma = makePrisma({
+        organizationInvite: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: "invite-1",
+            organizationId: "org-1",
+            email: "a@b.com",
+            role: "MEMBER",
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: new Date(Date.now() + 60_000),
+            organization: { name: "Acme" },
+          }),
+        },
+        user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "user-1", email: "a@b.com" }) },
+        organizationMember: { findUnique: jest.fn().mockResolvedValue(null) },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      const result = await service.acceptInvite("user-1", "raw-token");
+
+      expect(result).toEqual({ organizationId: "org-1", organizationName: "Acme", role: "MEMBER" });
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 });

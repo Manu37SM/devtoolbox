@@ -7,9 +7,9 @@ import type {
   ApiKeyCreatedResult,
   ApiKeySummary,
   BillablePlan,
-  CheckoutSessionResult,
+  CancelSubscriptionResult,
+  CreateSubscriptionResult,
   LinkedOAuthAccount,
-  PortalSessionResult,
   SubscriptionSummary,
   UserProfile,
 } from "@devtoolbox/shared";
@@ -22,6 +22,50 @@ import { Input } from "@/components/ui/input";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 const PROVIDER_LABEL: Record<string, string> = { github: "GitHub", google: "Google" };
+
+// Minimal shape of what this page actually calls on the Razorpay Checkout.js
+// global — the SDK ships no official TypeScript types, so this is asserted
+// at the boundary rather than pulling in an untyped `any`.
+interface RazorpayCheckoutOptions {
+  key: string;
+  subscription_id: string;
+  name: string;
+  description?: string;
+  prefill?: { email?: string };
+  handler: (response: { razorpay_payment_id: string; razorpay_subscription_id: string; razorpay_signature: string }) => void;
+  modal?: { ondismiss?: () => void };
+}
+interface RazorpayCheckoutInstance {
+  open: () => void;
+}
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayCheckoutOptions) => RazorpayCheckoutInstance;
+  }
+}
+
+const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+// Loaded once and cached — a second call to onUpgrade() (e.g. after a
+// dismissed modal) reuses the already-loaded script instead of injecting a
+// duplicate <script> tag.
+let razorpayScriptPromise: Promise<void> | null = null;
+function loadRazorpayCheckoutScript(): Promise<void> {
+  if (typeof window !== "undefined" && window.Razorpay) return Promise.resolve();
+  if (!razorpayScriptPromise) {
+    razorpayScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = RAZORPAY_CHECKOUT_SRC;
+      script.onload = () => resolve();
+      script.onerror = () => {
+        razorpayScriptPromise = null; // allow retrying on a transient network failure
+        reject(new Error("Couldn't load the payment provider. Check your connection and try again."));
+      };
+      document.body.appendChild(script);
+    });
+  }
+  return razorpayScriptPromise;
+}
 
 export default function AccountPage() {
   const router = useRouter();
@@ -43,7 +87,7 @@ export default function AccountPage() {
   const [justCreatedKey, setJustCreatedKey] = useState<ApiKeyCreatedResult | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
-  const [billingActionPlan, setBillingActionPlan] = useState<BillablePlan | "portal" | null>(null);
+  const [billingActionPlan, setBillingActionPlan] = useState<BillablePlan | "cancel" | null>(null);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -105,26 +149,69 @@ export default function AccountPage() {
       .catch(() => setSubscription(null));
   }, [status, user?.plan]);
 
+  // Razorpay has no hosted Checkout page like Stripe's — Checkout.js is a
+  // client-side modal loaded from Razorpay's CDN (AUDIT_REPORT.md §20).
+  // Loaded lazily on first upgrade attempt rather than on every page load,
+  // since most visitors to /account never click "Upgrade."
   async function onUpgrade(plan: BillablePlan) {
     setBillingError(null);
     setBillingActionPlan(plan);
     try {
-      const { url } = await apiPost<CheckoutSessionResult>("/billing/checkout-session", { plan }, { authenticated: true });
-      window.location.href = url;
+      await loadRazorpayCheckoutScript();
+      const { razorpaySubscriptionId, razorpayKeyId } = await apiPost<CreateSubscriptionResult>(
+        "/billing/subscription",
+        { plan },
+        { authenticated: true },
+      );
+
+      const checkout = new window.Razorpay({
+        key: razorpayKeyId,
+        subscription_id: razorpaySubscriptionId,
+        name: "DevToolbox",
+        description: `${plan} plan`,
+        prefill: { email: user?.email },
+        handler: async (response) => {
+          try {
+            const summary = await apiPost<SubscriptionSummary | null>(
+              "/billing/verify-payment",
+              {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_subscription_id: response.razorpay_subscription_id,
+                razorpay_signature: response.razorpay_signature,
+              },
+              { authenticated: true },
+            );
+            setSubscription(summary);
+          } catch (err) {
+            setBillingError(err instanceof ApiClientError ? err.message : "Payment succeeded but couldn't be verified — contact support.");
+          } finally {
+            setBillingActionPlan(null);
+          }
+        },
+        modal: {
+          ondismiss: () => setBillingActionPlan(null), // user closed the modal without paying — not an error
+        },
+      });
+      checkout.open();
     } catch (err) {
       setBillingError(err instanceof ApiClientError ? err.message : "Couldn't start checkout. Please try again.");
       setBillingActionPlan(null);
     }
   }
 
-  async function onManageBilling() {
+  // No Razorpay-hosted billing portal to redirect to (AUDIT_REPORT.md §20)
+  // — cancellation is a direct API call instead, taking effect at the end
+  // of the current billing cycle (mirrors the old Stripe flow's default).
+  async function onCancelSubscription() {
     setBillingError(null);
-    setBillingActionPlan("portal");
+    setBillingActionPlan("cancel");
     try {
-      const { url } = await apiPost<PortalSessionResult>("/billing/portal-session", {}, { authenticated: true });
-      window.location.href = url;
+      await apiPost<CancelSubscriptionResult>("/billing/cancel-subscription", {}, { authenticated: true });
+      const summary = await apiGet<SubscriptionSummary | null>("/billing/subscription", { authenticated: true });
+      setSubscription(summary);
     } catch (err) {
-      setBillingError(err instanceof ApiClientError ? err.message : "Couldn't open the billing portal. Please try again.");
+      setBillingError(err instanceof ApiClientError ? err.message : "Couldn't cancel the subscription. Please try again.");
+    } finally {
       setBillingActionPlan(null);
     }
   }
@@ -232,16 +319,24 @@ export default function AccountPage() {
         {user.plan === "FREE" ? (
           <div className="flex gap-2">
             <Button size="sm" onClick={() => onUpgrade("PRO")} disabled={billingActionPlan !== null}>
-              {billingActionPlan === "PRO" ? "Redirecting…" : "Upgrade to PRO"}
+              {billingActionPlan === "PRO" ? "Opening checkout…" : "Upgrade to PRO"}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => onUpgrade("TEAM")} disabled={billingActionPlan !== null}>
-              {billingActionPlan === "TEAM" ? "Redirecting…" : "Upgrade to TEAM"}
+              {billingActionPlan === "TEAM" ? "Opening checkout…" : "Upgrade to TEAM"}
             </Button>
           </div>
         ) : (
-          <Button variant="secondary" size="sm" className="self-start" onClick={onManageBilling} disabled={billingActionPlan !== null}>
-            {billingActionPlan === "portal" ? "Redirecting…" : "Manage billing"}
-          </Button>
+          !subscription?.cancelAtPeriodEnd && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="self-start"
+              onClick={onCancelSubscription}
+              disabled={billingActionPlan !== null}
+            >
+              {billingActionPlan === "cancel" ? "Cancelling…" : "Cancel subscription"}
+            </Button>
+          )
         )}
       </section>
 

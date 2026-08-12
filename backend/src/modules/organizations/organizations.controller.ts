@@ -133,4 +133,33 @@ export class OrganizationsController {
   async getUsage(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     return this.organizationsService.getUsage(user.userId, id);
   }
+
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
+  @Get(":id/invites")
+  async listInvites(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.organizationsService.listInvites(user.userId, id);
+  }
+
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
+  @Delete(":id/invites/:inviteId")
+  @HttpCode(204)
+  async revokeInvite(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") id: string,
+    @Param("inviteId") inviteId: string,
+  ) {
+    await this.organizationsService.revokeInvite(user.userId, id, inviteId);
+  }
+
+  // Deliberately not nested under ":id" — the token alone identifies both
+  // the org and the invite; requiring the org id in the URL too would add
+  // nothing but a second thing that could disagree with the token.
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
+  @Post("invites/:token/accept")
+  async acceptInvite(@CurrentUser() user: AuthenticatedUser, @Param("token") token: string) {
+    return this.organizationsService.acceptInvite(user.userId, token);
+  }
 }

@@ -25,6 +25,7 @@ User ──1:N── Favorite
 User ──1:N── HistoryEntry (only if sync enabled; otherwise local IndexedDB only)
 User ──N:1── Organization (nullable; Phase 4 team workspaces — ✅ shipped, API.md §17)
 Organization ──1:N── OrganizationMember (join: User × Organization, role)
+Organization ──1:N── OrganizationInvite (pending email-token invites; API.md §17.1)
 Organization ──1:N── Snippet, Pipeline (nullable organizationId; org-shared, additive to userId ownership)
 User ──1:N── AiUsageEvent (aggregate counters, not payload content)
 User ──1:N── ApiKey (Phase 4 public API/CLI access)
@@ -211,7 +212,7 @@ model AiUsageEvent {
 // display label. The actual gate is `resolveEffectivePlan()`
 // (backend/src/common/plan/effective-plan.ts): a member's effective plan is
 // TEAM whenever they belong to an org whose OWNER has `User.plan === TEAM`.
-// There is no separate org-level Stripe subscription in this pass — an org
+// There is no separate org-level Razorpay subscription in this pass — an org
 // "goes TEAM" purely because its owner personally subscribed via the
 // existing billing flow (§9/AUDIT_REPORT.md §15). This keeps billing a
 // single well-tested code path instead of adding a second one for orgs.
@@ -243,6 +244,32 @@ enum OrgRole {
   OWNER
   ADMIN
   MEMBER
+}
+
+// Email-token org invites (Phase 4 follow-up — API.md §17.1, AUDIT_REPORT.md
+// §21). Deferred from the original team workspaces MVP pass above; shipped
+// once `addMember` needed a path for emails with no existing account. Same
+// hashed-opaque-token shape as VerificationToken (never store the raw
+// token), but a separate table rather than folding into VerificationToken —
+// an invite is scoped to an (organization, email) pair, not a userId, since
+// the invited person may not have an account to attach a VerificationToken
+// to yet.
+model OrganizationInvite {
+  id              String       @id @default(uuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email           String
+  role            OrgRole      @default(MEMBER)
+  tokenHash       String       @unique
+  invitedByUserId String
+  invitedByUser   User         @relation(fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([email])
 }
 
 // Plugin marketplace v1 (Phase 4 — API.md §18, ARCHITECTURE.md §16). WASM
@@ -337,36 +364,40 @@ model ApiKey {
 }
 
 // Added during Phase 4 implementation — not in the original ERD above.
-// Backs billing (ARCHITECTURE.md §14.2). NOT what plan checks read —
-// User.plan (existing field, now also gets a `stripeCustomerId` sibling)
-// stays the single denormalized value every other module already checks
-// (PlanThrottleGuard, ApiKeysService, AI Gateway quotas); this table exists
-// so support/debugging can see the underlying Stripe state and so a
-// webhook-delivery failure (User.plan out of sync with Stripe) is
-// detectable instead of silent. Status values mirror Stripe's own
-// subscription.status strings 1:1 — no lossy translation to invent/maintain.
+// Backs billing (ARCHITECTURE.md §14.2). Migrated off Stripe to Razorpay
+// (AUDIT_REPORT.md §20 — Stripe doesn't support billing for this business
+// from India) before any production subscription existed. NOT what plan
+// checks read — User.plan (existing field, now also gets a
+// `razorpayCustomerId` sibling) stays the single denormalized value every
+// other module already checks (PlanThrottleGuard, ApiKeysService, AI
+// Gateway quotas); this table exists so support/debugging can see the
+// underlying Razorpay state and so a webhook-delivery failure (User.plan
+// out of sync with Razorpay) is detectable instead of silent. Status values
+// mirror Razorpay's own subscription.status strings 1:1 — no lossy
+// translation to invent/maintain.
 enum SubscriptionStatus {
+  CREATED
+  AUTHENTICATED
   ACTIVE
-  PAST_DUE
-  CANCELED
-  INCOMPLETE
-  INCOMPLETE_EXPIRED
-  TRIALING
-  UNPAID
+  PENDING
+  HALTED
+  CANCELLED
+  COMPLETED
+  EXPIRED
 }
 
 model Subscription {
-  id                   String             @id @default(uuid())
-  userId               String             @unique
-  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stripeSubscriptionId String             @unique
-  stripePriceId        String
-  plan                 Plan
-  status               SubscriptionStatus
-  currentPeriodEnd     DateTime
-  cancelAtPeriodEnd    Boolean            @default(false)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                     String             @id @default(uuid())
+  userId                 String             @unique
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpaySubscriptionId String             @unique
+  razorpayPlanId         String
+  plan                   Plan
+  status                 SubscriptionStatus
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean            @default(false)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   @@index([userId])
 }
@@ -396,12 +427,21 @@ model Subscription {
   §14.3's "API/CLI access tier." A revoked key's row is kept (`revokedAt` set,
   not deleted) so past usage can still be audited; `ApiKeyAuthGuard` rejects
   any key with `revokedAt` set regardless of `keyHash` validity.
-- `Subscription` + `User.stripeCustomerId` added to back billing
-  (ARCHITECTURE.md §14.2). `User.plan` is updated by the Stripe webhook
-  handler on every `customer.subscription.*` event — it's a cache of
-  Stripe's state, not the other way around; if the two ever disagree,
-  Stripe is authoritative and `Subscription` (kept in sync from the same
-  webhook) is what a support/debug flow would compare against.
+- `Subscription` + `User.razorpayCustomerId` added to back billing
+  (ARCHITECTURE.md §14.2). `User.plan` is updated by the Razorpay webhook
+  handler on every `subscription.*` event (plus an immediate post-payment
+  verification call, API.md §9) — it's a cache of Razorpay's state, not the
+  other way around; if the two ever disagree, Razorpay is authoritative and
+  `Subscription` (kept in sync from the same events) is what a
+  support/debug flow would compare against. Originally built on Stripe;
+  migrated to Razorpay before any production subscription existed
+  (AUDIT_REPORT.md §20 — Stripe doesn't support billing for this business
+  from India), via a rename/retype migration
+  (`20260812120000_stripe_to_razorpay`) rather than a new billing model.
+- `OrganizationInvite` added (migration `20260812150000_add_org_invites`) to
+  close the gap the original team workspaces pass deliberately deferred:
+  `addMember` used to just 404 if no account existed yet for the invited
+  email. Same hashed-token pattern as `VerificationToken` — see AUDIT_REPORT.md §21.
 
 ## 4. Data Retention & Privacy Notes
 
@@ -413,7 +453,8 @@ model Subscription {
 | `AiUsageEvent` | No — token counts only, never prompt/response content | Retained for billing/analytics, aggregated after 90 days |
 | `Session` | No | Refresh token stored as hash only; purged on logout/expiry |
 | `ApiKey` | No | Raw key shown once at creation, never stored; `keyHash` retained (and revoked rows kept, not deleted) for audit until the user deletes their account |
-| `Subscription` | No — Stripe IDs and status only, no payment/card data (that lives entirely in Stripe, never touches this DB) | Kept in sync with Stripe via webhook. Account deletion does not yet cancel the underlying Stripe subscription automatically — tracked as a follow-up, see AUDIT_REPORT.md §15 |
+| `Subscription` | No — Razorpay IDs and status only, no payment/card/UPI data (that lives entirely in Razorpay, never touches this DB) | Kept in sync with Razorpay via webhook + post-payment verification. Account deletion does not yet cancel the underlying Razorpay subscription automatically — tracked as a follow-up, see AUDIT_REPORT.md §15 |
+| `OrganizationInvite` | Contains the invited email address, not otherwise "user content" | Token hashed, never stored raw (same as `Session`/`ApiKey`/`VerificationToken`); rows kept after accept/revoke/expiry for audit visibility rather than deleted — no scheduled purge job yet, tracked as a follow-up |
 
 ## 5. Indexing Strategy
 

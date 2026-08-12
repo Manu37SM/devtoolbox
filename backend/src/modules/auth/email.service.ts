@@ -38,6 +38,17 @@ export class EmailService {
     await this.send(to, "Reset your DevToolbox password", passwordResetEmailHtml(link), `Reset your DevToolbox password: ${link}`);
   }
 
+  /** Team workspace invites (AUDIT_REPORT.md §21) — same "log to console
+   * without RESEND_API_KEY" degrade path as every other email here. */
+  async sendOrgInviteEmail(to: string, organizationName: string, link: string): Promise<void> {
+    await this.send(
+      to,
+      `You've been invited to join ${organizationName} on DevToolbox`,
+      orgInviteEmailHtml(organizationName, link),
+      `You've been invited to join ${organizationName} on DevToolbox: ${link}`,
+    );
+  }
+
   private async send(to: string, subject: string, html: string, textFallback: string): Promise<void> {
     if (!this.resend) {
       this.logger.log(`[dev email → ${to}] ${subject}: ${textFallback}`);
@@ -62,4 +73,17 @@ function verificationEmailHtml(link: string): string {
 
 function passwordResetEmailHtml(link: string): string {
   return `<p>Someone requested a password reset for your DevToolbox account.</p><p><a href="${link}">${link}</a></p><p>If this wasn't you, you can safely ignore this email — your password won't change unless you click the link above.</p>`;
+}
+
+// Org names are arbitrary user input (CreateOrganizationSchema, up to 80
+// chars) — escaped before interpolating into HTML, unlike `link` above
+// (always a same-origin FRONTEND_URL-prefixed URL this service built
+// itself, never user-supplied).
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function orgInviteEmailHtml(organizationName: string, link: string): string {
+  const safeName = escapeHtml(organizationName);
+  return `<p>You've been invited to join <strong>${safeName}</strong> on DevToolbox.</p><p><a href="${link}">${link}</a></p><p>This link expires in 7 days. If you weren't expecting this, you can safely ignore it.</p>`;
 }

@@ -1,28 +1,40 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type {
+  AcceptOrganizationInviteResult,
   AddOrganizationMemberDto,
+  AddOrganizationMemberResult,
   CreateOrganizationDto,
   OrganizationDetail,
+  OrganizationInviteSummary,
   OrganizationSummary,
   OrganizationUsageSummary,
   UpdateOrganizationDto,
   UpdateOrganizationMemberRoleDto,
 } from "@devtoolbox/shared";
 import { PrismaService } from "../../database/prisma.service";
+import { generateOpaqueToken, hashToken } from "../../common/crypto/token-hash";
+import { EmailService } from "../auth/email.service";
 
 const USAGE_PERIOD_DAYS = 30;
 const MAX_MEMBERS_FOR_USAGE = 500;
+const ORG_INVITE_TTL_DAYS = 7;
 
 /**
  * Team workspaces (API.md §17, Phase 4 MVP scope). Deliberately narrow —
  * see ARCHITECTURE.md §14.2 and AUDIT_REPORT.md §17.2 for what's out of
- * scope in this pass (SSO, custom branding, org-level Stripe billing,
- * email-token invite/accept flow). Members are added directly by email if
- * they already have a DevToolbox account; there's no pending-invite state.
+ * scope in this pass (SSO, custom branding, org-level Razorpay billing).
+ * Members with an existing DevToolbox account are added directly by email;
+ * `addMember` falls back to an email-token invite (AUDIT_REPORT.md §21) for
+ * anyone who doesn't have an account yet, rather than erroring.
  */
 @Injectable()
 export class OrganizationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly email: EmailService,
+  ) {}
 
   async create(userId: string, dto: CreateOrganizationDto): Promise<OrganizationSummary> {
     const org = await this.prisma.organization.create({
@@ -85,14 +97,18 @@ export class OrganizationsService {
     await this.prisma.organization.delete({ where: { id: organizationId } });
   }
 
-  async addMember(userId: string, organizationId: string, dto: AddOrganizationMemberDto) {
+  /** Adds an existing DevToolbox account directly, or — if no account
+   * exists for that email yet — creates/refreshes a pending email-token
+   * invite and sends it instead of erroring (AUDIT_REPORT.md §21; this used
+   * to just 404 "they'll need to sign up first" with no way to actually
+   * invite them). */
+  async addMember(userId: string, organizationId: string, dto: AddOrganizationMemberDto): Promise<AddOrganizationMemberResult> {
     await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
 
     const targetUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!targetUser) {
-      throw new NotFoundException(
-        "No DevToolbox account found for that email. They'll need to sign up before they can be added.",
-      );
+      const invite = await this.createOrRefreshInvite(organizationId, dto.email, userId);
+      return { status: "invited", invite };
     }
 
     const existing = await this.prisma.organizationMember.findUnique({
@@ -104,11 +120,85 @@ export class OrganizationsService {
       data: { organizationId, userId: targetUser.id, role: "MEMBER" },
     });
     return {
-      userId: targetUser.id,
-      email: targetUser.email,
-      displayName: targetUser.displayName,
-      role: member.role,
-      joinedAt: member.joinedAt.toISOString(),
+      status: "added",
+      member: {
+        userId: targetUser.id,
+        email: targetUser.email,
+        displayName: targetUser.displayName,
+        role: member.role,
+        joinedAt: member.joinedAt.toISOString(),
+      },
+    };
+  }
+
+  /** OWNER/ADMIN only — pending (not yet accepted, not revoked, not
+   * expired) invites for the org, most recent first. */
+  async listInvites(userId: string, organizationId: string): Promise<OrganizationInviteSummary[]> {
+    await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
+    const invites = await this.prisma.organizationInvite.findMany({
+      where: { organizationId, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
+      include: { invitedByUser: { select: { email: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    return invites.map((i: Parameters<OrganizationsService["toInviteSummary"]>[0]) => this.toInviteSummary(i));
+  }
+
+  /** OWNER/ADMIN only. Idempotent-ish: revoking an already-revoked invite
+   * is a no-op rather than an error; revoking an already-accepted one is
+   * rejected since there's no membership left to "un-invite." */
+  async revokeInvite(userId: string, organizationId: string, inviteId: string): Promise<void> {
+    await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
+    const invite = await this.prisma.organizationInvite.findUnique({ where: { id: inviteId } });
+    if (!invite || invite.organizationId !== organizationId) {
+      throw new NotFoundException("Invite not found.");
+    }
+    if (invite.acceptedAt) {
+      throw new ConflictException("This invite has already been accepted — remove the member instead.");
+    }
+    if (invite.revokedAt) return; // already revoked — nothing to do
+
+    await this.prisma.organizationInvite.update({ where: { id: inviteId }, data: { revokedAt: new Date() } });
+  }
+
+  /** Any signed-in user — the invite's own email must match the caller's
+   * account email (case-insensitive), so accepting is only possible after
+   * signing up/logging in with the exact address the invite was sent to.
+   * Never trusted from the client beyond the raw token itself; the token
+   * is looked up by its hash, same as VerificationToken. */
+  async acceptInvite(userId: string, rawToken: string): Promise<AcceptOrganizationInviteResult> {
+    const tokenHash = hashToken(rawToken);
+    const invite = await this.prisma.organizationInvite.findUnique({
+      where: { tokenHash },
+      include: { organization: true },
+    });
+    if (!invite || invite.revokedAt || invite.acceptedAt || invite.expiresAt < new Date()) {
+      throw new UnauthorizedException("This invite link is invalid or has expired.");
+    }
+
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (user.email.toLowerCase() !== invite.email.toLowerCase()) {
+      throw new ForbiddenException("This invite was sent to a different email address — sign in with that address to accept it.");
+    }
+
+    const existingMembership = await this.prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId: invite.organizationId, userId } },
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.organizationInvite.update({ where: { id: invite.id }, data: { acceptedAt: new Date() } }),
+      // Idempotent: if the caller somehow already joined this org through
+      // another path before accepting (e.g. an OWNER added them directly
+      // in the meantime), don't fail the accept — just mark the invite
+      // used and leave the existing membership as-is.
+      ...(existingMembership
+        ? []
+        : [this.prisma.organizationMember.create({ data: { organizationId: invite.organizationId, userId, role: invite.role } })]),
+    ]);
+
+    return {
+      organizationId: invite.organizationId,
+      organizationName: invite.organization.name,
+      role: existingMembership?.role ?? invite.role,
     };
   }
 
@@ -212,6 +302,56 @@ export class OrganizationsService {
       totalInputTokens: byMember.reduce((sum, m) => sum + m.inputTokens, 0),
       totalOutputTokens: byMember.reduce((sum, m) => sum + m.outputTokens, 0),
       byMember,
+    };
+  }
+
+  /** Creates a new pending invite, or — if one already exists for this
+   * (org, email) pair and hasn't expired/been revoked/accepted — extends
+   * it and issues a fresh token rather than piling up duplicate rows.
+   * Fresh token every time regardless, since the old raw token (if any)
+   * was already handed to the previous email and can't be recovered from
+   * its stored hash. */
+  private async createOrRefreshInvite(organizationId: string, email: string, invitedByUserId: string): Promise<OrganizationInviteSummary> {
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId } });
+    const { raw, hash } = generateOpaqueToken();
+    const expiresAt = new Date(Date.now() + ORG_INVITE_TTL_DAYS * 24 * 60 * 60_000);
+
+    const existing = await this.prisma.organizationInvite.findFirst({
+      where: { organizationId, email, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
+    });
+
+    const invite = existing
+      ? await this.prisma.organizationInvite.update({
+          where: { id: existing.id },
+          data: { tokenHash: hash, expiresAt, invitedByUserId },
+          include: { invitedByUser: { select: { email: true } } },
+        })
+      : await this.prisma.organizationInvite.create({
+          data: { organizationId, email, tokenHash: hash, expiresAt, invitedByUserId },
+          include: { invitedByUser: { select: { email: true } } },
+        });
+
+    const link = `${this.config.get<string>("FRONTEND_URL")}/invites/${raw}`;
+    await this.email.sendOrgInviteEmail(email, org.name, link);
+
+    return this.toInviteSummary(invite);
+  }
+
+  private toInviteSummary(invite: {
+    id: string;
+    email: string;
+    role: "OWNER" | "ADMIN" | "MEMBER";
+    createdAt: Date;
+    expiresAt: Date;
+    invitedByUser: { email: string };
+  }): OrganizationInviteSummary {
+    return {
+      id: invite.id,
+      email: invite.email,
+      role: invite.role,
+      invitedByEmail: invite.invitedByUser.email,
+      createdAt: invite.createdAt.toISOString(),
+      expiresAt: invite.expiresAt.toISOString(),
     };
   }
 
