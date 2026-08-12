@@ -62,16 +62,27 @@ describe("OrganizationsService", () => {
     it("creates an org with the caller as OWNER", async () => {
       const prisma = makePrisma({
         organization: {
-          create: jest
-            .fn()
-            .mockResolvedValue({ id: "org-1", name: "Acme", createdAt: new Date("2026-01-01T00:00:00Z") }),
+          create: jest.fn().mockResolvedValue({
+            id: "org-1",
+            name: "Acme",
+            createdAt: new Date("2026-01-01T00:00:00Z"),
+            brandName: null,
+            brandLogoUrl: null,
+          }),
         },
       });
       const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
 
       const result = await service.create("user-1", { name: "Acme" });
 
-      expect(result).toEqual({ id: "org-1", name: "Acme", role: "OWNER", createdAt: "2026-01-01T00:00:00.000Z" });
+      expect(result).toEqual({
+        id: "org-1",
+        name: "Acme",
+        role: "OWNER",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        brandName: null,
+        brandLogoUrl: null,
+      });
       expect(prisma.organization.create).toHaveBeenCalledWith({
         data: { name: "Acme", members: { create: { userId: "user-1", role: "OWNER" } } },
       });
@@ -449,6 +460,70 @@ describe("OrganizationsService", () => {
 
       expect(result).toEqual({ organizationId: "org-1", organizationName: "Acme", role: "MEMBER" });
       expect(prisma.$transaction).toHaveBeenCalled();
+    });
+  });
+
+  describe("updateBranding", () => {
+    it("throws ForbiddenException for a non-OWNER", async () => {
+      const prisma = makePrisma({
+        organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "ADMIN" }) },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      await expect(
+        service.updateBranding("user-1", "org-1", { brandName: "Acme" }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("updates brandName/brandLogoUrl for an OWNER", async () => {
+      const prisma = makePrisma({
+        organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "OWNER" }) },
+        organization: {
+          update: jest.fn().mockResolvedValue({
+            id: "org-1",
+            name: "Acme",
+            createdAt: new Date("2026-01-01T00:00:00Z"),
+            brandName: "Acme Platform Team",
+            brandLogoUrl: "https://acme.example.com/logo.png",
+          }),
+        },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      const result = await service.updateBranding("user-1", "org-1", {
+        brandName: "Acme Platform Team",
+        brandLogoUrl: "https://acme.example.com/logo.png",
+      });
+
+      expect(prisma.organization.update).toHaveBeenCalledWith({
+        where: { id: "org-1" },
+        data: { brandName: "Acme Platform Team", brandLogoUrl: "https://acme.example.com/logo.png" },
+      });
+      expect(result.brandName).toBe("Acme Platform Team");
+      expect(result.brandLogoUrl).toBe("https://acme.example.com/logo.png");
+    });
+
+    it("clears a field when explicitly passed null, and leaves it untouched when omitted", async () => {
+      const prisma = makePrisma({
+        organizationMember: { findUnique: jest.fn().mockResolvedValue({ role: "OWNER" }) },
+        organization: {
+          update: jest.fn().mockResolvedValue({
+            id: "org-1",
+            name: "Acme",
+            createdAt: new Date("2026-01-01T00:00:00Z"),
+            brandName: null,
+            brandLogoUrl: "https://acme.example.com/logo.png",
+          }),
+        },
+      });
+      const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
+
+      await service.updateBranding("user-1", "org-1", { brandName: null });
+
+      expect(prisma.organization.update).toHaveBeenCalledWith({
+        where: { id: "org-1" },
+        data: { brandName: null },
+      });
     });
   });
 });

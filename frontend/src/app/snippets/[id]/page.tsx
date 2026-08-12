@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ShareButton } from "@/components/share/ShareButton";
 
 interface Snippet {
   id: string;
@@ -107,9 +108,15 @@ export default function SnippetPage({ params }: SnippetPageProps) {
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-text-primary">Edit snippet</h1>
-        <Button variant="destructive" size="sm" onClick={onDelete}>
-          Delete
-        </Button>
+        <div className="flex items-center gap-2">
+          <ShareButton
+            toolSlug={snippet.toolSlug}
+            getPayload={() => (content.trim() ? { title, content, toolSlug: snippet.toolSlug } : null)}
+          />
+          <Button variant="destructive" size="sm" onClick={onDelete}>
+            Delete
+          </Button>
+        </div>
       </div>
 
       <label className="flex flex-col gap-1.5 text-sm text-text-primary">

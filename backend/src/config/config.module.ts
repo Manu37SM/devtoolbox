@@ -18,6 +18,12 @@ const envSchema = z.object({
   // rather than at first history write.
   HISTORY_ENCRYPTION_KEY: z.string().min(32),
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
+  // Org SSO (AUDIT_REPORT.md §23): this backend's own externally-reachable
+  // origin, needed for the SAML ACS (assertion consumer service) callback
+  // URL — SAML's IdP-initiated POST target must be an absolute URL the IdP
+  // dashboard is configured with ahead of time, unlike OIDC/OAuth's
+  // redirect_uri which the frontend already supplies per-request.
+  BACKEND_URL: z.string().url().default("http://localhost:4000"),
   // AI Gateway: optional in dev — AiGatewayService returns a clear 503
   // ("AI features aren't configured") from any endpoint that actually needs
   // to call the model, rather than failing boot; the deterministic-first
@@ -51,6 +57,13 @@ const envSchema = z.object({
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
   RAZORPAY_PLAN_ID_PRO: z.string().optional(),
   RAZORPAY_PLAN_ID_TEAM: z.string().optional(),
+  // Org SSO (AUDIT_REPORT.md §23): AES-256-GCM master key for encrypting
+  // SsoConnection.oidcClientSecretEnc at rest, same shape as
+  // HISTORY_ENCRYPTION_KEY but a distinct key so the two blast radii don't
+  // overlap. Optional in dev like the other integration keys above — SsoService
+  // returns a clear 503 from any route that needs it rather than failing boot,
+  // so an org with no SSO connection configured is entirely unaffected.
+  SSO_SECRET_ENCRYPTION_KEY: z.string().min(32).optional(),
 });
 
 @Module({

@@ -3,7 +3,14 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { AddOrganizationMemberResult, OrganizationDetail, OrganizationInviteSummary, OrganizationUsageSummary } from "@devtoolbox/shared";
+import type {
+  AddOrganizationMemberResult,
+  OrganizationDetail,
+  OrganizationInviteSummary,
+  OrganizationUsageSummary,
+  SsoConnectionSummary,
+  UpsertSsoConnectionDto,
+} from "@devtoolbox/shared";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +42,21 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   const [invites, setInvites] = useState<OrganizationInviteSummary[]>([]);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
+  const [brandName, setBrandName] = useState("");
+  const [brandLogoUrl, setBrandLogoUrl] = useState("");
+  const [savingBranding, setSavingBranding] = useState(false);
+
+  const [sso, setSso] = useState<SsoConnectionSummary | null | undefined>(undefined);
+  const [ssoProtocol, setSsoProtocol] = useState<"OIDC" | "SAML">("OIDC");
+  const [ssoDomain, setSsoDomain] = useState("");
+  const [oidcIssuer, setOidcIssuer] = useState("");
+  const [oidcClientId, setOidcClientId] = useState("");
+  const [oidcClientSecret, setOidcClientSecret] = useState("");
+  const [samlEntryPoint, setSamlEntryPoint] = useState("");
+  const [samlIssuer, setSamlIssuer] = useState("");
+  const [samlCert, setSamlCert] = useState("");
+  const [savingSso, setSavingSso] = useState(false);
+  const [removingSso, setRemovingSso] = useState(false);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -45,6 +67,8 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
       const detail = await apiGet<OrganizationDetail>(`/organizations/${id}`, { authenticated: true });
       setOrg(detail);
       setRenameValue(detail.name);
+      setBrandName(detail.brandName ?? "");
+      setBrandLogoUrl(detail.brandLogoUrl ?? "");
     } catch {
       setOrg(null);
     }
@@ -76,6 +100,109 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
     void loadInvites();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org, id]);
+
+  async function loadSso() {
+    try {
+      const conn = await apiGet<SsoConnectionSummary | null>(`/organizations/${id}/sso`, { authenticated: true });
+      setSso(conn);
+      if (conn) {
+        setSsoProtocol(conn.protocol);
+        setSsoDomain(conn.domain);
+        setOidcIssuer(conn.oidcIssuer ?? "");
+        setOidcClientId(conn.oidcClientId ?? "");
+        setSamlEntryPoint(conn.samlEntryPoint ?? "");
+        setSamlIssuer(conn.samlIssuer ?? "");
+        setSamlCert(conn.samlCert ?? "");
+      }
+    } catch {
+      setSso(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!org || org.role !== "OWNER") return;
+    void loadSso();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [org, id]);
+
+  async function onSaveSso() {
+    setError(null);
+    setSavingSso(true);
+    try {
+      const dto: UpsertSsoConnectionDto =
+        ssoProtocol === "OIDC"
+          ? {
+              protocol: "OIDC",
+              domain: ssoDomain.trim(),
+              oidcIssuer: oidcIssuer.trim(),
+              oidcClientId: oidcClientId.trim(),
+              ...(oidcClientSecret.trim() ? { oidcClientSecret: oidcClientSecret.trim() } : {}),
+            }
+          : {
+              protocol: "SAML",
+              domain: ssoDomain.trim(),
+              samlEntryPoint: samlEntryPoint.trim(),
+              samlIssuer: samlIssuer.trim(),
+              samlCert: samlCert.trim(),
+            };
+      await apiPost(`/organizations/${id}/sso`, dto, { authenticated: true });
+      setOidcClientSecret("");
+      await loadSso();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Couldn't save SSO settings. Please try again.");
+    } finally {
+      setSavingSso(false);
+    }
+  }
+
+  async function onToggleSsoEnabled() {
+    if (!sso) return;
+    setError(null);
+    try {
+      await apiPost(`/organizations/${id}/sso/enabled`, { enabled: !sso.enabled }, { authenticated: true });
+      await loadSso();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Couldn't update SSO status.");
+    }
+  }
+
+  async function onRemoveSso() {
+    if (!confirm("Remove this SSO connection? Members will need to sign in with email/password or OAuth instead.")) return;
+    setError(null);
+    setRemovingSso(true);
+    try {
+      await apiDelete(`/organizations/${id}/sso`, { authenticated: true });
+      setSso(null);
+      setSsoDomain("");
+      setOidcIssuer("");
+      setOidcClientId("");
+      setOidcClientSecret("");
+      setSamlEntryPoint("");
+      setSamlIssuer("");
+      setSamlCert("");
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Couldn't remove the SSO connection.");
+    } finally {
+      setRemovingSso(false);
+    }
+  }
+
+  async function onSaveBranding() {
+    setError(null);
+    setSavingBranding(true);
+    try {
+      await apiPatch(
+        `/organizations/${id}/branding`,
+        { brandName: brandName.trim() || null, brandLogoUrl: brandLogoUrl.trim() || null },
+        { authenticated: true },
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Couldn't save branding. Please try again.");
+    } finally {
+      setSavingBranding(false);
+    }
+  }
 
   async function onRename() {
     setError(null);
@@ -208,6 +335,144 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
             <Button size="sm" onClick={onRename} disabled={renaming || !renameValue.trim()}>
               {renaming ? "Saving…" : "Save"}
             </Button>
+          </div>
+        </section>
+      )}
+
+      {org.role === "OWNER" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-text-primary">Branding for shared links</h2>
+          <p className="text-sm text-text-secondary">
+            When a member shares a tool&apos;s output as this org, the public link shows this name/logo instead of
+            default DevToolbox branding.
+          </p>
+          <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+            Brand name
+            <Input
+              value={brandName}
+              onChange={(e) => setBrandName(e.target.value)}
+              placeholder="e.g. Acme Platform Team"
+              className="max-w-72"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+            Logo URL <span className="text-text-muted">(optional)</span>
+            <Input
+              value={brandLogoUrl}
+              onChange={(e) => setBrandLogoUrl(e.target.value)}
+              placeholder="https://…/logo.png"
+              className="max-w-72"
+            />
+          </label>
+          <Button size="sm" className="self-start" onClick={onSaveBranding} disabled={savingBranding}>
+            {savingBranding ? "Saving…" : "Save branding"}
+          </Button>
+        </section>
+      )}
+
+      {org.role === "OWNER" && sso !== undefined && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-medium text-text-primary">Single sign-on (SSO)</h2>
+            {sso && <Badge variant={sso.enabled ? "success" : "neutral"}>{sso.enabled ? "Enabled" : "Disabled"}</Badge>}
+          </div>
+          <p className="text-sm text-text-secondary">
+            Let anyone with an email at this domain sign in through your identity provider instead of a DevToolbox
+            password. First-time SSO sign-in automatically joins this org as a member.
+          </p>
+
+          <div className="flex gap-2">
+            <label className="flex items-center gap-1.5 text-sm text-text-primary">
+              <input
+                type="radio"
+                name="ssoProtocol"
+                checked={ssoProtocol === "OIDC"}
+                onChange={() => setSsoProtocol("OIDC")}
+              />
+              OIDC
+            </label>
+            <label className="flex items-center gap-1.5 text-sm text-text-primary">
+              <input
+                type="radio"
+                name="ssoProtocol"
+                checked={ssoProtocol === "SAML"}
+                onChange={() => setSsoProtocol("SAML")}
+              />
+              SAML
+            </label>
+          </div>
+
+          <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+            Email domain
+            <Input value={ssoDomain} onChange={(e) => setSsoDomain(e.target.value)} placeholder="acme.com" className="max-w-72" />
+          </label>
+
+          {ssoProtocol === "OIDC" ? (
+            <>
+              <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+                Issuer URL
+                <Input
+                  value={oidcIssuer}
+                  onChange={(e) => setOidcIssuer(e.target.value)}
+                  placeholder="https://your-idp.example.com"
+                  className="max-w-96"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+                Client ID
+                <Input value={oidcClientId} onChange={(e) => setOidcClientId(e.target.value)} className="max-w-96" />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+                Client secret {sso?.oidcHasClientSecret && <span className="text-text-muted">(leave blank to keep the current one)</span>}
+                <Input
+                  type="password"
+                  value={oidcClientSecret}
+                  onChange={(e) => setOidcClientSecret(e.target.value)}
+                  className="max-w-96"
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+                IdP sign-in URL (entry point)
+                <Input
+                  value={samlEntryPoint}
+                  onChange={(e) => setSamlEntryPoint(e.target.value)}
+                  placeholder="https://your-idp.example.com/sso/saml"
+                  className="max-w-96"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+                IdP entity ID (issuer)
+                <Input value={samlIssuer} onChange={(e) => setSamlIssuer(e.target.value)} className="max-w-96" />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm text-text-primary">
+                IdP signing certificate (PEM)
+                <textarea
+                  value={samlCert}
+                  onChange={(e) => setSamlCert(e.target.value)}
+                  rows={4}
+                  className="max-w-96 rounded-md border border-border-default bg-bg-raised px-3 py-2 text-sm"
+                />
+              </label>
+            </>
+          )}
+
+          <div className="flex gap-2">
+            <Button size="sm" onClick={onSaveSso} disabled={savingSso || !ssoDomain.trim()}>
+              {savingSso ? "Saving…" : sso ? "Save changes" : "Set up SSO"}
+            </Button>
+            {sso && (
+              <>
+                <Button variant="ghost" size="sm" onClick={onToggleSsoEnabled}>
+                  {sso.enabled ? "Disable" : "Enable"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={onRemoveSso} disabled={removingSso}>
+                  {removingSso ? "Removing…" : "Remove"}
+                </Button>
+              </>
+            )}
           </div>
         </section>
       )}

@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards 
 import {
   AddOrganizationMemberSchema,
   CreateOrganizationSchema,
+  UpdateOrganizationBrandingSchema,
   UpdateOrganizationMemberRoleSchema,
   UpdateOrganizationSchema,
 } from "@devtoolbox/shared";
@@ -72,6 +73,21 @@ export class OrganizationsController {
     @Body(new ZodValidationPipe(UpdateOrganizationSchema)) dto: unknown,
   ) {
     return this.organizationsService.rename(user.userId, id, dto as Parameters<OrganizationsService["rename"]>[2]);
+  }
+
+  @PlanThrottle(ORG_THROTTLE)
+  @UseGuards(JwtAuthGuard, PlanThrottleGuard)
+  @Patch(":id/branding")
+  async updateBranding(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(UpdateOrganizationBrandingSchema)) dto: unknown,
+  ) {
+    return this.organizationsService.updateBranding(
+      user.userId,
+      id,
+      dto as Parameters<OrganizationsService["updateBranding"]>[2],
+    );
   }
 
   @PlanThrottle(ORG_THROTTLE)

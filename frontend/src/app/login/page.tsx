@@ -8,6 +8,7 @@ import { apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
+import { SsoLoginForm } from "@/components/auth/SsoLoginForm";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -95,6 +96,10 @@ function LoginForm() {
             Register
           </Link>
         </p>
+      </div>
+
+      <div className="border-t border-border-subtle pt-4">
+        <SsoLoginForm />
       </div>
     </div>
   );

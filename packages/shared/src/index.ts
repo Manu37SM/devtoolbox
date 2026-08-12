@@ -196,6 +196,11 @@ export type UpdateSyncedPipelineDto = z.infer<typeof UpdateSyncedPipelineSchema>
 export const CreateShareLinkSchema = z.object({
   toolSlug: z.string().min(1).max(120),
   payload: z.record(z.unknown()),
+  // Optional org attribution (API.md §8.1, AUDIT_REPORT.md §22) — the
+  // creator must be a member of this org (checked server-side); anonymous
+  // (no access token) callers can never set this, since there's no caller
+  // identity to check membership against.
+  organizationId: z.string().uuid().optional(),
 });
 export type CreateShareLinkDto = z.infer<typeof CreateShareLinkSchema>;
 
@@ -203,6 +208,22 @@ export interface ShareLinkResult {
   slug: string;
   url: string;
   expiresAt: string | null;
+}
+
+// Org branding shown on a share link's public page when the link was
+// created with an `organizationId` and that org has branding set — `null`
+// means "no org attribution or the org hasn't set branding," in which case
+// the frontend falls back to default DevToolbox branding.
+export interface ShareLinkBranding {
+  name: string;
+  logoUrl: string | null;
+}
+
+export interface ShareLinkView {
+  toolSlug: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  branding: ShareLinkBranding | null;
 }
 
 // ── AI Gateway DTOs (see API.md §9) ────────────────────────────────────────
@@ -564,11 +585,26 @@ export const UpdateOrganizationMemberRoleSchema = z.object({
 });
 export type UpdateOrganizationMemberRoleDto = z.infer<typeof UpdateOrganizationMemberRoleSchema>;
 
+// Custom branding for org-shared links (API.md §8.1/§17, AUDIT_REPORT.md
+// §22) — a separate schema/route from rename (`UpdateOrganizationSchema`)
+// rather than folding in, since these are optional/clearable fields with
+// different validation (`brandLogoUrl` is a URL) and a different mental
+// model ("how this org's shares look to visitors" vs. "the org's own
+// name"). Both fields nullable so either can be explicitly cleared by
+// sending `null`, not just omitted.
+export const UpdateOrganizationBrandingSchema = z.object({
+  brandName: z.string().max(80).nullable().optional(),
+  brandLogoUrl: z.string().url().max(2048).nullable().optional(),
+});
+export type UpdateOrganizationBrandingDto = z.infer<typeof UpdateOrganizationBrandingSchema>;
+
 export interface OrganizationSummary {
   id: string;
   name: string;
   role: OrgRole;
   createdAt: string;
+  brandName: string | null;
+  brandLogoUrl: string | null;
 }
 
 export interface OrganizationMemberSummary {
@@ -585,6 +621,8 @@ export interface OrganizationDetail {
   role: OrgRole;
   members: OrganizationMemberSummary[];
   createdAt: string;
+  brandName: string | null;
+  brandLogoUrl: string | null;
 }
 
 export interface OrganizationUsageSummary {
@@ -622,6 +660,74 @@ export interface AcceptOrganizationInviteResult {
   organizationId: string;
   organizationName: string;
   role: OrgRole;
+}
+
+// ── Org SSO (AUDIT_REPORT.md §23) — the last item deferred from the
+// original team workspaces MVP pass. One connection per org, discriminated
+// by protocol. `UpsertSsoConnectionSchema` uses a Zod discriminated union so
+// the OIDC-only/SAML-only fields are mutually validated at the boundary
+// (CLAUDE.md rule 5) rather than a loose object where the "wrong" protocol's
+// fields could be silently accepted. The client secret is write-only —
+// never returned by any read endpoint, hence no `oidcClientSecret` field on
+// `SsoConnectionSummary`.
+export const UpsertSsoConnectionSchema = z.discriminatedUnion("protocol", [
+  z.object({
+    protocol: z.literal("OIDC"),
+    domain: z.string().min(1).max(255),
+    oidcIssuer: z.string().url().max(2048),
+    oidcClientId: z.string().min(1).max(255),
+    // Optional on update — omit to leave an already-configured secret
+    // unchanged, matching UpdateOrganizationBrandingSchema's omit-vs-null
+    // convention (though here there's no "clear" case; a connection without
+    // a secret can't authenticate, so it's simply required on first create,
+    // enforced in the service layer since Zod alone can't see prior state).
+    oidcClientSecret: z.string().min(1).optional(),
+  }),
+  z.object({
+    protocol: z.literal("SAML"),
+    domain: z.string().min(1).max(255),
+    samlEntryPoint: z.string().url().max(2048),
+    samlIssuer: z.string().min(1).max(2048),
+    samlCert: z.string().min(1),
+  }),
+]);
+export type UpsertSsoConnectionDto = z.infer<typeof UpsertSsoConnectionSchema>;
+
+export const SetSsoConnectionEnabledSchema = z.object({ enabled: z.boolean() });
+export type SetSsoConnectionEnabledDto = z.infer<typeof SetSsoConnectionEnabledSchema>;
+
+export const OidcCallbackSchema = z.object({
+  code: z.string().min(1),
+  state: z.string().min(1),
+  redirectUri: z.string().url(),
+});
+export type OidcCallbackDto = z.infer<typeof OidcCallbackSchema>;
+
+export interface SsoConnectionSummary {
+  protocol: "OIDC" | "SAML";
+  domain: string;
+  enabled: boolean;
+  // Present only for the matching protocol; the other group is always
+  // undefined rather than a mix of nulls, mirroring the discriminated
+  // request shape above.
+  oidcIssuer: string | null;
+  oidcClientId: string | null;
+  oidcHasClientSecret: boolean;
+  samlEntryPoint: string | null;
+  samlIssuer: string | null;
+  samlCert: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// GET /sso/discover?domain= — public, unauthenticated: tells the login page
+// whether this email domain has an SSO connection to route to, without
+// exposing which org owns it (avoids leaking org existence/membership from
+// an arbitrary domain guess beyond "yes/no, SSO is configured").
+export interface SsoDiscoveryResult {
+  available: boolean;
+  protocol: "OIDC" | "SAML" | null;
+  organizationId: string | null;
 }
 
 // ── Plugin marketplace (Phase 4, v1 — API.md §18, ARCHITECTURE.md §16) ────

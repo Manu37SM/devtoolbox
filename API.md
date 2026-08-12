@@ -104,20 +104,26 @@ Common `code` values: `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `FORBID
 
 ## 8. Share Links
 
+First given a frontend (a `Share` button on Pipelines and Snippets, plus a public `/s/:slug` viewer page) and org-attributed branding in the same pass (AUDIT_REPORT.md §22) — the backend routes below predate that pass and are otherwise unchanged.
+
 | Method | Path | Description | Auth |
 |---|---|---|---|
-| POST | `/shares` | Create a share link `{ toolSlug, payload }` (size-capped, default 30-day expiry) | optional (anonymous allowed, rate-limited harder) |
-| GET | `/shares/:slug` | Resolve a share link's payload (increments `viewCount`) | none |
+| POST | `/shares` | Create a share link `{ toolSlug, payload, organizationId? }` (size-capped, default 30-day expiry). `organizationId` requires being signed in and a member of that org — 403 otherwise. | optional (anonymous allowed, rate-limited harder; `organizationId` requires an access token) |
+| GET | `/shares/:slug` | Resolve a share link — `{ toolSlug, payload, createdAt, branding }` (increments `viewCount`). `branding` is `{ name, logoUrl }` if the link is org-attributed and that org has set a `brandName`, else `null` | none |
 | DELETE | `/shares/:slug` | Delete own share link early | access token, must own |
 
 **Example — `POST /shares`**
 ```json
 // Request
-{ "toolSlug": "json-formatter", "payload": { "input": "{...}", "options": { "indent": 2 } } }
+{ "toolSlug": "json-formatter", "payload": { "input": "{...}", "options": { "indent": 2 } }, "organizationId": "9f2a..." }
 
 // Response 201
 { "slug": "k3f9zQ2pLm7a", "url": "https://devtoolbox.dev/s/k3f9zQ2pLm7a", "expiresAt": "2026-08-29T00:00:00Z" }
 ```
+
+### 8.1 Org branding (API.md §17)
+
+`PATCH /organizations/:id/branding` — `{ brandName?, brandLogoUrl? }`, either nullable to explicitly clear it, omit to leave unchanged — sets the name/logo shown on that org's attributed share links. `OWNER` only, same gate as rename. `brandLogoUrl` is validated as a well-formed URL but not fetched/verified server-side; it's rendered as a plain `<img src>` on the public share page, same trust tier as `User.avatarUrl` elsewhere in this API.
 
 ## 9. Billing (Phase 4 — Razorpay)
 
@@ -247,7 +253,8 @@ curl -X POST https://api.devtoolbox.dev/v1/public/hash \
 | `/v1/public/*` | — (no anonymous access) | — (PRO/TEAM only) | 5000/hour/user |
 | `/billing/subscription` (POST), `/billing/verify-payment`, `/billing/cancel-subscription` | — | 10/hour/user | 10/hour/user |
 | `/billing/webhook` | not applicable — Razorpay-signature-authed, not plan-gated; a generous flat `100/min` global limit guards against replay/abuse | | |
-| `/organizations/*` | — | 60/hour/user | 60/hour/user |
+| `/organizations/*` (incl. `/organizations/:id/sso*`) | — | 60/hour/user | 60/hour/user |
+| `/sso/discover`, `/sso/oidc/*`, `/sso/saml/*` | 30/min/IP (discover), 10/min/IP (login flows) — unauthenticated by definition, same budget class as auth endpoints | — | — |
 | All other CRUD | 300/min/user | 300/min/user | 300/min/user |
 
 Rate-limit responses include `Retry-After` and `X-RateLimit-Remaining` headers. `/v1/public/*`'s limit is shared across all of a user's API keys (not one budget per key) — reuses `PlanThrottleGuard`'s existing per-user identity resolution rather than adding a new per-key rate-limit dimension; a user with multiple keys (e.g. one per CI pipeline) shares one budget across them, same as any other authenticated surface in this table. The "Pro" column now also covers any user whose *effective* plan resolves to TEAM via §17's org-owner-plan inheritance, not just `User.plan` directly — see AUDIT_REPORT.md §17.1's `resolveEffectivePlan` note.
@@ -258,7 +265,7 @@ Rate-limit responses include `Retry-After` and `X-RateLimit-Remaining` headers. 
 
 ## 17. Team Workspaces (Phase 4)
 
-MVP scope, since extended with email-token invites (§17.1) — see ARCHITECTURE.md §14.2's narrowed team-workspaces note and AUDIT_REPORT.md §17/§21 for what's still deliberately deferred (SSO, custom branding, org-level Razorpay billing). An organization's members get TEAM-tier rate limits/AI quota (§15's "Pro" column) whenever the organization's owner has `User.plan === "TEAM"` — there is no separate org-level subscription; the owner's existing personal billing (§9) is what makes an org "active."
+MVP scope, since extended with email-token invites (§17.1) and custom branding for shared links (§8.1, §22), and now org-level SSO (§17.5, AUDIT_REPORT.md §23). Still deliberately deferred: org-level Razorpay billing. An organization's members get TEAM-tier rate limits/AI quota (§15's "Pro" column) whenever the organization's owner has `User.plan === "TEAM"` — there is no separate org-level subscription; the owner's existing personal billing (§9) is what makes an org "active."
 
 | Method | Path | Description | Auth |
 |---|---|---|---|
@@ -266,6 +273,7 @@ MVP scope, since extended with email-token invites (§17.1) — see ARCHITECTURE
 | GET | `/organizations` | List orgs the caller belongs to, with their role in each | access token |
 | GET | `/organizations/:id` | Org detail + member list (`OWNER`/`ADMIN`: full; `MEMBER`: names/roles only, no usage figures) | access token, must be a member |
 | PATCH | `/organizations/:id` | Rename | access token, `OWNER` only |
+| PATCH | `/organizations/:id/branding` | `{ brandName?, brandLogoUrl? }` — shown on this org's attributed share links (§8.1) | access token, `OWNER` only |
 | DELETE | `/organizations/:id` | Delete org (members keep their own snippets/pipelines; org-shared ones are deleted) | access token, `OWNER` only |
 | POST | `/organizations/:id/members` | `{ email }` → `{ status: "added", member }` if an account already exists for that email (added immediately), or `{ status: "invited", invite }` otherwise — creates/refreshes a 7-day email-token invite and sends it (AUDIT_REPORT.md §21) instead of the old 404 | access token, `OWNER`/`ADMIN` |
 | PATCH | `/organizations/:id/members/:userId` | `{ role: "ADMIN"\|"MEMBER" }` — change a member's role (cannot demote the last `OWNER`) | access token, `OWNER` only |
@@ -308,6 +316,26 @@ Same hashed-opaque-token pattern as email-verify/password-reset (§2) — the ra
 // Response 201
 { "id": "9f2a...", "name": "Acme Platform Team", "role": "OWNER", "createdAt": "2026-08-11T00:00:00Z" }
 ```
+
+### 17.5 Org SSO — OIDC + SAML (AUDIT_REPORT.md §23)
+
+The last item deferred from the original team workspaces MVP pass. One connection per org, keyed by an email domain. Split into two route groups: admin configuration (nested under `/organizations/:id/sso`, `OWNER`-only) and public IdP-facing login endpoints (`/sso/*`, unauthenticated by definition). A first-time SSO sign-in JIT-provisions (just-in-time) both the `User` row (if none exists for the IdP-supplied email) and `OrganizationMember` (as `MEMBER`) — SSO login always happens in the context of one specific org, unlike personal GitHub/Google OAuth (§2), so auto-join is the point rather than a side effect to guard against.
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| GET | `/organizations/:id/sso` | Current connection, or `null` if none configured. Never includes the OIDC client secret — only `oidcHasClientSecret: boolean` | access token, `OWNER`/`ADMIN` |
+| POST | `/organizations/:id/sso` | Create or update the connection. Body discriminated by `protocol` (`"OIDC"` or `"SAML"`); `oidcClientSecret` is required on first create, optional on update (omit to leave the existing encrypted secret unchanged) | access token, `OWNER` only |
+| POST | `/organizations/:id/sso/enabled` | `{ enabled: boolean }` — pause/resume without deleting the configuration | access token, `OWNER` only |
+| DELETE | `/organizations/:id/sso` | Remove the connection entirely | access token, `OWNER` only |
+| GET | `/sso/discover?domain=` | `{ available, protocol, organizationId }` — tells the login page whether an email domain has SSO to route to. Discloses only yes/no + protocol + org id, never a member list or org name | none |
+| GET | `/sso/oidc/authorize?domain=&redirectUri=` | `{ url, state }` — builds the IdP authorize-redirect URL (via the IdP's `/.well-known/openid-configuration` discovery document) for the frontend to navigate to | none |
+| POST | `/sso/oidc/callback` | `{ code, state, redirectUri }` → same `AuthTokenResponse` shape as `/auth/oauth/:provider/callback` (§2), sets the refresh-token cookie. Verifies the id_token's RS256 signature against the IdP's live JWKS (via `jose`), issuer, audience, and nonce | none |
+| GET | `/sso/saml/authorize?domain=` | `{ url }` — the IdP's SSO URL to redirect to (SP-initiated) | none |
+| POST | `/sso/saml/callback` | SAML ACS (assertion consumer service) endpoint — the IdP POSTs the assertion here directly as a browser form submission, not a frontend fetch. Validates the signed assertion (via `@node-saml/node-saml`), sets the refresh cookie, and 302-redirects to the frontend (`/account?sso=1` on success, `/login?ssoError=1` on failure) rather than returning JSON, since there's no frontend code in the loop to receive a JSON response | none |
+
+**New dependencies, flagged per CLAUDE.md rule 10 before adding:** `jose` (JWKS fetch + JWT/RS256 verification — a security-sensitive primitive not worth hand-rolling, unlike the plain-fetch OAuth exchange §2 already does for GitHub/Google, which never needs to verify a signature) and `@node-saml/node-saml` (SAML XML signature verification — same rationale). Both confirmed with the user before implementation.
+
+**Config:** `SSO_SECRET_ENCRYPTION_KEY` (AES-256-GCM master key, same shape as `HISTORY_ENCRYPTION_KEY` but a separate key) and `BACKEND_URL` (this backend's externally-reachable origin, needed for the SAML ACS callback URL an IdP dashboard is configured with ahead of time) — both optional in dev, degrading with a clear 503 from any SSO route that needs them rather than failing boot, same treatment as every other optional integration in this codebase.
 
 ## 18. Plugin Marketplace (Phase 4 — v1)
 

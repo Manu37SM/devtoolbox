@@ -4,6 +4,28 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (Team workspaces — org SSO: OIDC + SAML)
+
+- **Closes the last item deliberately deferred from the original team workspaces MVP scope.** One `SsoConnection` per org, `OWNER`-configurable via `POST/GET/DELETE /organizations/:id/sso` and `POST /organizations/:id/sso/enabled` — discriminated by protocol (OIDC or SAML), keyed by an email domain used for login-time discovery (`GET /sso/discover?domain=`).
+- **New dependencies, flagged and confirmed with the user before adding (CLAUDE.md rule 10):** `jose` (OIDC id_token JWKS fetch + RS256 verification) and `@node-saml/node-saml` (SAML assertion XML signature verification) — both genuinely security-sensitive primitives, not worth hand-rolling.
+- **OIDC login** (`GET /sso/oidc/authorize`, `POST /sso/oidc/callback`) — standard authorization-code flow with a nonce round-tripped through the id_token to defend against replay; issuer/audience/signature all verified against the IdP's live JWKS.
+- **SAML login** (`GET /sso/saml/authorize`, `POST /sso/saml/callback`) — SP-initiated redirect to the IdP; the IdP POSTs the signed assertion directly to the backend's ACS callback (not a frontend route, unlike OIDC/OAuth), which sets the session cookie and redirects to `/account`.
+- **JIT (just-in-time) provisioning** — a first-time SSO sign-in creates a `User` (if none exists for the IdP-supplied email) and an `OrganizationMember` (as `MEMBER`) in one step, via a new `SsoIdentity` model mirroring `OAuthAccount`'s shape.
+- **`SsoConnection.oidcClientSecretEnc`** encrypted at rest (AES-256-GCM, new `backend/src/common/crypto/secret-encryption.ts`, mirrors `history-encryption.ts`'s algorithm exactly under a distinct master key, `SSO_SECRET_ENCRYPTION_KEY`) — the first genuine credential (not user content) this codebase encrypts at rest.
+- New migration `20260812190000_add_sso`. Frontend: an OWNER-only SSO settings section on `/account/organizations/:id`, a collapsible "Sign in with SSO" entry on `/login`, and a new `/sso/callback` page for the OIDC redirect leg.
+- Backend: new `sso.service.spec.ts` covering connection CRUD/OWNER-gating, domain discovery, OIDC callback (JIT provisioning for new/existing users, nonce-mismatch rejection, missing-email rejection), and SAML callback (returning-identity login, missing-relay-state and missing-NameID rejection).
+- Full details, including the two flagged new dependencies, in AUDIT_REPORT.md §23. **Requires a local `npm install && npx prisma generate && npx prisma migrate dev`** — this sandbox has no network access to install `jose`/`@node-saml/node-saml` or regenerate the Prisma client, same disclosed gap as every prior pass this session.
+
+### Added (Custom branding for shared links + base Share UI)
+
+- **Discovered mid-pass: Share Links (Phase 3) had a backend but zero frontend** — no Share button anywhere, no public viewer, despite FEATURE.md marking it "✅ Shipped." Flagged to the user before proceeding; user chose to build the base Share UI and branding together rather than branding alone.
+- **New `ShareButton` component** (`frontend/src/components/share/`) — wired into Pipelines (`PipelineBuilder.tsx`) and Snippets (`snippets/[id]/page.tsx`). Lets a signed-in user optionally attribute the share to an org they're a member of. `POST /shares` unchanged; button just calls it and surfaces the resulting URL with copy-to-clipboard.
+- **New public viewer at `/s/:slug`** — unauthenticated `GET /shares/:slug`, renders org branding (if any) plus a pipeline-specific view, a snippet-shaped (`title`/`content`) view, or a generic JSON dump fallback for any other `toolSlug`. Deliberately not a bespoke view per tool (60+ tools) — out of scope for this pass, documented in the page's own comments.
+- **`Organization.brandName`/`brandLogoUrl`** (migration `20260812170000_add_share_link_branding`) — both nullable, OWNER-only via new `PATCH /organizations/:id/branding` (PATCH semantics: omitted = unchanged, explicit `null` = clear). `brandLogoUrl` is never fetched/verified server-side, same trust tier as `User.avatarUrl`.
+- **`ShareLink.organizationId`** (same migration) — optional, settable only by an authenticated member of that org (checked server-side, never trusted from the client), `onDelete: SetNull`.
+- Backend: new `share.service.spec.ts` (module had zero tests before this pass) + new `updateBranding` tests in `organizations.service.spec.ts`.
+- Full details, including the frontend-gap discovery and scope decision, in AUDIT_REPORT.md §22. **Requires a local `npx prisma generate && npx prisma migrate dev`** — same stale-Prisma-client gap disclosed for every schema-touching pass this session.
+
 ### Added (Team workspaces — email-token invites)
 
 - **`addMember` no longer 404s when no account exists for an invited email** — it now creates (or refreshes) a 7-day email-token invite and sends it, same hashed-opaque-token pattern as email-verify/password-reset. New `OrganizationInvite` model (migration `20260812150000_add_org_invites`), new endpoints `GET /organizations/:id/invites`, `DELETE /organizations/:id/invites/:inviteId`, `POST /organizations/invites/:token/accept`.

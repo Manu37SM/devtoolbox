@@ -26,7 +26,10 @@ User ──1:N── HistoryEntry (only if sync enabled; otherwise local Indexed
 User ──N:1── Organization (nullable; Phase 4 team workspaces — ✅ shipped, API.md §17)
 Organization ──1:N── OrganizationMember (join: User × Organization, role)
 Organization ──1:N── OrganizationInvite (pending email-token invites; API.md §17.1)
+Organization ──1:N── ShareLink (optional org attribution for branding; API.md §8.1)
 Organization ──1:N── Snippet, Pipeline (nullable organizationId; org-shared, additive to userId ownership)
+Organization ──1:1── SsoConnection (org-level OIDC/SAML config; API.md §17.5)
+SsoConnection ──1:N── SsoIdentity ──N:1── User (JIT-provisioned identity link, mirrors OAuthAccount)
 User ──1:N── AiUsageEvent (aggregate counters, not payload content)
 User ──1:N── ApiKey (Phase 4 public API/CLI access)
 User ──1:1── Subscription (Phase 4 billing; nullable — free users have none)
@@ -181,6 +184,8 @@ model ShareLink {
   slug         String    @unique  // short, unguessable (nanoid, 12+ chars)
   userId       String?             // nullable: anonymous shares allowed
   user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizationId String?           // optional org attribution (AUDIT_REPORT.md §22) — SET NULL on org deletion
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   toolSlug     String
   payload      Json                // input/options/output snapshot, size-capped
   objectStorageKey String?         // for large binary payloads (images), stored in S3-compatible storage instead
@@ -190,6 +195,7 @@ model ShareLink {
 
   @@index([slug])
   @@index([expiresAt])
+  @@index([organizationId])
 }
 
 model AiUsageEvent {
@@ -220,12 +226,18 @@ model Organization {
   id        String   @id @default(uuid())
   name      String
   plan      Plan     @default(TEAM)
+  // Custom branding for org-attributed share links (AUDIT_REPORT.md §22).
+  // Both nullable — no branding set means shares fall back to default
+  // DevToolbox branding. brandLogoUrl isn't fetched/verified server-side.
+  brandName    String?
+  brandLogoUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members   OrganizationMember[]
-  snippets  Snippet[]
-  pipelines Pipeline[]
+  members    OrganizationMember[]
+  snippets   Snippet[]
+  pipelines  Pipeline[]
+  shareLinks ShareLink[]
 }
 
 model OrganizationMember {
@@ -401,6 +413,60 @@ model Subscription {
 
   @@index([userId])
 }
+
+// Added during Phase 4 implementation — not in the original ERD above.
+// Org-level SSO (AUDIT_REPORT.md §23), the last item deferred from the
+// original team workspaces MVP pass. One connection per org (MVP: single
+// IdP per org). `oidcClientSecretEnc` is encrypted at rest (AES-256-GCM,
+// per-org HKDF derivation — backend/src/common/crypto/secret-encryption.ts,
+// same shape as HISTORY_ENCRYPTION_KEY's derivation but a distinct master
+// key) since, unlike brandLogoUrl, this is a genuine credential. `samlCert`
+// (the IdP's public signing cert) is not a secret, stored in plaintext.
+enum SsoProtocol {
+  OIDC
+  SAML
+}
+
+model SsoConnection {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  protocol       SsoProtocol
+  domain         String       @unique
+  enabled        Boolean      @default(true)
+
+  oidcIssuer          String?
+  oidcClientId        String?
+  oidcClientSecretEnc String?
+
+  samlEntryPoint String?
+  samlIssuer     String?
+  samlCert       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  identities SsoIdentity[]
+}
+
+// Links a User to the org SSO connection they authenticated through — same
+// shape as OAuthAccount (external subject id, uniqued per-connection).
+// Deliberately not folded into OAuthAccount: SSO is org-scoped and
+// JIT-provisions org membership on first login, which personal OAuth never
+// does.
+model SsoIdentity {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ssoConnectionId String
+  ssoConnection   SsoConnection @relation(fields: [ssoConnectionId], references: [id], onDelete: Cascade)
+  externalId      String // OIDC 'sub' claim or SAML NameID
+
+  createdAt DateTime @default(now())
+
+  @@unique([ssoConnectionId, externalId])
+  @@index([userId])
+}
 ```
 
 **Implementation notes (Phase 3):**
@@ -442,6 +508,33 @@ model Subscription {
   close the gap the original team workspaces pass deliberately deferred:
   `addMember` used to just 404 if no account existed yet for the invited
   email. Same hashed-token pattern as `VerificationToken` — see AUDIT_REPORT.md §21.
+- `Organization.brandName`/`brandLogoUrl` and `ShareLink.organizationId` added
+  (migration `20260812170000_add_share_link_branding`) for custom branding on
+  shared links — see AUDIT_REPORT.md §22. This pass also discovered the Share
+  Links backend module had no frontend at all despite being marked shipped in
+  FEATURE.md, so it shipped alongside the first Share UI (`ShareButton`,
+  `/s/[slug]` public viewer) rather than as branding-only. Both new
+  `Organization` fields are nullable — no branding set falls back to default
+  DevToolbox branding on the share page. `brandLogoUrl` isn't fetched or
+  verified server-side, same trust tier as `User.avatarUrl`.
+  `ShareLink.organizationId` is optional and only settable by an authenticated
+  member of that org (checked via `OrganizationMember`, never trusted from the
+  client) — `onDelete: SetNull` so deleting the org doesn't delete the share.
+- `SsoConnection`/`SsoIdentity` added (migration `20260812190000_add_sso`) —
+  org-level SSO, the last item deferred from the original team workspaces MVP
+  pass (AUDIT_REPORT.md §23). One connection per org (`organizationId`
+  unique), keyed by a globally-unique `domain` for login-time discovery.
+  `SsoIdentity` mirrors `OAuthAccount`'s shape (external subject id, uniqued
+  per-connection) but is a separate model rather than reusing `OAuthAccount`
+  — SSO login JIT-provisions org membership on first sign-in, which personal
+  OAuth deliberately never does, so the two needed different downstream
+  behavior even though the identity-linking shape is identical.
+  `oidcClientSecretEnc` is the one genuinely new at-rest-encryption use case
+  since `HistoryEntry` — a real credential, not user-typed content — so it
+  gets its own master key (`SSO_SECRET_ENCRYPTION_KEY`) via a small new
+  module (`secret-encryption.ts`) that otherwise mirrors
+  `history-encryption.ts`'s algorithm exactly rather than inventing a second
+  at-rest-encryption convention.
 
 ## 4. Data Retention & Privacy Notes
 
@@ -449,12 +542,15 @@ model Subscription {
 | --- | --- | --- |
 | `HistoryEntry` | Yes (opt-in sync only) | User-purgeable anytime; previews truncated (e.g., 4KB) and encrypted at rest |
 | `Snippet` / `Pipeline` | Yes (explicit save) | Until user deletes; soft-deleted 30 days before hard purge |
-| `ShareLink` | Yes (explicit share) | Default 30-day expiry, hard-deleted by scheduled job after expiry |
+| `ShareLink` | Yes (explicit share) | Default 30-day expiry, hard-deleted by scheduled job after expiry. Optional `organizationId` (nullable, `SetNull` on org delete) is org attribution/branding only, not user content |
+| `Organization` (`brandName`/`brandLogoUrl`) | No — org-chosen display name and an unverified external logo URL, not user tool content | Kept until org rename/branding cleared or org deleted; `brandLogoUrl` never fetched/stored server-side, rendered client-side only |
 | `AiUsageEvent` | No — token counts only, never prompt/response content | Retained for billing/analytics, aggregated after 90 days |
 | `Session` | No | Refresh token stored as hash only; purged on logout/expiry |
 | `ApiKey` | No | Raw key shown once at creation, never stored; `keyHash` retained (and revoked rows kept, not deleted) for audit until the user deletes their account |
 | `Subscription` | No — Razorpay IDs and status only, no payment/card/UPI data (that lives entirely in Razorpay, never touches this DB) | Kept in sync with Razorpay via webhook + post-payment verification. Account deletion does not yet cancel the underlying Razorpay subscription automatically — tracked as a follow-up, see AUDIT_REPORT.md §15 |
 | `OrganizationInvite` | Contains the invited email address, not otherwise "user content" | Token hashed, never stored raw (same as `Session`/`ApiKey`/`VerificationToken`); rows kept after accept/revoke/expiry for audit visibility rather than deleted — no scheduled purge job yet, tracked as a follow-up |
+| `SsoConnection` | `oidcClientSecretEnc` is a genuine credential (AES-256-GCM at rest, distinct master key from `HISTORY_ENCRYPTION_KEY`); `samlCert` is the IdP's public cert, not a secret, stored plaintext | Kept until an OWNER deletes the connection; no automatic expiry |
+| `SsoIdentity` | No — just an external subject id (OIDC `sub`/SAML NameID), same sensitivity tier as `OAuthAccount.providerUserId` | Kept for the life of the linked `User`/`SsoConnection`; cascade-deleted with either |
 
 ## 5. Indexing Strategy
 

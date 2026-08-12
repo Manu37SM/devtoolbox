@@ -32,6 +32,14 @@ enum VerificationTokenType {
   PASSWORD_RESET
 }
 
+// Org-level SSO (AUDIT_REPORT.md §23) — the last item deferred from the
+// original Phase 4 team workspaces scope. One connection per org (MVP: no
+// multi-IdP-per-org support), discriminated by protocol.
+enum SsoProtocol {
+  OIDC
+  SAML
+}
+
 model User {
   id               String    @id @default(uuid())
   email            String    @unique
@@ -71,6 +79,7 @@ model User {
   plugins             Plugin[]
   reviewedPluginVersions PluginVersion[]
   sentOrganizationInvites OrganizationInvite[]
+  ssoIdentities        SsoIdentity[]
 
   @@index([email])
 }
@@ -97,6 +106,24 @@ model OAuthAccount {
   createdAt      DateTime @default(now())
 
   @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+// Links a User to the org SSO connection they last authenticated through —
+// same shape as OAuthAccount (external subject id, uniqued per-connection),
+// deliberately not folded into OAuthAccount since SSO is org-scoped and JIT
+// (just-in-time) provisions membership in that org on first login, which
+// personal OAuth login never does. See AUDIT_REPORT.md §23.
+model SsoIdentity {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ssoConnectionId String
+  ssoConnection   SsoConnection @relation(fields: [ssoConnectionId], references: [id], onDelete: Cascade)
+  externalId      String        // OIDC 'sub' claim or SAML NameID
+  createdAt       DateTime      @default(now())
+
+  @@unique([ssoConnectionId, externalId])
   @@index([userId])
 }
 
@@ -189,19 +216,28 @@ model PipelineStep {
 }
 
 model ShareLink {
-  id               String    @id @default(uuid())
-  slug             String    @unique
+  id               String        @id @default(uuid())
+  slug             String        @unique
   userId           String?
-  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // Optional org attribution (Phase 4 follow-up — AUDIT_REPORT.md §22).
+  // Nullable/SET NULL on org deletion, same additive-not-required pattern
+  // as Snippet.organizationId/Pipeline.organizationId — a share link
+  // created without an organizationId behaves exactly as before this
+  // change. Only settable at creation time by a member of that org
+  // (ShareService.create), never changed afterward.
+  organizationId   String?
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   toolSlug         String
   payload          Json
   objectStorageKey String?
-  viewCount        Int       @default(0)
+  viewCount        Int           @default(0)
   expiresAt        DateTime?
-  createdAt        DateTime  @default(now())
+  createdAt        DateTime      @default(now())
 
   @@index([slug])
   @@index([expiresAt])
+  @@index([organizationId])
 }
 
 model AiUsageEvent {
@@ -227,13 +263,66 @@ model Organization {
   id        String   @id @default(uuid())
   name      String
   plan      Plan     @default(TEAM)
+  // Custom branding for org-shared links (Phase 4 follow-up —
+  // AUDIT_REPORT.md §22; ARCHITECTURE.md §14.2 originally deferred this).
+  // Both nullable/optional — an org with neither set just shows the
+  // default DevToolbox branding on its shared links, same as a personal
+  // (non-org) share. `brandLogoUrl` is validated as a well-formed URL at
+  // the DTO layer (UpdateOrganizationSchema) but not fetched/verified
+  // server-side — it's rendered as a plain `<img src>` client-side, no
+  // different in trust level from any other externally-hosted image URL
+  // already accepted elsewhere in this codebase (e.g. User.avatarUrl).
+  brandName     String?
+  brandLogoUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members   OrganizationMember[]
-  snippets  Snippet[]
-  pipelines Pipeline[]
-  invites   OrganizationInvite[]
+  members       OrganizationMember[]
+  snippets      Snippet[]
+  pipelines     Pipeline[]
+  invites       OrganizationInvite[]
+  shareLinks    ShareLink[]
+  ssoConnection SsoConnection?
+}
+
+// Org-level SSO connection (AUDIT_REPORT.md §23) — the last item deferred
+// from the original Phase 4 team workspaces scope. One row per org (MVP: a
+// single IdP per org, no multi-connection support). `domain` is the email
+// domain that routes an unauthenticated visitor to this org's SSO at login
+// (`GET /sso/discover?domain=`) — unique across all orgs so domain lookup is
+// unambiguous. Only one of the OIDC/SAML field groups is populated,
+// discriminated by `protocol`; enforced at the DTO layer
+// (UpsertSsoConnectionSchema), not a DB constraint, since Postgres has no
+// native "exactly one of these column groups is non-null" check without a
+// CHECK constraint Prisma doesn't model well here — same tradeoff already
+// accepted for ShareLink's payload shape varying by toolSlug.
+// `oidcClientSecret` is encrypted at rest (backend/src/common/crypto/
+// secret-encryption.ts, same AES-256-GCM/HKDF pattern as
+// history-encryption.ts, distinct master key `SSO_SECRET_ENCRYPTION_KEY`) —
+// unlike brandLogoUrl this is a genuine credential, not attacker-controlled
+// display data, so it gets the same at-rest protection as History content.
+// `samlCert` (the IdP's public signing certificate) is not a secret and is
+// stored in plaintext.
+model SsoConnection {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  protocol       SsoProtocol
+  domain         String       @unique
+  enabled        Boolean      @default(true)
+
+  oidcIssuer          String?
+  oidcClientId        String?
+  oidcClientSecretEnc String? // AES-256-GCM ciphertext, see model doc above
+
+  samlEntryPoint String? // IdP SSO URL the SP-initiated AuthnRequest redirects to
+  samlIssuer     String? // IdP entity id
+  samlCert       String? // IdP's public signing cert (PEM), not a secret
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  identities SsoIdentity[]
 }
 
 model OrganizationMember {

@@ -14,6 +14,7 @@ import { pushPipelineToAccount, PipelineConflictError } from "@/lib/pipeline-syn
 import { useAuthStore } from "@/store/auth-store";
 import { ApiClientError } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
+import { ShareButton } from "@/components/share/ShareButton";
 
 interface PipelineBuilderProps {
   /** Existing pipeline to edit, or undefined when creating a new one. */
@@ -238,6 +239,11 @@ export function PipelineBuilder({ pipeline }: PipelineBuilderProps) {
             {isSaving ? "Saving…" : "Save"}
           </Button>
           {saveMessage ? <span className="text-sm text-text-muted">{saveMessage}</span> : null}
+          <ShareButton
+            toolSlug="pipeline"
+            getPayload={() => (steps.length > 0 ? { name, description, steps, initialInput } : null)}
+            disabledHint="Add at least one step before sharing."
+          />
         </div>
 
         {isAuthenticated && (

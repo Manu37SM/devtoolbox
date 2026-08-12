@@ -9,6 +9,7 @@ import type {
   OrganizationInviteSummary,
   OrganizationSummary,
   OrganizationUsageSummary,
+  UpdateOrganizationBrandingDto,
   UpdateOrganizationDto,
   UpdateOrganizationMemberRoleDto,
 } from "@devtoolbox/shared";
@@ -43,7 +44,14 @@ export class OrganizationsService {
         members: { create: { userId, role: "OWNER" } },
       },
     });
-    return { id: org.id, name: org.name, role: "OWNER", createdAt: org.createdAt.toISOString() };
+    return {
+      id: org.id,
+      name: org.name,
+      role: "OWNER",
+      createdAt: org.createdAt.toISOString(),
+      brandName: org.brandName,
+      brandLogoUrl: org.brandLogoUrl,
+    };
   }
 
   async listForUser(userId: string): Promise<OrganizationSummary[]> {
@@ -57,6 +65,8 @@ export class OrganizationsService {
       name: m.organization.name,
       role: m.role,
       createdAt: m.organization.createdAt.toISOString(),
+      brandName: m.organization.brandName,
+      brandLogoUrl: m.organization.brandLogoUrl,
     }));
   }
 
@@ -73,6 +83,8 @@ export class OrganizationsService {
       name: org.name,
       role: membership.role,
       createdAt: org.createdAt.toISOString(),
+      brandName: org.brandName,
+      brandLogoUrl: org.brandLogoUrl,
       members: org.members.map((m) => ({
         userId: m.userId,
         email: m.user.email,
@@ -83,10 +95,39 @@ export class OrganizationsService {
     };
   }
 
+  /** OWNER only — same gate as `rename`. Either field can be explicitly
+   * cleared by passing `null`; omitting a field leaves it unchanged
+   * (standard PATCH semantics, same as `rename`'s `name`). */
+  async updateBranding(userId: string, organizationId: string, dto: UpdateOrganizationBrandingDto): Promise<OrganizationSummary> {
+    await this.requireRole(userId, organizationId, ["OWNER"]);
+    const org = await this.prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        ...(dto.brandName !== undefined ? { brandName: dto.brandName } : {}),
+        ...(dto.brandLogoUrl !== undefined ? { brandLogoUrl: dto.brandLogoUrl } : {}),
+      },
+    });
+    return {
+      id: org.id,
+      name: org.name,
+      role: "OWNER",
+      createdAt: org.createdAt.toISOString(),
+      brandName: org.brandName,
+      brandLogoUrl: org.brandLogoUrl,
+    };
+  }
+
   async rename(userId: string, organizationId: string, dto: UpdateOrganizationDto): Promise<OrganizationSummary> {
     await this.requireRole(userId, organizationId, ["OWNER"]);
     const org = await this.prisma.organization.update({ where: { id: organizationId }, data: { name: dto.name } });
-    return { id: org.id, name: org.name, role: "OWNER", createdAt: org.createdAt.toISOString() };
+    return {
+      id: org.id,
+      name: org.name,
+      role: "OWNER",
+      createdAt: org.createdAt.toISOString(),
+      brandName: org.brandName,
+      brandLogoUrl: org.brandLogoUrl,
+    };
   }
 
   async delete(userId: string, organizationId: string): Promise<void> {
