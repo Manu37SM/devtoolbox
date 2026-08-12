@@ -28,6 +28,7 @@
     "@codemirror/view": "^6.34.0",
     "@devtoolbox/shared": "*",
     "@faker-js/faker": "^10.5.0",
+    "@sentry/nextjs": "^8.42.0",
     "@jridgewell/source-map": "^0.3.11",
     "@radix-ui/react-dialog": "^1.1.0",
     "class-variance-authority": "^0.7.0",

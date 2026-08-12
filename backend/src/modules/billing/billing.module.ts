@@ -7,5 +7,10 @@ import { BillingService } from "./billing.service";
 @Module({
   controllers: [BillingController],
   providers: [BillingService],
+  // Exported so UsersModule can cancel the underlying Razorpay subscription
+  // on account deletion (AUDIT_REPORT.md §15.2/§24) — reuses the exact same
+  // cancelSubscription() path the /billing/cancel-subscription route calls,
+  // rather than a second copy of the Razorpay cancel-subscription call.
+  exports: [BillingService],
 })
 export class BillingModule {}

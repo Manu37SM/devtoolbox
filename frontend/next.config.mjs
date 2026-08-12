@@ -1,7 +1,33 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Next.js only auto-loads `.env`/`.env.local` from its own directory
+// (`frontend/`), never from a monorepo root. This project ships a single
+// root `.env.example`/`.env` (DEVELOPMENT_GUIDE.md §2's `cp .env.example
+// .env`), so without this, every `NEXT_PUBLIC_*` var (API base URL, Sentry
+// DSN, OAuth client IDs, ...) is silently undefined when the frontend is
+// started the documented way — that's what was causing "Cannot POST" on
+// login: `apiBaseUrl()` should have thrown a friendly "backend not
+// configured" error, but if the value it read was blank/malformed for any
+// reason, requests fall back to a relative path and hit the Next.js dev
+// server itself instead of the backend, which has no matching route and
+// returns Express's raw "Cannot POST /path".
+//
+// `process.loadEnvFile` is a Node 22+ built-in (this project already
+// requires Node 22 everywhere — see backend/Dockerfile, ci.yml) — no new
+// dependency needed. Wrapped in try/catch because real deploys (Vercel)
+// have no `.env` file on disk at all; env vars are injected directly into
+// the process by the platform, and that's expected, not an error.
+try {
+  process.loadEnvFile(path.join(__dirname, "..", ".env"));
+} catch {
+  // No root .env on disk — normal in CI/production (Vercel), or if this
+  // workspace has its own frontend/.env.local instead. Next's normal
+  // frontend/.env* loading still runs after this either way.
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -44,7 +70,53 @@ const nextConfig = {
   // update checks (which the browser already runs periodically/on
   // navigation) actually see fresh bytes instead of a cached response.
   async headers() {
+    // Security headers for every route (AUDIT_REPORT.md prod-readiness sweep).
+    // The backend already sends these via helmet() (main.ts) for API
+    // responses; this covers the actual HTML/asset responses users' browsers
+    // render, which helmet never touches since it only runs on the NestJS
+    // app.
+    //
+    // CSP note: this is intentionally permissive on script-src/style-src
+    // ('unsafe-inline' for Next's inline bootstrap script + CSS-in-JS/inline
+    // styles some tool UIs use, 'unsafe-eval'/'wasm-unsafe-eval' because
+    // several client-side tool transforms — e.g. the image/QR/SVG tools —
+    // use WebAssembly). Tightening this to a nonce-based CSP (no
+    // 'unsafe-inline'/'unsafe-eval') is a real follow-up, but doing it
+    // safely requires per-request nonce wiring through the App Router,
+    // which is a bigger, separate change — not done speculatively here to
+    // avoid shipping a CSP that silently breaks tool pages.
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "worker-src 'self' blob:",
+      "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io " +
+        (process.env.NEXT_PUBLIC_API_BASE_URL
+          ? new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin
+          : ""),
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ]
+      .join("; ")
+      .trim();
+
+    const securityHeaders = [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+      { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+      { key: "Content-Security-Policy", value: csp },
+    ];
+
     return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
       {
         source: "/sw.js",
         headers: [
@@ -58,4 +130,18 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry (AUDIT_REPORT.md §24) — `withSentryConfig` wraps the build to
+// upload source maps and inject the client init; it's a no-op at runtime
+// for anyone without SENTRY_ORG/SENTRY_PROJECT/SENTRY_AUTH_TOKEN set (build
+// still succeeds, just without source-map upload — those three are only
+// needed for readable stack traces in the Sentry dashboard, not for error
+// capture itself, which only needs NEXT_PUBLIC_SENTRY_DSN). See
+// sentry.client.config.ts/sentry.server.config.ts/sentry.edge.config.ts for
+// the actual init + the CLAUDE.md rule 8 redaction rules.
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  disableLogger: true,
+});

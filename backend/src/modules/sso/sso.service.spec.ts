@@ -50,7 +50,12 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
   } as unknown as import("../../database/prisma.service").PrismaService;
 }
 
-function makeConfig(values: Record<string, string | undefined> = { SSO_SECRET_ENCRYPTION_KEY: MASTER_KEY }) {
+function makeConfig(
+  values: Record<string, string | undefined> = {
+    SSO_SECRET_ENCRYPTION_KEY: MASTER_KEY,
+    FRONTEND_URL: "https://app.devtoolbox.dev",
+  },
+) {
   return { get: jest.fn((key: string) => values[key]) } as unknown as ConfigService;
 }
 
@@ -192,6 +197,7 @@ describe("SsoService", () => {
       organizationId: "org-1",
       protocol: "OIDC",
       enabled: true,
+      domain: "acme.com",
       oidcIssuer: "https://idp.example.com",
       oidcClientId: "client-1",
       oidcClientSecretEnc: encryptSecret(MASTER_KEY, "org-1", "shh"),
@@ -230,7 +236,9 @@ describe("SsoService", () => {
     it("rejects a domain with no enabled OIDC connection", async () => {
       const prisma = makePrisma();
       const service = new SsoService(prisma, makeConfig(), makeAuth());
-      await expect(service.buildOidcAuthorizeUrl("nope.com", "https://x")).rejects.toThrow();
+      await expect(
+        service.buildOidcAuthorizeUrl("nope.com", "https://app.devtoolbox.dev/sso/callback"),
+      ).rejects.toThrow();
     });
 
     it("completes login for a first-time user (JIT provisioning + org join)", async () => {
@@ -290,7 +298,9 @@ describe("SsoService", () => {
       mockJwtVerify.mockResolvedValue({ payload: { sub: "sub-1", email: "a@acme.com", nonce: "actual-nonce" } });
 
       const state = Buffer.from(JSON.stringify({ connectionId: "conn-1", nonce: "different-nonce" })).toString("base64url");
-      await expect(service.handleOidcCallback("code-1", state, "https://x", {})).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.handleOidcCallback("code-1", state, "https://app.devtoolbox.dev/sso/callback", {}),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it("rejects when the IdP returns no email and this is a first-time identity", async () => {
@@ -303,9 +313,39 @@ describe("SsoService", () => {
       mockJwtVerify.mockResolvedValue({ payload: { sub: "sub-1", nonce: "n1" } });
 
       const state = Buffer.from(JSON.stringify({ connectionId: "conn-1", nonce: "n1" })).toString("base64url");
-      await expect(service.handleOidcCallback("code-1", state, "https://x", {})).rejects.toThrow(
-        "identity provider did not return an email",
+      await expect(
+        service.handleOidcCallback("code-1", state, "https://app.devtoolbox.dev/sso/callback", {}),
+      ).rejects.toThrow("identity provider did not return an email");
+    });
+
+    it("rejects a redirectUri that isn't on this app's own origin", async () => {
+      const prisma = makePrisma({ ssoConnection: { findUnique: jest.fn().mockResolvedValue(connection) } });
+      const service = new SsoService(prisma, makeConfig(), makeAuth());
+      await expect(service.buildOidcAuthorizeUrl("acme.com", "https://evil.example.com/callback")).rejects.toThrow(
+        "own origin",
       );
+    });
+
+    // Regression test for the account-takeover finding in AUDIT_REPORT.md
+    // §23.5: an SsoConnection is fully configured by its org's OWNER,
+    // including which IdP it trusts — nothing before this check stopped a
+    // connection at attacker-controlled-idp.example.com from asserting an
+    // email at a domain it has no relationship to, which would otherwise
+    // link the login to an existing victim account at that email.
+    it("rejects an asserted email whose domain doesn't match the connection's domain", async () => {
+      const prisma = makePrisma({
+        ssoConnection: { findUnique: jest.fn().mockResolvedValue(connection) }, // connection.domain = "acme.com"
+        ssoIdentity: { findUnique: jest.fn().mockResolvedValue(null) },
+      });
+      const service = new SsoService(prisma, makeConfig(), makeAuth());
+      mockDiscoveryAndToken("id-token-value");
+      mockJwtVerify.mockResolvedValue({ payload: { sub: "sub-attacker", email: "victim@totally-different.com", nonce: "n2" } });
+
+      const state = Buffer.from(JSON.stringify({ connectionId: "conn-1", nonce: "n2" })).toString("base64url");
+      await expect(
+        service.handleOidcCallback("code-1", state, "https://app.devtoolbox.dev/sso/callback", {}),
+      ).rejects.toThrow("only authorized for @acme.com");
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
     });
   });
 
@@ -315,6 +355,7 @@ describe("SsoService", () => {
       organizationId: "org-1",
       protocol: "SAML",
       enabled: true,
+      domain: "acme.com",
       samlEntryPoint: "https://idp.example.com/sso",
       samlIssuer: "https://idp.example.com",
       samlCert: "-----BEGIN CERTIFICATE-----",
@@ -347,6 +388,25 @@ describe("SsoService", () => {
       const service = new SsoService(prisma, makeConfig(), makeAuth());
       mockValidatePostResponseAsync.mockResolvedValue({ profile: null });
       await expect(service.handleSamlCallback("resp", "conn-2", "https://x", {})).rejects.toThrow(UnauthorizedException);
+    });
+
+    // Same account-takeover regression as the OIDC test above (AUDIT_REPORT.md
+    // §23.5) — a SAML connection's entryPoint/cert are equally attacker-
+    // supplied at connection-creation time, so an assertion's email must be
+    // bound to the connection's own claimed domain too.
+    it("rejects an asserted email whose domain doesn't match the connection's domain", async () => {
+      const prisma = makePrisma({
+        ssoConnection: { findUnique: jest.fn().mockResolvedValue(connection) }, // connection.domain = "acme.com"
+        ssoIdentity: { findUnique: jest.fn().mockResolvedValue(null) },
+      });
+      const service = new SsoService(prisma, makeConfig(), makeAuth());
+      mockValidatePostResponseAsync.mockResolvedValue({
+        profile: { nameID: "attacker-nameid", email: "victim@totally-different.com" },
+      });
+      await expect(service.handleSamlCallback("resp", "conn-2", "https://x", {})).rejects.toThrow(
+        "only authorized for @acme.com",
+      );
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
     });
   });
 });

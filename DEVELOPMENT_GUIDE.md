@@ -97,12 +97,15 @@ devtoolbox/
 │   │   ├── jobs/                 # BullMQ processors (share-link cleanup, usage rollups)
 │   │   ├── middleware/
 │   │   └── tests/                # e2e (supertest) suites, one per module
-│   └── prisma/
-│       └── schema.prisma
+│   ├── prisma/
+│   │   └── schema.prisma
+│   └── Dockerfile                # production image, built via `turbo prune` (AUDIT_REPORT.md §24/§25)
+├── render.yaml                   # Render Blueprint: backend web service + Postgres + Redis (Key Value), all free tier (AUDIT_REPORT.md §25)
 ├── packages/
 │   └── shared/                   # types & Zod schemas shared frontend<->backend (AI gateway DTOs, tool metadata types)
 ├── docs/                         # ADRs, diagrams, supplementary specs
 ├── scripts/                      # bootstrap.sh, release.sh, generate-tool.ts (scaffolding CLI)
+├── vercel.json                   # Vercel monorepo build config for the frontend
 └── .github/workflows/            # ci.yml, deploy-frontend.yml, deploy-backend.yml
 ```
 
@@ -163,18 +166,19 @@ Coverage gate: 80% line coverage minimum on `transform.ts` files and backend `se
 
 ## 7. CI/CD
 
-- **CI (GitHub Actions, `ci.yml`):** on every PR — install (cached), typecheck, lint, unit tests, build, Storybook build + a11y check, Playwright smoke suite against a preview build.
-- **Preview deploys:** every PR gets a Vercel preview URL (frontend) and an ephemeral backend environment (Fly.io/Render preview app) for full-stack PRs touching the API.
-- **CD:** merge to `main` → automatic deploy to staging → manual promote to production (or automatic after a smoke-test gate, revisited once release cadence stabilizes). Backend deploys run Prisma migrations as a pre-deploy step with an automatic rollback plan if migration fails.
-- **Release/versioning:** semantic-release driven by Conventional Commits, auto-generates CHANGELOG.md entries and git tags.
+- **CI (GitHub Actions, `ci.yml`):** on every PR — install (cached), typecheck, lint, unit tests, build, Storybook build + a11y check.
+- **CD — ✅ shipped (AUDIT_REPORT.md §24/§25):** `deploy-backend.yml` and `deploy-frontend.yml` both trigger via `workflow_run` on `ci.yml`'s completion on `main` — a broken build/lint/test run blocks both deploys, not just the one that happened to touch that workspace. Backend deploys to **Render** (`backend/Dockerfile` + `render.yaml`, built via `turbo prune` so the image only carries `@devtoolbox/backend` + `@devtoolbox/shared`, not the frontend/CLI/extension); `render.yaml`'s `preDeployCommand` runs `prisma migrate deploy` before any new instance starts serving traffic — no separate manual migration step. The deploy workflow POSTs to a Render Deploy Hook rather than relying on Render's own auto-deploy-on-push, so a redeploy only happens after this monorepo's full CI run passes (see AUDIT_REPORT.md §25 for why Fly.io was dropped in favor of Render — Fly lost its free tier in 2026). Frontend deploys to **Vercel** via the CLI (`vercel.json` at repo root, `installCommand: npm ci` + `buildCommand: npx turbo run build --filter=@devtoolbox/frontend` so the monorepo's shared package resolves correctly) rather than Vercel's own Git-integration auto-deploy, specifically so it's gated behind the same CI run as the backend.
+- **Preview deploys — not yet built.** No per-PR ephemeral environments (Vercel preview URLs, ephemeral backend). A real gap for a team iterating with pull requests; not blocking for a single-maintainer / pre-launch setup, which is what CD was built for first.
+- **Staging environment — not yet built.** `main` deploys straight to production; no staged rollout. Given the size of this deployment (single Render web service, single Vercel project), a staging tier is a reasonable next addition but wasn't built speculatively.
+- **Release/versioning:** semantic-release driven by Conventional Commits is described in CHANGELOG.md's header note but not yet wired up as an actual CI step — CHANGELOG.md entries have been maintained by hand through this project's entire build-out so far.
+- **Required GitHub Actions secrets** for the two deploy workflows: `RENDER_DEPLOY_HOOK_URL` (backend, from the devtoolbox-api service's Settings → Deploy Hook in the Render dashboard), `VERCEL_TOKEN`/`VERCEL_ORG_ID`/`VERCEL_PROJECT_ID` (frontend, obtained via `vercel link` once against the real Vercel project). Full step-by-step for every one of these is in PROD_READY.md.
 
 ## 8. Logging, Monitoring, Analytics
 
-- **Error tracking:** Sentry (frontend + backend), scrubbed of any tool input/output content via `beforeSend` redaction — stack traces and metadata only.
-- **APM/tracing:** OpenTelemetry SDK in the backend, exported to a hosted backend (e.g., Grafana Cloud/Honeycomb) — traces auth, sync, AI gateway, and network-proxy request paths.
-- **Metrics/dashboards:** Prometheus-format metrics (request rate/latency/error rate per route, AI token usage, queue depth) visualized in Grafana.
-- **Product analytics:** privacy-respecting, aggregate-only event tracking (tool opened, transform run [no content], pipeline created, share created) via a self-hosted or privacy-first provider (e.g., Plausible/PostHog with input capture disabled) — never third-party ad-network trackers, per ARCHITECTURE.md §12/NFR privacy requirement.
-- **Uptime:** external synthetic monitoring (e.g., Better Uptime/Checkly) against key routes and the AI gateway health endpoint.
+- **Error tracking — ✅ shipped (AUDIT_REPORT.md §24):** Sentry, backend (`@sentry/node`, initialized in `main.ts`) and frontend (`@sentry/nextjs`, `sentry.client/server/edge.config.ts` + `src/instrumentation.ts` + `src/app/global-error.tsx`). Deliberately narrow, per CLAUDE.md rule 8: no automatic request-body/cookie capture, no Session Replay (a dev-tools product's entire surface is "paste your data in" — Replay would routinely record exactly the content rule 8 forbids), `beforeSend` strips `request.data`/`extra` as defense-in-depth, and the backend's `GlobalExceptionFilter` only reports true 5xx/unhandled errors (never 4xx validation/auth errors, which are expected control flow and could echo user input in `exception.message`). No `tracesSampleRate` (performance tracing) enabled yet — error capture only.
+- **APM/tracing, metrics/dashboards (OpenTelemetry, Prometheus/Grafana) — not yet built.** Still the plan for when traffic/team size justifies the operational overhead; error tracking alone (above) is the higher-priority first step and is what shipped.
+- **Product analytics — not yet built.** `NEXT_PUBLIC_ANALYTICS_HOST` exists as a placeholder env var; no provider (Plausible/PostHog/etc.) is actually integrated yet.
+- **Uptime monitoring — not yet built.** Render's own health check (`render.yaml`'s `healthCheckPath`, polling `GET /v1/health`) restarts an unhealthy backend instance automatically, but there's no external synthetic monitoring (Better Uptime/Checkly/etc.) alerting a human if the whole app goes down — and on the free plan, an idle instance sleeping after 15 minutes is expected behavior, not something a monitor should page on.
 
 ## 9. Environment Configuration
 
@@ -188,6 +192,8 @@ JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
 HISTORY_ENCRYPTION_KEY=
 FRONTEND_URL=
+BACKEND_URL=                  # this backend's own origin — needed for the SAML ACS callback URL (§17.5)
+SSO_SECRET_ENCRYPTION_KEY=    # org SSO client-secret encryption at rest
 ANTHROPIC_API_KEY=
 AI_MODEL_HAIKU=
 AI_MODEL_SONNET=
@@ -200,10 +206,11 @@ GOOGLE_OAUTH_CLIENT_SECRET=
 RESEND_API_KEY=
 EMAIL_FROM=
 SENTRY_DSN=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_ID_PRO=
-STRIPE_PRICE_ID_TEAM=
+RAZORPAY_KEY_ID=              # migrated off Stripe — AUDIT_REPORT.md §20 (no India support)
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+RAZORPAY_PLAN_ID_PRO=
+RAZORPAY_PLAN_ID_TEAM=
 
 # Frontend
 NEXT_PUBLIC_API_BASE_URL=
@@ -211,6 +218,13 @@ NEXT_PUBLIC_SENTRY_DSN=
 NEXT_PUBLIC_ANALYTICS_HOST=
 NEXT_PUBLIC_GITHUB_CLIENT_ID=
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+
+# Frontend build-time only (source-map upload; not needed to run/build without them,
+# only for readable stack traces in the Sentry dashboard) — set as CI secrets, not
+# needed locally:
+SENTRY_ORG=
+SENTRY_PROJECT=
+SENTRY_AUTH_TOKEN=
 ```
 
 Backend config is validated at boot via a Zod schema (`backend/src/config`) — the process fails fast with a clear message on any missing/malformed variable rather than failing later at first use.

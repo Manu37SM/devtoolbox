@@ -1,6 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import * as Sentry from "@sentry/node";
 import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./common/filters/global-exception.filter";
 
@@ -8,6 +9,34 @@ import { GlobalExceptionFilter } from "./common/filters/global-exception.filter"
  * Backend entry point. See ARCHITECTURE.md §8.3 for module boundaries and
  * DEVELOPMENT_GUIDE.md §3 for the full folder structure.
  */
+
+// Initialized before the Nest app so early boot failures are still
+// captured. No `Sentry.expressIntegration()`/request auto-instrumentation
+// enabled — those automatically attach request bodies/cookies to events,
+// which for this codebase's tool endpoints could mean arbitrary user tool
+// content ending up in Sentry (CLAUDE.md rule 8). GlobalExceptionFilter
+// below reports exceptions manually instead, with an explicit, minimal set
+// of fields. No-op (never calls `Sentry.init`) if SENTRY_DSN isn't set —
+// same "degrade, don't fail boot" treatment as every other optional
+// integration in this codebase.
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV ?? "development",
+    tracesSampleRate: 0,
+    // Defense-in-depth on top of GlobalExceptionFilter's manual, minimal
+    // capture: strip anything that could carry request/response bodies
+    // even if a future change accidentally starts passing more context.
+    beforeSend(event) {
+      if (event.request) {
+        delete event.request.data;
+        delete event.request.cookies;
+      }
+      return event;
+    },
+  });
+}
+
 async function bootstrap() {
   // `rawBody: true` preserves the exact request bytes on `req.rawBody`
   // alongside Nest's normal JSON body parsing (every other route is

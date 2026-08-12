@@ -64,6 +64,12 @@ const envSchema = z.object({
   // returns a clear 503 from any route that needs it rather than failing boot,
   // so an org with no SSO connection configured is entirely unaffected.
   SSO_SECRET_ENCRYPTION_KEY: z.string().min(32).optional(),
+  // Error tracking (AUDIT_REPORT.md §24) — optional in dev, same
+  // degrade-don't-fail-boot treatment as every other integration key above.
+  // GlobalExceptionFilter only ever sends the exception + route/status
+  // metadata to Sentry, never the request body — CLAUDE.md rule 8 ("no
+  // tool input/output content in ... error reports").
+  SENTRY_DSN: z.string().optional(),
 });
 
 @Module({
@@ -71,6 +77,26 @@ const envSchema = z.object({
     NestConfigModule.forRoot({
       isGlobal: true,
       validate: (config) => envSchema.parse(config),
+      // @nestjs/config's default `.env` lookup is relative to
+      // `process.cwd()` — for a monorepo, that's `backend/` when this app
+      // is started via `npm run dev`/`turbo run dev` (each workspace's dev
+      // script runs with its own directory as cwd), NOT the repo root. This
+      // project ships a single root `.env.example`/`.env` (DEVELOPMENT_GUIDE.md
+      // §2's `cp .env.example .env`), so without this, the backend silently
+      // sees none of those variables when run the documented way — it
+      // either fails Zod validation on required vars (DATABASE_URL, JWT
+      // secrets, etc.) or, if those happen to be set some other way,
+      // FRONTEND_URL/BACKEND_URL/etc. quietly fall back to their
+      // `localhost` defaults instead of the real configured values. Listing
+      // both paths covers every way this app is actually started: `../.env`
+      // for the documented root-cwd workflow above, `.env` as a fallback
+      // for anyone running `nest start` directly from inside `backend/`
+      // with their own `backend/.env`. Neither file exists in a real
+      // deploy (Render/Vercel inject env vars directly into the process,
+      // no `.env` file on disk) — @nestjs/config silently ignores missing
+      // paths, so this is a no-op there, not a hard dependency on the file
+      // existing.
+      envFilePath: ["../.env", ".env"],
     }),
   ],
 })

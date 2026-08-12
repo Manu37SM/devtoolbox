@@ -1,0 +1,107 @@
+# Render Blueprint — defines the backend web service, its Postgres database,
+# and its Redis (Key Value) cache in one file, all on Render's free tier, all
+# in the Singapore region (closest Render region to India — Render has no
+# Mumbai region as of this writing; see PROD_READY.md's "Why Render" note).
+#
+# Switched from Fly.io to Render (AUDIT_REPORT.md §25) specifically because
+# Fly.io no longer offers a real free tier and now requires a credit
+# card after a ~2-hour trial, while Render's free web service + free
+# Postgres + free Key Value require no card at all. Trade-off, disclosed in
+# PROD_READY.md: free web services sleep after 15 min idle (cold start ~30-60s
+# on the next request) and the free Postgres instance auto-deletes 30+14
+# days after creation unless upgraded to a paid instance — genuinely
+# different from Fly's "always-on" free-tier machines, not a strictly better
+# swap, but the one that costs nothing.
+#
+# Deploy: connect this repo to Render as a Blueprint (dashboard → New →
+# Blueprint → pick this repo → Render reads this file). Set every `sync:
+# false` env var's real value in the Render dashboard after creation — never
+# commit real secrets here. See PROD_READY.md for where to get each one.
+databases:
+  - name: devtoolbox-db
+    databaseName: devtoolbox
+    user: devtoolbox
+    plan: free
+    region: singapore
+
+services:
+  - type: keyvalue
+    name: devtoolbox-redis
+    plan: free
+    region: singapore
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: [] # no external access — only reachable from other Render services in this account, which is all this app needs (BullMQ jobs + rate-limit counters, both accessed only from the backend service below)
+
+  - type: web
+    name: devtoolbox-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    healthCheckPath: /v1/health
+    # Runs once per deploy, before the new version starts serving traffic —
+    # same role as fly.toml's old `release_command`. If your Render plan/UI
+    # doesn't show this field, run it manually instead: Render dashboard →
+    # devtoolbox-api → Shell → `npx prisma migrate deploy --schema=backend/prisma/schema.prisma`.
+    preDeployCommand: npx prisma migrate deploy --schema=backend/prisma/schema.prisma
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: devtoolbox-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: devtoolbox-redis
+          type: keyvalue
+          property: connectionString
+      # Everything below is a real secret/URL you fill in via the Render
+      # dashboard (Environment tab) after the Blueprint is created —
+      # `sync: false` tells Render "don't manage this value, ask the human."
+      # Full step-by-step for every one of these is in PROD_READY.md.
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: HISTORY_ENCRYPTION_KEY
+        sync: false
+      - key: SSO_SECRET_ENCRYPTION_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AI_MODEL_HAIKU
+        value: claude-haiku-4-5
+      - key: AI_MODEL_SONNET
+        value: claude-sonnet-4-5
+      - key: GITHUB_OAUTH_CLIENT_ID
+        sync: false
+      - key: GITHUB_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: RAZORPAY_PLAN_ID_PRO
+        sync: false
+      - key: RAZORPAY_PLAN_ID_TEAM
+        sync: false

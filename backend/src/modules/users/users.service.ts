@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import type { UpdateProfileDto, UserProfile } from "@devtoolbox/shared";
 import { PrismaService } from "../../database/prisma.service";
+import { BillingService } from "../billing/billing.service";
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billing: BillingService,
+  ) {}
 
   async getProfile(userId: string): Promise<UserProfile> {
     const user = await this.findActiveUser(userId);
@@ -27,9 +31,28 @@ export class UsersService {
    * row stays but is excluded from lookups everywhere else via the
    * `deletedAt` check; hard-purge is a scheduled job, out of scope here.
    * All sessions are revoked immediately so existing tokens stop working
-   * right away even though the row survives. */
+   * right away even though the row survives.
+   *
+   * Cancels the user's underlying Razorpay subscription first (closes
+   * AUDIT_REPORT.md §15.2's disclosed gap — soft-delete used to revoke app
+   * access but leave billing running indefinitely). Cancellation happens
+   * *before* the soft-delete transaction, not after: if it fails partway,
+   * we want the account to still show as active/billed rather than
+   * silently deleted-but-still-being-charged. A user with no subscription,
+   * or a server with billing not configured at all, is not an error here —
+   * both are the common case (most users are on the free plan) and must
+   * not block account deletion. */
   async softDelete(userId: string): Promise<void> {
     await this.findActiveUser(userId);
+
+    try {
+      await this.billing.cancelSubscription(userId);
+    } catch (err) {
+      if (!(err instanceof NotFoundException) && !(err instanceof ServiceUnavailableException)) {
+        throw err;
+      }
+    }
+
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { deletedAt: new Date() } }),
       this.prisma.session.updateMany({

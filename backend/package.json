@@ -40,6 +40,7 @@
     "@nestjs/platform-express": "^11.1.28",
     "@nestjs/throttler": "^6.2.0",
     "@node-saml/node-saml": "^5.0.1",
+    "@sentry/node": "^8.42.0",
     "@prisma/client": "^5.20.0",
     "argon2": "^0.41.0",
     "bullmq": "^5.15.0",

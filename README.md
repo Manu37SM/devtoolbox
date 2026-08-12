@@ -32,13 +32,15 @@ The category is crowded — JSON formatters, Base64 encoders, and JWT decoders e
 | [CLAUDE.md](./CLAUDE.md) | Instructions for Claude / AI coding agents working in this repo |
 | [AUDIT_REPORT.md](./AUDIT_REPORT.md) | Planning-phase audit: decisions made, risks, open items |
 | [CHANGELOG.md](./CHANGELOG.md) | Version history |
+| [PROD_READY.md](./PROD_READY.md) | Step-by-step guide to deploying to production: every env var, how to get it, and what (if anything) it costs |
+| [SECURITY.md](./SECURITY.md) | Vulnerability disclosure policy |
 
 ## Tech Stack (summary — full rationale in ARCHITECTURE.md)
 
 - **Frontend:** Next.js 15 (App Router) + React 19 + TypeScript, Tailwind CSS, Zustand (UI/theme state), Dexie/IndexedDB (local-first history, favorites, pipelines — no server-state library needed at this stage)
 - **Backend:** Node.js + NestJS (TypeScript), PostgreSQL + Prisma, Redis, BullMQ — scaffolded per ARCHITECTURE.md but not yet load-bearing; no shipped tool currently depends on it
 - **AI layer:** Anthropic Claude API (Sonnet/Haiku tier routing) via a thin internal AI gateway service
-- **Infra:** Docker, GitHub Actions CI/CD, Vercel (frontend) + Fly.io/Render (API), Cloudflare (CDN/WAF), S3-compatible object storage
+- **Infra:** Docker, GitHub Actions CI/CD, Vercel (frontend) + Render (API + Postgres + Redis, all free tier — see PROD_READY.md), Cloudflare (CDN/WAF), S3-compatible object storage
 - **Observability:** OpenTelemetry, Sentry, Grafana/Prometheus (self-hosted) or hosted equivalents
 
 ## Monorepo Layout

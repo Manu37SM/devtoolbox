@@ -4,6 +4,39 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (Full prod-readiness sweep + PROD_READY.md)
+
+- **New `PROD_READY.md`** at repo root — a from-scratch, step-by-step deploy guide: every required/optional env var and exactly how to obtain it (Sentry, Resend, GitHub/Google OAuth apps, Razorpay, Anthropic), an openssl-free secret-generation method (`node -e "require('crypto').randomBytes(32)..."`, since openssl isn't assumed to be installed), the actual Render + Vercel deploy steps, a per-service cost breakdown (everything free except the optional Anthropic API), and confirmation every recommended service works from India.
+- **`frontend/src/app/robots.ts` and `sitemap.ts`** — previously missing entirely. Disallows auth/account/SSO/snippet/pipeline/share-link routes from indexing (share links use an unguessable slug as their access control, per ARCHITECTURE.md §8.4 — indexing them would defeat that); allows the homepage, plugin marketplace, and all tool pages, generated from the live `toolRegistry`. New `NEXT_PUBLIC_SITE_URL` env var backs both.
+- **Security headers for the frontend** (`frontend/next.config.mjs`) — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security`, and a Content-Security-Policy, applied to every route. The backend already sent equivalent headers via `helmet()`; this covers the actual HTML/asset responses browsers render, which helmet never touched.
+- **Repo file sweep** — removed stale/regenerable build artifacts (`backend/dist`, `frontend/.next`, `.turbo` cache, an empty leftover `npminstall.log`) and an empty, unreferenced `frontend/src/app/api` directory.
+- Full findings and rationale in AUDIT_REPORT.md §25.
+
+### Added (Production readiness: deploy, monitoring, account-deletion fix)
+
+- **Backend deploys to Fly.io** — `backend/Dockerfile` (multi-stage, built via `turbo prune` so the image only carries `@devtoolbox/backend` + `@devtoolbox/shared`), `backend/fly.toml` (health-checked against the new `GET /v1/health`, `release_command` runs `prisma migrate deploy` before any new instance takes traffic).
+- **Frontend deploys to Vercel** — `vercel.json` at repo root (`npm ci` + `npx turbo run build --filter=@devtoolbox/frontend`, so the monorepo's `@devtoolbox/shared` dependency resolves correctly).
+- **CD wired up** — `.github/workflows/deploy-backend.yml` and `deploy-frontend.yml`, both gated behind `ci.yml` passing on `main` (via `workflow_run`), not a separate/looser trigger.
+- **Error tracking (Sentry) shipped, backend + frontend** — deliberately narrow: no automatic request-body/cookie capture, no Session Replay, `GlobalExceptionFilter` only reports true 5xx/unhandled errors (never 4xx validation/auth errors) — see CLAUDE.md rule 8 and AUDIT_REPORT.md §24 for the full rationale.
+- **New `GET /health`** (unauthenticated, checks Postgres connectivity) — what Fly's health check polls.
+- **Fixed a disclosed billing gap** (AUDIT_REPORT.md §15.2): account deletion now cancels the user's underlying Razorpay subscription (`UsersService.softDelete` calls `BillingService.cancelSubscription` before soft-deleting) instead of leaving it running indefinitely after the account is gone.
+- **New `SECURITY.md`** at repo root — was referenced by CONTRIBUTING.md but didn't exist.
+- New env vars: `SSO_SECRET_ENCRYPTION_KEY`, `BACKEND_URL` (both should already be set from the SSO pass — now also documented in DEVELOPMENT_GUIDE.md §9, which had drifted and still referenced retired `STRIPE_*` vars), `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` (CI-only, for source-map upload).
+- Full details, including what's still genuinely not production-ready (no staging tier, no PR preview environments, no APM/uptime monitoring, no domain-ownership verification for SSO), in AUDIT_REPORT.md §24.
+
+### Changed (Backend deploy target: Fly.io → Render)
+
+- **Backend now deploys to Render, not Fly.io.** Fly.io stopped offering a real free tier in 2026 (new accounts get a short trial then require a credit card), which conflicts with keeping this app free to run. Replaced `backend/fly.toml` with `render.yaml` at the repo root (a Render Blueprint defining the web service, a free managed Postgres database, and a free Key Value/Redis cache, all in Render's Singapore region).
+- **Postgres and Redis both now run on Render itself** (`render.yaml`'s `databases:` and `type: keyvalue` blocks) rather than a third-party provider — a deliberate choice to keep the whole backend stack on one free, no-card-required platform.
+- `.github/workflows/deploy-backend.yml` now POSTs to a Render Deploy Hook instead of running `flyctl deploy`; the only required GitHub secret is `RENDER_DEPLOY_HOOK_URL` (previously `FLY_API_TOKEN`).
+- Trade-offs accepted and disclosed: Render's free web service sleeps after 15 minutes idle (cold start ~30-60s on the next request), and the free Postgres instance auto-expires 30 days after creation (14-day grace period) unless upgraded to a paid instance type — see PROD_READY.md.
+- Full rationale in AUDIT_REPORT.md §25.
+
+### Fixed (Post-implementation security audit — org SSO)
+
+- **Critical: account takeover via unbound JIT provisioning.** SSO login matched an existing account by email alone, with no check that the email's domain matched the connection's own configured domain — an org `OWNER` could point their self-serve SSO connection at an IdP they control and assert any existing user's email, silently linking a login as that victim. Fixed: the asserted email must now end in `@{connection.domain}` before an account is linked or created, for both OIDC and SAML. Domain-ownership verification (DNS/file-based) is a disclosed follow-up, not yet built — see AUDIT_REPORT.md §23.5.
+- **Medium: unvalidated `redirectUri` on OIDC endpoints.** Now pinned to `FRONTEND_URL`'s origin as defense-in-depth, on top of the IdP's own redirect_uri allowlist.
+
 ### Added (Team workspaces — org SSO: OIDC + SAML)
 
 - **Closes the last item deliberately deferred from the original team workspaces MVP scope.** One `SsoConnection` per org, `OWNER`-configurable via `POST/GET/DELETE /organizations/:id/sso` and `POST /organizations/:id/sso/enabled` — discriminated by protocol (OIDC or SAML), keyed by an email domain used for login-time discovery (`GET /sso/discover?domain=`).

@@ -126,6 +126,7 @@ export class SsoService {
   // ── OIDC login flow ────────────────────────────────────────────────────
 
   async buildOidcAuthorizeUrl(domain: string, redirectUri: string): Promise<{ url: string; state: string }> {
+    this.requireOwnOriginRedirect(redirectUri);
     const conn = await this.requireEnabledConnection(domain, "OIDC");
     const discovery = await this.fetchOidcDiscovery(conn.oidcIssuer!);
     const nonce = cryptoRandomString();
@@ -147,6 +148,7 @@ export class SsoService {
     redirectUri: string,
     meta: { userAgent?: string; ip?: string },
   ): Promise<{ tokens: AuthTokenResponse; refreshToken: IssuedRefreshToken }> {
+    this.requireOwnOriginRedirect(redirectUri);
     const masterKey = this.config.get<string>("SSO_SECRET_ENCRYPTION_KEY");
     if (!masterKey) throw new ServiceUnavailableException("SSO is not configured on this server.");
 
@@ -198,7 +200,7 @@ export class SsoService {
     const displayName = typeof payload.name === "string" ? payload.name : null;
     const avatarUrl = typeof payload.picture === "string" ? payload.picture : null;
 
-    const user = await this.findOrProvisionUser(conn.id, conn.organizationId, sub, email, displayName, avatarUrl);
+    const user = await this.findOrProvisionUser(conn.id, conn.organizationId, conn.domain, sub, email, displayName, avatarUrl);
     const refreshToken = await this.authService.createSession(user.id, meta);
     return { tokens: this.authService.buildAuthResponse(user), refreshToken };
   }
@@ -234,7 +236,7 @@ export class SsoService {
     const email = profile.email ?? (profile.nameID.includes("@") ? profile.nameID : null);
     const displayName = typeof profile["displayName"] === "string" ? (profile["displayName"] as string) : null;
 
-    const user = await this.findOrProvisionUser(conn.id, conn.organizationId, profile.nameID, email, displayName, null);
+    const user = await this.findOrProvisionUser(conn.id, conn.organizationId, conn.domain, profile.nameID, email, displayName, null);
     const refreshToken = await this.authService.createSession(user.id, meta);
     return { tokens: this.authService.buildAuthResponse(user), refreshToken };
   }
@@ -247,10 +249,33 @@ export class SsoService {
    * is added as a MEMBER of the connection's org if not already a member.
    * Unlike personal OAuth, SSO login is always in the context of one
    * specific org (the one the domain/connection belongs to), so auto-join
-   * is the whole point rather than a side effect to guard against. */
+   * is the whole point rather than a side effect to guard against.
+   *
+   * SECURITY-CRITICAL (fixed after an audit flagged this as account-takeover
+   * risk, see AUDIT_REPORT.md §23.5): `domain` here is `SsoConnection.domain`
+   * — the email domain this specific connection is *supposed* to represent.
+   * An org OWNER fully controls their own connection's IdP config (issuer,
+   * client secret, or SAML cert/entry point), so a malicious or compromised
+   * OWNER could otherwise stand up a connection at an IdP they control and
+   * assert *any* email in a token/assertion — including an existing
+   * DevToolbox user's address at a completely different domain — since
+   * `jwtVerify`/SAML signature checks only prove the token was signed by
+   * that connection's own configured IdP, not that the IdP is authoritative
+   * for the asserted email's domain. Without this check, that would let the
+   * attacker's IdP silently link an `SsoIdentity` onto a victim's existing
+   * account and log in as them. Requiring the asserted email to end in
+   * `@{domain}` closes that gap: a connection can only ever provision or
+   * link accounts for its own claimed domain, which is the actual security
+   * boundary SSO domain-scoping is supposed to provide. This does not by
+   * itself prove the org *owns* that domain (no DNS/file verification step
+   * exists yet — a real follow-up, noted in AUDIT_REPORT.md §23.5), but it
+   * does close the specific attacker-picks-any-victim-email vector the
+   * audit found, since the attacker's connection is still confined to
+   * accounts at the domain the attacker themselves configured. */
   private async findOrProvisionUser(
     ssoConnectionId: string,
     organizationId: string,
+    domain: string,
     externalId: string,
     email: string | null,
     displayName: string | null,
@@ -266,6 +291,11 @@ export class SsoService {
       if (!user || user.deletedAt) throw new UnauthorizedException("Account no longer available.");
     } else {
       if (!email) throw new BadRequestException("SSO sign-in failed: identity provider did not return an email address.");
+      if (!email.toLowerCase().endsWith(`@${domain.toLowerCase()}`)) {
+        throw new ForbiddenException(
+          `SSO sign-in failed: this connection is only authorized for @${domain} addresses.`,
+        );
+      }
       const existingUser = await this.prisma.user.findUnique({ where: { email } });
       user = existingUser
         ? await this.prisma.user.update({
@@ -323,6 +353,29 @@ export class SsoService {
     const res = await fetch(url);
     if (!res.ok) throw new BadRequestException(`Could not reach identity provider's OIDC discovery document (${url}).`);
     return (await res.json()) as OidcDiscoveryDocument;
+  }
+
+  /** Defense-in-depth per AUDIT_REPORT.md §23.5: `redirectUri` is an
+   * unauthenticated, client-supplied query param forwarded verbatim to the
+   * IdP as `redirect_uri` and reused at token-exchange time. The primary
+   * protection is the IdP's own exact-match redirect_uri allowlisting, but
+   * that's config on a system this codebase doesn't control — pinning it to
+   * this app's own origin here means a misconfigured or permissive IdP
+   * registration can't be abused to redirect an authorization code
+   * somewhere else. */
+  private requireOwnOriginRedirect(redirectUri: string): void {
+    const frontendUrl = this.config.get<string>("FRONTEND_URL") ?? "https://devtoolbox.dev";
+    let expectedOrigin: string;
+    let actualOrigin: string;
+    try {
+      expectedOrigin = new URL(frontendUrl).origin;
+      actualOrigin = new URL(redirectUri).origin;
+    } catch {
+      throw new BadRequestException("Invalid redirectUri.");
+    }
+    if (actualOrigin !== expectedOrigin) {
+      throw new BadRequestException("redirectUri must be on this app's own origin.");
+    }
   }
 
   private async requireEnabledConnection(domain: string, protocol: "OIDC" | "SAML") {

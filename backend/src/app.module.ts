@@ -17,6 +17,7 @@ import { BillingModule } from "./modules/billing/billing.module";
 import { OrganizationsModule } from "./modules/organizations/organizations.module";
 import { PluginsModule } from "./modules/plugins/plugins.module";
 import { SsoModule } from "./modules/sso/sso.module";
+import { HealthModule } from "./modules/health/health.module";
 import { ConfigModule } from "./config/config.module";
 import { PrismaModule } from "./database/prisma.module";
 
@@ -47,6 +48,7 @@ import { PrismaModule } from "./database/prisma.module";
     OrganizationsModule,
     PluginsModule,
     SsoModule,
+    HealthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

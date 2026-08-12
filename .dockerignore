@@ -1,0 +1,14 @@
+# Keeps the Docker build context (repo root, per backend/Dockerfile and
+# frontend/Dockerfile) small — node_modules/build output get reinstalled/
+# rebuilt inside the image anyway, and none of this needs to be uploaded to
+# the Docker daemon.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/.storybook-static
+.git
+.env
+.env.*
+!.env.example
