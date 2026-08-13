@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { CopyButton } from "@/components/tools/CopyButton";
 
@@ -10,12 +11,19 @@ interface OutputPaneProps {
 
 /** Standardized output pane: read-only CodeEditor-equivalent + copy action
  * in the top-right, per UI_GUIDELINES.md §4/§5. `aria-live="polite"`
- * announces transform completion for screen reader users (§6). */
+ * announces transform completion for screen reader users (§6). The visible
+ * <label> is programmatically associated with the textarea via
+ * htmlFor/id (not just visual proximity) so screen readers announce it -
+ * axe's "label" rule flags an unassociated <label> + <textarea> pair. */
 export function OutputPane({ label = "Output", value, error, placeholder }: OutputPaneProps) {
+  const outputId = useId();
+
   return (
     <div className="flex h-full flex-col gap-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-text-secondary">{label}</label>
+        <label htmlFor={outputId} className="text-sm font-medium text-text-secondary">
+          {label}
+        </label>
         <CopyButton value={value} />
       </div>
       <div className="flex-1" aria-live="polite">
@@ -27,7 +35,7 @@ export function OutputPane({ label = "Output", value, error, placeholder }: Outp
             {error}
           </div>
         ) : (
-          <Textarea value={value} readOnly placeholder={placeholder} />
+          <Textarea id={outputId} value={value} readOnly placeholder={placeholder} />
         )}
       </div>
     </div>
