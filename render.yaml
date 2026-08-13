@@ -1,7 +1,19 @@
-# Render Blueprint — defines the backend web service, its Postgres database,
-# and its Redis (Key Value) cache in one file, all on Render's free tier, all
-# in the Singapore region (closest Render region to India — Render has no
-# Mumbai region as of this writing; see PROD_READY.md's "Why Render" note).
+# Render Blueprint — defines the backend web service and its Redis (Key
+# Value) cache, all on Render's free tier, in the Oregon region.
+#
+# Region note: Render's Internal connection URLs (the fast/private/free
+# ones — see PROD_READY.md §6) only resolve within the same region's
+# private network. This app's Postgres database lives on a free instance
+# shared with another app on this account (see the `databases:` note
+# below), and that instance is in Oregon — so every service here that talks
+# to it over an Internal URL (this web service directly, and this Redis
+# instance indirectly, since the web service reaches Redis internally too)
+# must also be in Oregon, or Prisma fails to connect at all (`P1001: Can't
+# reach database server`) rather than just being slower. Singapore would
+# otherwise be the closer region for India-based users (Render has no
+# Mumbai region as of this writing — see PROD_READY.md's "Why Render"
+# note), but that only matters if every service can actually reach the
+# database; matching the database's region is the harder requirement.
 #
 # Switched from Fly.io to Render (AUDIT_REPORT.md §25) specifically because
 # Fly.io no longer offers a real free tier and now requires a credit
@@ -32,7 +44,7 @@ services:
   - type: keyvalue
     name: devtoolbox-redis
     plan: free
-    region: singapore
+    region: oregon
     maxmemoryPolicy: allkeys-lru
     ipAllowList: [] # no external access — only reachable from other Render services in this account, which is all this app needs (BullMQ jobs + rate-limit counters, both accessed only from the backend service below)
 
@@ -42,7 +54,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
     plan: free
-    region: singapore
+    region: oregon
     healthCheckPath: /v1/health
     # No `preDeployCommand` here: that field only works on paid Render web
     # service plans — the free plan this deploys on rejects the Blueprint
