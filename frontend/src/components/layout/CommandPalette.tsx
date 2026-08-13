@@ -42,8 +42,8 @@ export function CommandPalette() {
   const detectedTool = smartDetection ? getToolBySlug(smartDetection.toolSlug) : null;
 
   function navigateToTool(slug: string) {
-    close();
     router.push(`/tools/${slug}`);
+    close();
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/tools/CopyButton";
-import { generatePassword } from "./transform";
+import { generatePassword, type PasswordResult } from "./transform";
 import type { PasswordGeneratorOptions } from "./schema";
 
 function strengthLabel(bits: number): { label: string; variant: "danger" | "warning" | "success" } {
@@ -24,7 +24,14 @@ export function PasswordGeneratorToolView() {
   });
   const [seed, setSeed] = useState(0);
 
-  const result = useMemo(() => generatePassword(options), [options, seed]);
+  // Generated only on the client, after mount, to avoid a server/client
+  // hydration mismatch: generatePassword() uses crypto.getRandomValues, which
+  // returns a different value on every call, including the SSR pass.
+  const [result, setResult] = useState<PasswordResult>({ password: "", entropyBits: 0, error: null });
+  useEffect(() => {
+    setResult(generatePassword(options));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options, seed]);
   const strength = strengthLabel(result.entropyBits);
 
   return (

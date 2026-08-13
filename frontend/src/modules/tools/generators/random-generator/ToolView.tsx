@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/tools/CopyButton";
-import { generateRandom } from "./transform";
+import { generateRandom, type RandomGeneratorResult } from "./transform";
 import type { RandomGeneratorOptions } from "./schema";
 
 export function RandomGeneratorToolView() {
@@ -26,7 +26,14 @@ export function RandomGeneratorToolView() {
   const options: RandomGeneratorOptions =
     kind === "number" ? { kind: "number", ...numberOpts } : { kind: "string", ...stringOpts };
 
-  const result = useMemo(() => generateRandom(options), [options, seed]);
+  // Generated only on the client, after mount, to avoid a server/client
+  // hydration mismatch: generateRandom() uses crypto.getRandomValues, which
+  // returns a different value on every call, including the SSR pass.
+  const [result, setResult] = useState<RandomGeneratorResult>({ values: [], error: null });
+  useEffect(() => {
+    setResult(generateRandom(options));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options, seed]);
   const joined = result.values.join("\n");
 
   return (

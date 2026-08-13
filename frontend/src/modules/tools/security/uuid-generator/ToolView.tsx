@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/tools/CopyButton";
 import { generateUuids } from "./transform";
@@ -15,7 +15,15 @@ export function UuidGeneratorToolView() {
   });
   const [seed, setSeed] = useState(0);
 
-  const uuids = useMemo(() => generateUuids(options), [options, seed]);
+  // Generated only on the client, after mount: this uses crypto.getRandomValues,
+  // which would produce a different value on the server render vs. the
+  // client's first render and cause a React hydration mismatch if computed
+  // during render (see fix for this class of bug across the generator tools).
+  const [uuids, setUuids] = useState<string[]>([]);
+  useEffect(() => {
+    setUuids(generateUuids(options));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options, seed]);
   const joined = uuids.join("\n");
 
   return (
