@@ -1,5 +1,12 @@
 # Going to production — a complete, no-jargon walkthrough
 
+## Current status
+
+- **Backend (Render):** ✅ Deployed and live at `https://devtoolbox-api.onrender.com`.
+- **Frontend (Vercel):** ✅ Deployed and live at `https://devtoolbox-frontend-final.vercel.app`.
+- **GitHub Actions (§8):** ✅ Set up — all required secrets (`RENDER_DEPLOY_HOOK_URL`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) are added, and `deploy-backend.yml`/`deploy-frontend.yml` deploy automatically on push to `main` after CI passes. Known issue: because Vercel's own Git-integration auto-deploy was never disabled (§7 step 9), every push now produces **two** frontend deploys — the Action's CLI-triggered one (`deploy-frontend.yml`, succeeding) and Vercel's own Git-triggered one (failing, shown as repeated "failed to deploy in the Production environment" notifications). The successful Action-triggered deploy is what's actually live; the failing one is redundant, not a sign the site is down — but it should be silenced by following §7 step 9 (Ignored Build Step) to stop the noise and the wasted build. Root-caused, not yet fixed as of this writing.
+- **Domain + Razorpay:** ⏳ Domain not yet verified, Razorpay account not yet verified (Test Mode only) — not covered by this update, tracked separately.
+
 This is a step-by-step guide to taking DevToolbox from "runs on my machine" to "live on the internet," written for someone who has never set up a production deploy before. It assumes no prior experience with any of these tools, and no `openssl` installed locally.
 
 It covers, in order: (1) how to generate the random secret keys the app needs, without `openssl`; (2) every environment variable the app reads, what it's for, and exactly how to get its value; (3) the actual deploy steps for Render (backend) and Vercel (frontend); (4) a plain answer to "is this going to cost me money," service by service; (5) confirmation that everything here works from India.
@@ -184,12 +191,13 @@ Database migrations run automatically — you don't need a separate manual step 
 6. In your GitHub repo, add three more Actions secrets (same location as step 8 above): `VERCEL_TOKEN` (generate one at **vercel.com → Account Settings → Tokens → Create**), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (both from step 5).
 7. Push to `main` — `deploy-frontend.yml` picks it up after CI passes and deploys via the Vercel CLI.
 8. Go back to the Render dashboard (§6) and update `FRONTEND_URL` to your real Vercel URL, and update `NEXT_PUBLIC_API_BASE_URL` in Vercel to your real Render URL — these two need to point at each other's *actual* deployed addresses, not the placeholders.
+9. **Do this once §8's GitHub Action secrets are set — it's what's currently causing the "failed to deploy" notifications (see Current status above).** Unlike Render, Vercel has no single "Auto-Deploy off" toggle — its Git integration keeps deploying on every push regardless of the Action, and in this repo's case that second, redundant Git-triggered deploy is actually failing (not just wasting a build — see the Current status note for why the failure itself isn't dangerous: the Action's deploy is the one that goes live). To make Vercel deploy *only* through the CI-gated Action: go to **Settings → Git → Ignored Build Step**, and set it to a command that always exits `0` (e.g. `exit 0`) — this makes Vercel skip every Git-triggered build while leaving the Git connection (PR comments, etc.) and CLI/Action-triggered deploys (`vercel deploy`, used by `deploy-frontend.yml`) working normally.
 
 ---
 
 ## 8. GitHub Actions secrets — full list
 
-Set these under **Settings → Secrets and variables → Actions** in your GitHub repo:
+**Status: done.** All four required secrets are set and `deploy-backend.yml`/`deploy-frontend.yml` deploy automatically on push to `main` after CI passes. Set under **Settings → Secrets and variables → Actions** in the GitHub repo:
 
 | Secret | Used by | Where it comes from |
 |---|---|---|
@@ -197,11 +205,13 @@ Set these under **Settings → Secrets and variables → Actions** in your GitHu
 | `VERCEL_TOKEN` | `deploy-frontend.yml` | §7 step 6 |
 | `VERCEL_ORG_ID` | `deploy-frontend.yml` | §7 step 5 |
 | `VERCEL_PROJECT_ID` | `deploy-frontend.yml` | §7 step 5 |
-| `SENTRY_ORG` (optional) | source-map upload during frontend build | Your Sentry org slug (shown in the Sentry dashboard URL) |
-| `SENTRY_PROJECT` (optional) | source-map upload during frontend build | Your Sentry project slug |
-| `SENTRY_AUTH_TOKEN` (optional) | source-map upload during frontend build | §3.2's Sentry step 9 |
+| `SENTRY_ORG` (optional) | source-map upload during **frontend** build | Your Sentry org slug (shown in the Sentry dashboard URL) |
+| `SENTRY_PROJECT` (optional) | source-map upload during **frontend** build | Your **frontend** Sentry project's slug (the Next.js project, not the backend/NestJS one — see note below) |
+| `SENTRY_AUTH_TOKEN` (optional) | source-map upload during **frontend** build | §3.2's Sentry step 9 |
 
-The three `SENTRY_*` secrets are only needed for readable (non-minified) stack traces in the Sentry dashboard — skip them and everything else still works, you'll just see minified code in error reports.
+**Not currently wired up.** As of this writing, none of `ci.yml`, `deploy-backend.yml`, or `deploy-frontend.yml` actually reference `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` — the source-map upload step this table describes hasn't been implemented in any workflow yet. It's fine to have `SENTRY_AUTH_TOKEN`/`SENTRY_ORG` set without `SENTRY_PROJECT` (or none of the three at all) — nothing currently reads them. This is unrelated to error tracking working at runtime, which only depends on `SENTRY_DSN` (backend, §3.2) and `NEXT_PUBLIC_SENTRY_DSN` (frontend, §4) being set on Render/Vercel — those are already live if you followed §3.2/§4.
+
+If backend and frontend are different Sentry projects (they should be — one Node/NestJS project, one Next.js project), `SENTRY_PROJECT` as a single GitHub Actions secret can only ever hold one slug. That's fine as documented here because this row is specifically for the *frontend* build's source-map upload — the backend was never meant to use this secret. If a backend source-map/release step is added later, it needs its own separately-named secret (e.g. `SENTRY_PROJECT_BACKEND`), not a second value crammed into this one.
 
 ---
 
@@ -215,11 +225,13 @@ One geographic trade-off worth knowing: Render's closest region to India is Sing
 
 ## 10. Quick checklist
 
-- [ ] Generated 4 unique secrets via `node -e "..."` (§2): `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `HISTORY_ENCRYPTION_KEY`, `SSO_SECRET_ENCRYPTION_KEY`
-- [ ] Render Blueprint deployed, all `sync: false` env vars filled in (§6)
-- [ ] Vercel project deployed, all `NEXT_PUBLIC_*` env vars filled in (§7)
-- [ ] `FRONTEND_URL` (Render) and `NEXT_PUBLIC_API_BASE_URL` (Vercel) point at each other's real URLs
-- [ ] `<backend URL>/v1/health` returns `{"status":"ok"}`
-- [ ] Decided whether to enable `ANTHROPIC_API_KEY` (cost) — set a spending limit if yes
-- [ ] Decided whether to enable Sentry, Resend, OAuth apps, Razorpay — each is independently optional
-- [ ] GitHub Actions secrets set (§8) so `git push` to `main` deploys automatically
+- [x] Generated 4 unique secrets via `node -e "..."` (§2): `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `HISTORY_ENCRYPTION_KEY`, `SSO_SECRET_ENCRYPTION_KEY`
+- [x] Render Blueprint deployed, all `sync: false` env vars filled in (§6) — live at `https://devtoolbox-api.onrender.com`
+- [x] Vercel project deployed, all `NEXT_PUBLIC_*` env vars filled in (§7) — live at `https://devtoolbox-frontend-final.vercel.app`
+- [x] `FRONTEND_URL` (Render) and `NEXT_PUBLIC_API_BASE_URL` (Vercel) point at each other's real URLs
+- [x] `<backend URL>/v1/health` returns `{"status":"ok"}`
+- [x] Decided whether to enable `ANTHROPIC_API_KEY` (cost) — set a spending limit if yes
+- [x] Decided whether to enable Sentry, Resend, OAuth apps, Razorpay — each is independently optional
+- [x] **GitHub Actions secrets set (§8) so `git push` to `main` deploys automatically** — done; still need to silence Vercel's redundant failing auto-deploy via §7 step 9 (Ignored Build Step)
+- [ ] Domain verified
+- [ ] Razorpay account verified (currently Test Mode only)

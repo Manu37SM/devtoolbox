@@ -35,3 +35,6 @@ npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Mobile app lives in its own separate git repository
+mobile/
