@@ -26,6 +26,15 @@ RUN turbo prune @devtoolbox/backend --docker
 FROM base AS installer
 WORKDIR /app
 COPY --from=pruner /app/out/json/ .
+# `turbo prune --docker`'s out/json/ is package.json files only (that's the
+# whole point — it's what makes this layer cacheable across builds where
+# only source changed). `npm ci`'s postinstall runs `prisma generate`
+# (backend/package.json), which needs backend/prisma/schema.prisma to
+# exist — out/json/ doesn't carry it, only out/full/ (copied into the next
+# stage) does. Copy just that one directory in ahead of `npm ci` rather
+# than the full source, so this layer only invalidates when the Prisma
+# schema itself changes, not on every unrelated source edit.
+COPY --from=pruner /app/out/full/backend/prisma ./backend/prisma
 # `npm ci`'s postinstall runs `prisma generate` (backend/package.json) —
 # happens here, inside the linux build environment, so the generated query
 # engine binary matches the runtime image rather than whatever OS built the
