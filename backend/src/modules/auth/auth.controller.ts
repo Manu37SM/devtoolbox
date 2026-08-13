@@ -112,10 +112,26 @@ export class AuthController {
   }
 
   private setRefreshCookie(res: Response, token: IssuedRefreshToken): void {
+    const isProduction = this.config.get<string>("NODE_ENV") === "production";
+    // sameSite: "none" (production only) — frontend (Vercel) and backend
+    // (Render) are different registrable domains, so every request between
+    // them is cross-site as far as cookies are concerned. "strict" (or even
+    // "lax") silently drops this cookie on every cross-site request, which
+    // doesn't break the *first* login (the access token lives in memory,
+    // not the cookie) but breaks every subsequent session-restore: a page
+    // reload, or the full-page redirect round trip for OAuth
+    // login/account-linking (see frontend/src/app/auth/callback/[provider]/
+    // page.tsx's "waiting-for-session" branch, which surfaced this as
+    // "Your session expired before the connection could finish"). "none"
+    // requires `secure: true` (browsers reject `SameSite=None` without
+    // Secure) — true here since this only applies when isProduction, which
+    // is also when `secure` below is true. Local dev keeps "lax": frontend
+    // and backend are both on localhost (same site, different ports), so
+    // "lax" already works there and doesn't require HTTPS.
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, token.raw, {
       httpOnly: true,
-      secure: this.config.get<string>("NODE_ENV") === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       path: REFRESH_TOKEN_COOKIE_PATH,
       expires: token.expiresAt,
     });

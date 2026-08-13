@@ -162,10 +162,15 @@ export class SsoController {
   }
 
   private setRefreshCookie(res: Response, token: IssuedRefreshToken): void {
+    // sameSite: "none" in production — see auth.controller.ts's
+    // setRefreshCookie for why (frontend/backend are different registrable
+    // domains, so this cookie is cross-site and "strict"/"lax" silently
+    // drop it).
+    const isProduction = this.config.get<string>("NODE_ENV") === "production";
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, token.raw, {
       httpOnly: true,
-      secure: this.config.get<string>("NODE_ENV") === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       path: REFRESH_TOKEN_COOKIE_PATH,
       expires: token.expiresAt,
     });

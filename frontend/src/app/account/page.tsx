@@ -407,7 +407,13 @@ export default function AccountPage() {
           <Button variant="secondary" size="sm" onClick={onExport} disabled={exporting}>
             {exporting ? "Preparing…" : "Export data (JSON)"}
           </Button>
-          <Button variant="ghost" size="sm" onClick={onLogout}>
+          {/* "secondary" (bordered) rather than "ghost" — "ghost" renders as
+           * plain text with no visible boundary, easy to miss next to the
+           * bordered "Export data" button beside it (reported: hard to find).
+           * Not "destructive" — logging out isn't a dangerous/irreversible
+           * action like account deletion, so it shouldn't share that button's
+           * red danger styling. */}
+          <Button variant="secondary" size="sm" onClick={onLogout}>
             Log out
           </Button>
         </div>

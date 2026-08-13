@@ -177,7 +177,7 @@ Database migrations run automatically — you don't need a separate manual step 
 ## 7. Deploying the frontend to Vercel
 
 1. Go to [vercel.com](https://vercel.com) → **Sign Up** (GitHub sign-in is fastest) — no card required.
-2. Click **Add New → Project**, pick this repository. When prompted for the root directory, choose `frontend` (this is a monorepo — `vercel.json` at the repo root already configures the correct build command for that).
+2. Click **Add New → Project**, pick this repository. **Leave Root Directory as the repository root** (don't set it to `frontend`) — `vercel.json` at the repo root already scopes everything to the frontend workspace for you (`buildCommand: "npx turbo run build --filter=@devtoolbox/frontend"`, `outputDirectory: "frontend/.next"`), but only if Vercel is actually looking at the repo root for that file. Setting Root Directory to `frontend` makes Vercel look for `frontend/vercel.json` instead — which doesn't exist — silently discarding this config. With Root Directory left at the repo root, the Build Command/Output Directory/Install Command fields under **Build and Output Settings** should auto-populate to match `vercel.json` (`npx turbo run build --filter=@devtoolbox/frontend`, `frontend/.next`, `npm ci`) — you shouldn't need to type any of them in by hand.
 3. In **Environment Variables**, add everything from §4 above.
 4. Click **Deploy**. First deploy takes a few minutes.
 5. Go to **Settings → General**, note your project's **Project ID**, and your account's **Org ID** — both are shown there, or run `vercel link` locally to get them.

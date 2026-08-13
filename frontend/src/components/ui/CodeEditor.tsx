@@ -105,6 +105,19 @@ const appTheme = EditorView.theme({
     backgroundColor: "var(--color-accent) !important",
     opacity: "0.25",
   },
+  // The blinking caret CodeMirror actually renders isn't the native text
+  // caret — CM6's `drawSelection` (part of `basicSetup`) draws its own
+  // `.cm-cursor` overlay and hides the real one, so setting `caretColor`
+  // above (on `.cm-content`) has no visible effect on it. Without an
+  // explicit override here, `.cm-cursor` keeps CodeMirror's built-in
+  // default (a thin near-black border), which is nearly invisible against
+  // this app's dark-theme editor background (reported: "the cursor is
+  // darker than my life"). Using the accent color, and a touch wider than
+  // the 1.2px default, for a caret that reads clearly in both themes.
+  ".cm-cursor, .cm-dropCursor": {
+    borderLeftColor: "var(--color-accent)",
+    borderLeftWidth: "2px",
+  },
 });
 
 /** CodeMirror 6 wrapper — the real `CodeEditor` referenced by
