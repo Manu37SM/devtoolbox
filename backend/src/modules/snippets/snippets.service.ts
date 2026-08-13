@@ -55,7 +55,23 @@ export class SnippetsService {
 
   async create(userId: string, dto: CreateSnippetDto) {
     if (dto.organizationId) await this.assertMember(userId, dto.organizationId);
-    return this.prisma.snippet.create({ data: { userId, ...dto } });
+    // Spelled out explicitly rather than `{ userId, ...dto }` — Prisma's
+    // generated `create` input is `XOR<SnippetCreateInput,
+    // SnippetUncheckedCreateInput>` (relation-based vs. scalar-FK-based),
+    // and TypeScript can't discriminate that union against a generic
+    // spread of a DTO type that has `organizationId` typed as `string |
+    // undefined` (see pipelines.service.ts's `create` for the same
+    // pattern, same reason).
+    return this.prisma.snippet.create({
+      data: {
+        userId,
+        organizationId: dto.organizationId,
+        toolSlug: dto.toolSlug,
+        title: dto.title,
+        content: dto.content,
+        isPublic: dto.isPublic,
+      },
+    });
   }
 
   // Returns the same 404 for "doesn't exist" and "exists but you can't see
