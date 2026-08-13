@@ -29,6 +29,31 @@ try {
   // frontend/.env* loading still runs after this either way.
 }
 
+// Parsed once at module scope, defensively: NEXT_PUBLIC_API_BASE_URL is a
+// plain string env var a human types into the Vercel dashboard (or
+// .env), so it's one accidental stray quote/space/missing-scheme away
+// from not being a valid absolute URL. `new URL(...)` used to be called
+// directly inline inside the headers() CSP builder below on a bad value,
+// which threw straight out of next.config.mjs and hard-failed the
+// *entire* production build ("TypeError: Invalid URL" at
+// next.config.mjs's headers()) instead of just breaking the one CSP
+// connect-src entry that depended on it. Fail soft instead: log a build
+// warning and omit the extra origin from CSP rather than blocking
+// deploys - same-origin `'self'` traffic is unaffected either way.
+let apiOrigin = "";
+if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+  try {
+    apiOrigin = new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin;
+  } catch {
+    console.warn(
+      `[next.config.mjs] NEXT_PUBLIC_API_BASE_URL is set but is not a valid absolute URL ` +
+        `(got: ${JSON.stringify(process.env.NEXT_PUBLIC_API_BASE_URL)}). ` +
+        `Expected something like "https://devtoolbox-api.onrender.com/v1". ` +
+        `Skipping it in the CSP connect-src for this build.`,
+    );
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -93,9 +118,7 @@ const nextConfig = {
       "font-src 'self' data:",
       "worker-src 'self' blob:",
       "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io " +
-        (process.env.NEXT_PUBLIC_API_BASE_URL
-          ? new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin
-          : ""),
+        apiOrigin,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
