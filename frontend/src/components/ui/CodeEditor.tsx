@@ -108,15 +108,24 @@ const appTheme = EditorView.theme({
   // The blinking caret CodeMirror actually renders isn't the native text
   // caret — CM6's `drawSelection` (part of `basicSetup`) draws its own
   // `.cm-cursor` overlay and hides the real one, so setting `caretColor`
-  // above (on `.cm-content`) has no visible effect on it. Without an
-  // explicit override here, `.cm-cursor` keeps CodeMirror's built-in
-  // default (a thin near-black border), which is nearly invisible against
-  // this app's dark-theme editor background (reported: "the cursor is
-  // darker than my life"). Using the accent color, and a touch wider than
-  // the 1.2px default, for a caret that reads clearly in both themes.
+  // above (on `.cm-content`) has no visible effect on it. `drawSelection`
+  // ships its own baseTheme rule — `.cm-cursor, .cm-dropCursor { borderLeft:
+  // "1.2px solid black" }` (checked directly in
+  // node_modules/@codemirror/view) — as a single `border-left` shorthand.
+  // It also has a `"&dark .cm-cursor"` variant, but that only applies when
+  // the editor is constructed with `EditorView.theme(styles, {dark: true})`,
+  // which this app doesn't do (colors switch via the `.dark` class on
+  // <html> + CSS custom properties instead, not CodeMirror's own dark
+  // flag) — so that variant never engages and the plain black default wins
+  // regardless of the app's theme. A previous fix here only set
+  // `borderLeftColor`, which lost to the base theme's `border-left`
+  // shorthand once actually loaded in the browser (its longhand write can
+  // still land after ours depending on StyleModule insertion order) —
+  // still invisible against the dark editor background (reported again:
+  // "the blinking cursor is not visible"). Setting the full `borderLeft`
+  // shorthand here, `!important`, removes any ordering ambiguity.
   ".cm-cursor, .cm-dropCursor": {
-    borderLeftColor: "var(--color-accent)",
-    borderLeftWidth: "2px",
+    borderLeft: "2px solid var(--color-accent) !important",
   },
 });
 
