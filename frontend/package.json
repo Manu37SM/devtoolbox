@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test e2e/a11y.spec.ts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.6.0",
@@ -63,10 +64,10 @@
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.11.0",
     "@playwright/test": "^1.48.0",
-    "@storybook/addon-a11y": "^8.3.0",
-    "@storybook/addon-essentials": "^8.3.0",
-    "@storybook/nextjs": "^8.3.0",
-    "@storybook/react": "^8.3.0",
+    "@storybook/addon-a11y": "^9.1.20",
+    "@storybook/addon-docs": "^9.1.20",
+    "@storybook/nextjs": "^9.1.20",
+    "@storybook/react": "^9.1.20",
     "@testing-library/react": "^16.0.0",
     "@types/csso": "^5.0.4",
     "@types/dompurify": "^3.0.5",
@@ -84,7 +85,7 @@
     "eslint-config-next": "^15.0.0",
     "eslint-plugin-jsx-a11y": "^6.10.0",
     "postcss": "^8.4.0",
-    "storybook": "^8.3.0",
+    "storybook": "^9.1.20",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"

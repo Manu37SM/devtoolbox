@@ -9,7 +9,7 @@ import type { StorybookConfig } from "@storybook/nextjs";
 // of scope for this pass (Chromatic/Percy visual regression).
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx)"],
-  addons: ["@storybook/addon-essentials", "@storybook/addon-a11y"],
+  addons: ["@storybook/addon-a11y", "@storybook/addon-docs"],
   framework: {
     name: "@storybook/nextjs",
     options: {},

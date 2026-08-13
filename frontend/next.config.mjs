@@ -138,10 +138,26 @@ const nextConfig = {
 // capture itself, which only needs NEXT_PUBLIC_SENTRY_DSN). See
 // sentry.client.config.ts/sentry.server.config.ts/sentry.edge.config.ts for
 // the actual init + the CLAUDE.md rule 8 redaction rules.
-export default withSentryConfig(nextConfig, {
-  silent: true,
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  disableLogger: true,
-});
+//
+// Skip it entirely when this config is loaded by Storybook rather than a
+// real `next build`/`next dev`: @storybook/nextjs reuses this same file's
+// webpack customizations to stay in sync with the app, but Sentry's
+// webpack plugin taps into the compiler's Cache hooks in a way that
+// assumes Next's own build/dev orchestration manages that compiler's
+// lifecycle. Under Storybook's own builder-webpack5, compiler.close() runs
+// on a compiler Sentry's plugin didn't fully wire up, crashing
+// build-storybook with "Cannot read properties of undefined (reading
+// 'tap')" during cache shutdown — a build-tool-compatibility issue, not
+// anything about the app's actual Sentry setup. `process.env.STORYBOOK` is
+// set by the Storybook CLI itself (build and dev), so this only skips
+// Sentry for component-preview builds, which don't need source-map
+// upload anyway.
+export default process.env.STORYBOOK
+  ? nextConfig
+  : withSentryConfig(nextConfig, {
+      silent: true,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      disableLogger: true,
+    });
