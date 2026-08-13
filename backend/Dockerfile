@@ -51,4 +51,15 @@ EXPOSE 4000
 # GET /health (public, unauthenticated — sso.controller's public-route
 # pattern) is what Render's health check (render.yaml's `healthCheckPath`)
 # polls; see health module added alongside this Dockerfile.
-CMD ["node", "backend/dist/backend/src/main.js"]
+#
+# Migration runs here, as the first step of container start, rather than
+# via Render's `preDeployCommand` — that field is a paid-plan-only feature
+# and Render's Blueprint validation rejects it outright on the free web
+# service plan this app deploys on (render.yaml). `prisma migrate deploy`
+# is safe to run on every boot: it's a no-op (exits immediately) when the
+# database already has all migrations applied, so this costs nothing on
+# ordinary restarts/redeploys with no schema change. `prisma` (the CLI) is
+# a devDependency but is still present here — the installer stage above
+# runs a full `npm ci`, not `--omit=dev`, and that node_modules carries
+# through builder into this runtime image.
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=backend/prisma/schema.prisma && node backend/dist/backend/src/main.js"]

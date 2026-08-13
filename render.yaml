@@ -40,11 +40,15 @@ services:
     plan: free
     region: singapore
     healthCheckPath: /v1/health
-    # Runs once per deploy, before the new version starts serving traffic —
-    # same role as fly.toml's old `release_command`. If your Render plan/UI
-    # doesn't show this field, run it manually instead: Render dashboard →
-    # devtoolbox-api → Shell → `npx prisma migrate deploy --schema=backend/prisma/schema.prisma`.
-    preDeployCommand: npx prisma migrate deploy --schema=backend/prisma/schema.prisma
+    # No `preDeployCommand` here: that field only works on paid Render web
+    # service plans — the free plan this deploys on rejects the Blueprint
+    # outright if it's set ("pre-deploy command is not supported for free
+    # tier services"). Instead, `npx prisma migrate deploy` runs as the
+    # first step of the container's CMD (backend/Dockerfile) — safe on
+    # every boot since it's a no-op once migrations are already applied.
+    # If you upgrade this service to a paid plan later, moving the
+    # migration back to `preDeployCommand` is a fine (optional) cleanup,
+    # but leaving it in the Dockerfile CMD also continues to work fine.
     envVars:
       - key: NODE_ENV
         value: production

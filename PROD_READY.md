@@ -169,6 +169,8 @@ Anything prefixed `NEXT_PUBLIC_` is visible to anyone who views your site's sour
 8. In your GitHub repo, go to **Settings → Secrets and variables → Actions → New repository secret**, name it `RENDER_DEPLOY_HOOK_URL`, and paste the URL from step 7.
 9. Push to `main` (or manually trigger the first deploy from the Render dashboard) — Render builds `backend/Dockerfile` and starts the service. Once it's up, visit `<your service URL>/v1/health` — you should see `{"status":"ok",...}`.
 
+Database migrations run automatically — you don't need a separate manual step for them. Render's `preDeployCommand` field would be the natural place for this, but it's a paid-plan-only feature and Render's Blueprint validation rejects the whole deploy outright if it's set on a free web service (`"pre-deploy command is not supported for free tier services"`). Instead, `npx prisma migrate deploy` runs as the first step of the container's start command (see `backend/Dockerfile`'s `CMD`), every time the service boots. This is safe on ordinary restarts and redeploys with no schema change — it's a no-op once the database already has every migration applied. If you later upgrade `devtoolbox-api` to a paid Render plan, moving the migration to `preDeployCommand` in `render.yaml` is a fine (optional) cleanup, but leaving it in the Dockerfile also continues to work fine.
+
 ## 7. Deploying the frontend to Vercel
 
 1. Go to [vercel.com](https://vercel.com) → **Sign Up** (GitHub sign-in is fastest) — no card required.
