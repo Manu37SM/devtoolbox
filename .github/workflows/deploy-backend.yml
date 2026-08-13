@@ -1,6 +1,6 @@
 name: Deploy backend
 
-# Runs after CI succeeds on main — a `workflow_run` trigger keyed to
+# Runs after CI succeeds on master — a `workflow_run` trigger keyed to
 # ci.yml's completion, not a bare push trigger, so a broken build/test never
 # reaches production. See AUDIT_REPORT.md §24/§25.
 #
@@ -14,7 +14,7 @@ name: Deploy backend
 on:
   workflow_run:
     workflows: ["CI"]
-    branches: [main]
+    branches: [master]
     types: [completed]
 
 jobs:

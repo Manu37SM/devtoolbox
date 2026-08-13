@@ -1,6 +1,6 @@
 name: Deploy frontend
 
-# Same gate as deploy-backend.yml: only after CI succeeds on main, via the
+# Same gate as deploy-backend.yml: only after CI succeeds on master, via the
 # Vercel CLI rather than Vercel's own Git-integration auto-deploy — this
 # way a broken lint/typecheck/test run in the monorepo (which touches
 # shared code Vercel's own build wouldn't otherwise re-verify) blocks the
@@ -10,7 +10,7 @@ name: Deploy frontend
 on:
   workflow_run:
     workflows: ["CI"]
-    branches: [main]
+    branches: [master]
     types: [completed]
 
 jobs:
