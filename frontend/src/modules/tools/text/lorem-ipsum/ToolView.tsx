@@ -51,7 +51,7 @@ export function LoremIpsumToolView() {
             checked={options.startWithLoremIpsum}
             onChange={(e) => setOptions((o) => ({ ...o, startWithLoremIpsum: e.target.checked }))}
           />
-          Start with "Lorem ipsum"
+          Start with &quot;Lorem ipsum&quot;
         </label>
         <Button variant="secondary" size="sm" onClick={() => setSeed((s) => s + 1)}>
           Regenerate

@@ -1,7 +1,7 @@
 import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
+export type InputProps = InputHTMLAttributes<HTMLInputElement>;
 
 /** Single-line text input, styled to match Textarea's border/bg/focus
  * tokens (UI_GUIDELINES.md §4) — introduced for the Phase 3 auth forms
