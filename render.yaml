@@ -17,13 +17,17 @@
 # Blueprint → pick this repo → Render reads this file). Set every `sync:
 # false` env var's real value in the Render dashboard after creation — never
 # commit real secrets here. See PROD_READY.md for where to get each one.
-databases:
-  - name: devtoolbox-db
-    databaseName: devtoolbox
-    user: devtoolbox
-    plan: free
-    region: singapore
-
+#
+# No `databases:` block here. Render's free tier allows only one active free
+# Postgres *instance* per account — if you already have one backing another
+# app, this Blueprint's own `devtoolbox-db` fails to create ("cannot have
+# more than one active free tier database") and takes the web service down
+# with it. Instead of provisioning a new instance, this app runs its own
+# separate database on your existing free instance (one Postgres instance
+# can host multiple independent databases with no data sharing between
+# them) — `DATABASE_URL` below is `sync: false` so you paste that database's
+# connection string in yourself. See PROD_READY.md §6 for the exact steps to
+# create that second database and get its connection string.
 services:
   - type: keyvalue
     name: devtoolbox-redis
@@ -54,10 +58,6 @@ services:
         value: production
       - key: PORT
         value: "4000"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: devtoolbox-db
-          property: connectionString
       - key: REDIS_URL
         fromService:
           name: devtoolbox-redis
@@ -67,6 +67,14 @@ services:
       # dashboard (Environment tab) after the Blueprint is created —
       # `sync: false` tells Render "don't manage this value, ask the human."
       # Full step-by-step for every one of these is in PROD_READY.md.
+      #
+      # DATABASE_URL specifically: the connection string for the second,
+      # devtoolbox-only database on your existing free Postgres instance
+      # (see the note above `services:` at the top of this file) — not the
+      # instance's default/primary database, which belongs to whatever app
+      # already uses it.
+      - key: DATABASE_URL
+        sync: false
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET

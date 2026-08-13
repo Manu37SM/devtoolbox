@@ -37,12 +37,12 @@ Open a terminal in the project folder and run this once for **each** secret you 
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-That prints one line of random text, e.g. `k3F9s...==`. Copy the whole line — that's your secret. Run this command five separate times to get five different values for the five secrets listed in §3.1 below (don't reuse one value for multiple vars).
+That prints one line of random text, e.g. `k3F9s...==`. Copy the whole line — that's your secret. Run this command four separate times to get four different values for the four secrets listed in §3.1 below (don't reuse one value for multiple vars).
 
-If you'd rather generate all five at once, run this instead:
+If you'd rather generate all four at once, run this instead:
 
 ```bash
-node -e "for (let i = 0; i < 5; i++) console.log(require('crypto').randomBytes(32).toString('base64'))"
+node -e "for (let i = 0; i < 4; i++) console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
 That's it — no installation, no extra tools. This works identically on Windows, macOS, and Linux, since it's just Node.
@@ -57,18 +57,18 @@ These live in the Render dashboard once deployed (see §6), and in a local `.env
 
 | Variable | What it is | How to get it |
 |---|---|---|
-| `DATABASE_URL` | Postgres connection string | **Auto-filled by Render** — see §6, you never type this in yourself |
+| `DATABASE_URL` | Postgres connection string | Paste in yourself — see §6 step 3 for creating the database and getting this string (`render.yaml` doesn't provision Postgres itself, to avoid conflicting with Render's one-free-instance-per-account limit if you already run another app there) |
 | `REDIS_URL` | Redis connection string | **Auto-filled by Render** — see §6 |
 | `JWT_ACCESS_SECRET` | Signs login session tokens | Run the command in §2, paste the output |
 | `JWT_REFRESH_SECRET` | Signs long-lived refresh tokens | Run the command in §2 again — must be a **different** value from `JWT_ACCESS_SECRET` |
 | `HISTORY_ENCRYPTION_KEY` | Encrypts users' synced tool-history previews at rest | Run the command in §2 again — a third, different value |
 | `SSO_SECRET_ENCRYPTION_KEY` | Encrypts SSO client secrets at rest | Run the command in §2 again — a fourth, different value |
-| `FRONTEND_URL` | Your deployed frontend's URL | The Vercel URL you get in §7 (e.g. `https://devtoolbox.vercel.app`), or your custom domain |
-| `BACKEND_URL` | Your deployed backend's own URL | The Render URL you get in §6 (e.g. `https://devtoolbox-api.onrender.com`) |
 
 You'll set these directly in the Render dashboard when you create the service (§6) — `render.yaml` marks them `sync: false`, meaning Render won't auto-generate them, you paste each value in yourself.
 
 ### 3.2 Optional — the app boots fine without these, but the related feature is disabled until set
+
+**`FRONTEND_URL`** / **`BACKEND_URL`** — your deployed frontend's and backend's own URLs (e.g. `https://devtoolbox.vercel.app` and `https://devtoolbox-api.onrender.com`). Both have a `localhost` default in code, so the backend boots fine without them — but leaving them unset once you're actually deployed breaks real functionality: CORS will reject requests from your real frontend origin, the SSO callback URL (API.md §17.5) will point at `localhost`, and any links in emails will be wrong. You won't know the real values until after §6 (`BACKEND_URL`) and §7 (`FRONTEND_URL`), so it's normal to deploy first with these blank/placeholder and come back to set the real values once both services are live — just don't skip that step.
 
 **`ANTHROPIC_API_KEY`** — powers every AI tool (Explain This, NL→Cron, AI Commit Message, etc.). Leave blank to skip AI features entirely at zero cost; every AI tool page will show a friendly "not configured" message instead of an error.
 
@@ -161,9 +161,12 @@ Anything prefixed `NEXT_PUBLIC_` is visible to anyone who views your site's sour
 
 1. Push this repo to GitHub (if it isn't already).
 2. Go to [render.com](https://render.com) → **Sign Up** (GitHub sign-in is fastest) — no card required.
-3. Click **New → Blueprint**, then pick this repository. Render reads `render.yaml` at the repo root automatically and shows you the three resources it defines: the `devtoolbox-api` web service, the `devtoolbox-db` Postgres database, and the `devtoolbox-redis` cache.
-4. Click **Apply** — Render creates all three. `DATABASE_URL` and `REDIS_URL` are wired up automatically between them; you don't type those in.
-5. Once created, go to the `devtoolbox-api` service → **Environment** tab, and fill in every variable marked `sync: false` in `render.yaml` — that's the full list in §3.1 and §3.2 above (skip any optional one you're not using).
+3. **Get a Postgres database ready first, before creating the Blueprint.** `render.yaml` intentionally does *not* declare its own `databases:` entry, because Render's free tier allows only one active free Postgres *instance* per account — if you already run another free Postgres-backed app on this account, a Blueprint-managed `devtoolbox-db` fails to create every time this Blueprint syncs ("cannot have more than one active free tier database"), and takes the web service down with it since it depends on that database. Two cases:
+   - **You have no other free Postgres on this Render account:** go to **New → PostgreSQL**, name it (e.g. `devtoolbox-db`), region **Singapore**, plan **Free**, click **Create Database**.
+   - **You already have one** (backing another app): don't create a second instance — instead add a second, separate database to that *existing* instance, so devtoolbox gets its own isolated tables with no data sharing with the other app. Open that existing Postgres service in the Render dashboard → **Connect** tab → copy the **PSQL Command** shown, run it from a terminal with `psql` installed, then at the `psql` prompt run `CREATE DATABASE devtoolbox;` and `\q`.
+   - Either way, end up with a full **Internal Connection String** for the database devtoolbox should use (existing-instance case: same string as the instance's default database, but with the database name at the end changed to `devtoolbox`) — you'll need it in step 5.
+4. Click **New → Blueprint**, then pick this repository. Render reads `render.yaml` at the repo root and shows the two resources it defines: the `devtoolbox-api` web service and the `devtoolbox-redis` cache. Click **Apply** — Render creates both. `REDIS_URL` is wired up automatically; `DATABASE_URL` is not (see step 5).
+5. Once created, go to the `devtoolbox-api` service → **Environment** tab, and fill in every variable marked `sync: false` in `render.yaml` — that's `DATABASE_URL` (the connection string from step 3) plus the full list in §3.1 and §3.2 above (skip any optional one you're not using).
 6. Still on the service page, go to **Settings** and turn **Auto-Deploy** off — this repo's `deploy-backend.yml` GitHub Action triggers deploys instead, only after CI passes (see `DEVELOPMENT_GUIDE.md` §7). If you'd rather use Render's own auto-deploy and skip that extra safety gate, leave it on instead and skip step 8.
 7. Go to **Settings → Deploy Hook**, copy the URL shown.
 8. In your GitHub repo, go to **Settings → Secrets and variables → Actions → New repository secret**, name it `RENDER_DEPLOY_HOOK_URL`, and paste the URL from step 7.
