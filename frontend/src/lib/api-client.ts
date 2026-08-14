@@ -126,7 +126,7 @@ export function apiGet<T>(path: string, opts: { authenticated?: boolean } = {}):
   return request<T>(path, { method: "GET", ...opts });
 }
 
-export function apiPost<T>(path: string, body: unknown, opts: { authenticated?: boolean } = {}): Promise<T> {
+export function apiPost<T>(path: string, body: unknown, opts: RequestOptions = {}): Promise<T> {
   return request<T>(path, { method: "POST", body: JSON.stringify(body), ...opts });
 }
 
