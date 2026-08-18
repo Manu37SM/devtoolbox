@@ -20,8 +20,29 @@
  * getting stale precached shell/tool pages until those specific URLs are
  * revalidated via the stale-while-revalidate fetch handler, so it's not
  * catastrophic — but bump it when app-shell-critical files change.
+ *
+ * NETWORK-FIRST EXCEPTION: auth/config-sensitive routes (login, register,
+ * the OAuth callback pages, account) are deliberately excluded from
+ * stale-while-revalidate below and always try the network first instead.
+ * Those pages embed build-time config (NEXT_PUBLIC_* values like OAuth
+ * client IDs and the API base URL) — serving a stale cached copy of them
+ * right after a deploy that changed one of those values reproduces
+ * confusing, hard-to-diagnose auth failures that only self-heal on a
+ * *second* visit once the background revalidation catches up. For pages
+ * this sensitive to being current, "instant but possibly a deploy behind"
+ * is the wrong tradeoff — see the incident that prompted this comment.
  */
-const CACHE_NAME = "devtoolbox-v1";
+const CACHE_NAME = "devtoolbox-v2";
+
+const NETWORK_FIRST_PATHS = ["/login", "/register", "/account"];
+const NETWORK_FIRST_PREFIXES = ["/auth/"];
+
+function isNetworkFirst(pathname) {
+  return (
+    NETWORK_FIRST_PATHS.includes(pathname) ||
+    NETWORK_FIRST_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
+}
 
 // App shell + a handful of representative, high-traffic tool pages.
 // This is NOT the full tool catalog (see frontend/src/lib/registry.ts for
@@ -85,8 +106,40 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  event.respondWith(staleWhileRevalidate(request));
+  event.respondWith(
+    isNetworkFirst(url.pathname) ? networkFirst(request) : staleWhileRevalidate(request)
+  );
 });
+
+/**
+ * Network-first: always try the network for these routes, and only fall
+ * back to whatever's cached (or the app shell, for a navigation) if the
+ * network genuinely fails — the offline case, not the "just deployed"
+ * case. This is the opposite priority from stale-while-revalidate below,
+ * used specifically for auth/config-sensitive routes (see NETWORK_FIRST_*
+ * above) where "always current" matters more than "always instant."
+ */
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse && networkResponse.ok) {
+      cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
+  } catch {
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) return cachedResponse;
+
+    if (request.mode === "navigate") {
+      const shell = await cache.match("/");
+      if (shell) return shell;
+    }
+
+    return Response.error();
+  }
+}
 
 /**
  * Stale-while-revalidate: return the cached response immediately if one
