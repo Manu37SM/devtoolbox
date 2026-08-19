@@ -1,0 +1,24 @@
+version: 2
+
+# Checklist item #20 — dependency scanning. Weekly PRs for outdated/vulnerable
+# dependencies across every workspace with its own lockfile-relevant manifest,
+# plus the GitHub Actions versions pinned in .github/workflows/*.yml.
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Batch non-major bumps into one PR per ecosystem per week instead of
+      # one PR per package — keeps the PR queue reviewable. Majors still get
+      # their own PR since those need a human to actually read the changelog.
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

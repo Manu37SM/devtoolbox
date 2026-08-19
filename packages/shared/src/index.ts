@@ -39,16 +39,23 @@ export interface ToolRegistryEntry {
 }
 
 // ── Auth / Users DTOs (see API.md §2-3, ARCHITECTURE.md §9) ────────────────
+// `captchaToken` (checklist item #12, bot protection) is optional at the
+// schema layer because CaptchaService.verify() itself no-ops when
+// TURNSTILE_SECRET_KEY isn't configured (e.g. local dev) — see that class's
+// doc comment. In any environment where the secret *is* configured, a
+// missing token is rejected there, not here.
 export const RegisterSchema = z.object({
   email: z.string().email().max(255),
   password: z.string().min(10).max(200),
   displayName: z.string().min(1).max(80).optional(),
+  captchaToken: z.string().optional(),
 });
 export type RegisterDto = z.infer<typeof RegisterSchema>;
 
 export const LoginSchema = z.object({
   email: z.string().email().max(255),
   password: z.string().min(1).max(200),
+  captchaToken: z.string().optional(),
 });
 export type LoginDto = z.infer<typeof LoginSchema>;
 
@@ -81,6 +88,7 @@ export type VerifyEmailDto = z.infer<typeof VerifyEmailSchema>;
 
 export const PasswordResetRequestSchema = z.object({
   email: z.string().email().max(255),
+  captchaToken: z.string().optional(),
 });
 export type PasswordResetRequestDto = z.infer<typeof PasswordResetRequestSchema>;
 

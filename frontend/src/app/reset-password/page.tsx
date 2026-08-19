@@ -1,11 +1,19 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiPost, ApiClientError } from "@/lib/api-client";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/auth/TurnstileWidget";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
+// See login/page.tsx's identical constant for why this mirrors the backend
+// env var name. Only RequestStep below uses this — the confirm step
+// (POST /auth/password-reset/confirm) isn't captcha-gated on the backend,
+// since a valid, unguessable emailed token is already a much stronger
+// signal than a login/register attempt.
+const TURNSTILE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export default function ResetPasswordPage() {
   return (
@@ -25,16 +33,20 @@ function RequestStep() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await apiPost("/auth/password-reset/request", { email });
+      await apiPost("/auth/password-reset/request", { email, captchaToken: captchaToken ?? undefined });
       setDone(true);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong. Please try again.");
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setSubmitting(false);
     }
@@ -62,8 +74,9 @@ function RequestStep() {
           Email
           <Input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </label>
+        <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
         {error && <p className="text-sm text-danger">{error}</p>}
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || (TURNSTILE_CONFIGURED && !captchaToken)}>
           {submitting ? "Sending…" : "Send reset link"}
         </Button>
       </form>

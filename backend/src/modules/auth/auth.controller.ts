@@ -14,6 +14,8 @@ import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { CurrentUser, type AuthenticatedUser } from "./decorators/current-user.decorator";
 import { REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_PATH } from "./auth.constants";
+import { CaptchaService } from "../../common/captcha/captcha.service";
+import { generateCsrfToken } from "../../common/csrf/csrf";
 
 // 10/min/IP per API.md §12 "Auth endpoints" row.
 const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
@@ -23,6 +25,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly config: ConfigService,
+    private readonly captcha: CaptchaService,
   ) {}
 
   @Throttle(AUTH_THROTTLE)
@@ -33,10 +36,12 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { tokens, refreshToken } = await this.authService.register(
-      dto as Parameters<AuthService["register"]>[0],
-      { userAgent: req.get("user-agent"), ip: req.ip },
-    );
+    const { captchaToken, ...rest } = dto as Parameters<AuthService["register"]>[0] & { captchaToken?: string };
+    await this.captcha.verify(captchaToken, req.ip);
+    const { tokens, refreshToken } = await this.authService.register(rest, {
+      userAgent: req.get("user-agent"),
+      ip: req.ip,
+    });
     this.setRefreshCookie(res, refreshToken);
     return tokens;
   }
@@ -49,10 +54,12 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { tokens, refreshToken } = await this.authService.login(
-      dto as Parameters<AuthService["login"]>[0],
-      { userAgent: req.get("user-agent"), ip: req.ip },
-    );
+    const { captchaToken, ...rest } = dto as Parameters<AuthService["login"]>[0] & { captchaToken?: string };
+    await this.captcha.verify(captchaToken, req.ip);
+    const { tokens, refreshToken } = await this.authService.login(rest, {
+      userAgent: req.get("user-agent"),
+      ip: req.ip,
+    });
     this.setRefreshCookie(res, refreshToken);
     return tokens;
   }
@@ -90,8 +97,13 @@ export class AuthController {
   @Throttle(AUTH_THROTTLE)
   @Post("password-reset/request")
   @HttpCode(200)
-  async requestPasswordReset(@Body(new ZodValidationPipe(PasswordResetRequestSchema)) dto: unknown) {
-    await this.authService.requestPasswordReset((dto as { email: string }).email);
+  async requestPasswordReset(
+    @Body(new ZodValidationPipe(PasswordResetRequestSchema)) dto: unknown,
+    @Req() req: Request,
+  ) {
+    const { email, captchaToken } = dto as { email: string; captchaToken?: string };
+    await this.captcha.verify(captchaToken, req.ip);
+    await this.authService.requestPasswordReset(email, { userAgent: req.get("user-agent"), ip: req.ip });
     // Always the same response — no account-enumeration signal.
     return { ok: true };
   }
@@ -99,9 +111,12 @@ export class AuthController {
   @Throttle(AUTH_THROTTLE)
   @Post("password-reset/confirm")
   @HttpCode(200)
-  async confirmPasswordReset(@Body(new ZodValidationPipe(PasswordResetConfirmSchema)) dto: unknown) {
+  async confirmPasswordReset(
+    @Body(new ZodValidationPipe(PasswordResetConfirmSchema)) dto: unknown,
+    @Req() req: Request,
+  ) {
     const { token, password } = dto as { token: string; password: string };
-    await this.authService.confirmPasswordReset(token, password);
+    await this.authService.confirmPasswordReset(token, password, { userAgent: req.get("user-agent"), ip: req.ip });
     return { ok: true };
   }
 
@@ -109,6 +124,16 @@ export class AuthController {
   @Get("me")
   async me(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.me(user.userId);
+  }
+
+  // Issues the CSRF token + cookie pair a client needs before it can call
+  // POST /auth/refresh or /auth/logout — see csrf.ts. GET is exempt from
+  // CSRF protection itself (mutates nothing), so this can't be used to
+  // forge anything on its own.
+  @Get("csrf-token")
+  @HttpCode(200)
+  csrfToken(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return { csrfToken: generateCsrfToken(req, res) };
   }
 
   private setRefreshCookie(res: Response, token: IssuedRefreshToken): void {

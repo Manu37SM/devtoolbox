@@ -1,9 +1,19 @@
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import * as Sentry from "@sentry/node";
 import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./common/filters/global-exception.filter";
+
+// Checklist item #31 — explicit request body size limit, rather than
+// relying on body-parser's undocumented-here default. No route in this API
+// legitimately needs a large body (the largest, plugin WASM upload, is
+// base64 and already capped at ~2MB decoded in PluginsService — see
+// prisma/schema.prisma's PluginVersion doc comment); 5mb leaves headroom
+// for that base64 inflation (~2.7MB) plus JSON overhead without leaving the
+// limit effectively unbounded.
+const MAX_REQUEST_BODY_SIZE = "5mb";
 
 /**
  * Backend entry point. See ARCHITECTURE.md §8.3 for module boundaries and
@@ -43,7 +53,9 @@ async function bootstrap() {
   // unaffected) — POST /billing/webhook needs those exact bytes to verify
   // Razorpay's signature (API.md §9); parsed-then-reserialized JSON wouldn't
   // byte-match what Razorpay signed. See BillingController.
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
+  app.useBodyParser("json", { limit: MAX_REQUEST_BODY_SIZE });
+  app.useBodyParser("urlencoded", { limit: MAX_REQUEST_BODY_SIZE, extended: true });
 
   app.use(helmet());
   app.use(cookieParser());

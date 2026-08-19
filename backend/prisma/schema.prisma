@@ -60,6 +60,15 @@ model User {
   // there's exactly one privilege tier to gate (review-queue actions), and
   // introducing a full role system for that would be speculative.
   isAdmin          Boolean   @default(false)
+  // Account lockout (checklist item #37 — brute-force/credential-stuffing
+  // defense in depth on top of AUTH_THROTTLE's per-IP rate limit, which is
+  // bypassable via IP rotation). Reset to 0 on any successful login.
+  // `lockedUntil` is null when not locked; checked (and cleared once
+  // expired) in AuthService.login. Deliberately on User rather than a
+  // separate table — this is a single mutable counter per account, not an
+  // audit trail (that's SecurityEventLog, see below).
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
@@ -80,6 +89,7 @@ model User {
   reviewedPluginVersions PluginVersion[]
   sentOrganizationInvites OrganizationInvite[]
   ssoIdentities        SsoIdentity[]
+  securityEvents       SecurityEventLog[]
 
   @@index([email])
 }
@@ -460,6 +470,37 @@ model Plugin {
 
   @@index([authorUserId])
   @@index([status])
+}
+
+// Security event audit trail (checklist item #38 — previously only 5xx
+// exceptions were captured, via GlobalExceptionFilter -> Sentry; auth-level
+// events like failed logins, lockouts, and password resets were invisible).
+// Append-only, never updated. `userId` nullable because some events (e.g. a
+// failed login with an email that doesn't exist) have no user to attach to.
+// No tool input/output content is ever logged here per CLAUDE.md rule 8 —
+// only the event type, actor identifiers, and non-content metadata.
+enum SecurityEventType {
+  LOGIN_FAILED
+  LOGIN_SUCCEEDED
+  ACCOUNT_LOCKED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  REFRESH_TOKEN_REUSE_DETECTED
+  ADMIN_ACTION
+}
+
+model SecurityEventLog {
+  id        String            @id @default(uuid())
+  type      SecurityEventType
+  userId    String?
+  user      User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ipHash    String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
 }
 
 model PluginVersion {

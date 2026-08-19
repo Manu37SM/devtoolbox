@@ -73,6 +73,8 @@ These live in the Render dashboard once deployed (see §6), and in a local `.env
 
 You'll set these directly in the Render dashboard when you create the service (§6) — `render.yaml` marks them `sync: false`, meaning Render won't auto-generate them, you paste each value in yourself.
 
+**`CSRF_SECRET`** — not strictly required (falls back to `JWT_ACCESS_SECRET` if unset, so the app still boots and the CSRF protection still functions), but you should set a dedicated value in production rather than rely on the fallback. Run the command in §2 again — a fifth, different value.
+
 ### 3.2 Optional — the app boots fine without these, but the related feature is disabled until set
 
 **`FRONTEND_URL`** / **`BACKEND_URL`** — your deployed frontend's and backend's own URLs (e.g. `https://devtoolbox.vercel.app` and `https://devtoolbox-api.onrender.com`). Both have a `localhost` default in code, so the backend boots fine without them — but leaving them unset once you're actually deployed breaks real functionality: CORS will reject requests from your real frontend origin, the SSO callback URL (API.md §17.5) will point at `localhost`, and any links in emails will be wrong. You won't know the real values until after §6 (`BACKEND_URL`) and §7 (`FRONTEND_URL`), so it's normal to deploy first with these blank/placeholder and come back to set the real values once both services are live — just don't skip that step.
@@ -131,6 +133,13 @@ Full step-by-step (this is the level of detail you asked for):
 5. Go to **Settings → Webhooks → Add New Webhook**, point it at `<your backend URL>/billing/webhook`, select the subscription-related events (`subscription.activated`, `subscription.cancelled`, etc. — see `API.md` §14 for the exact list this app listens for), and copy the **Webhook Secret** shown into `RAZORPAY_WEBHOOK_SECRET`.
 6. Only switch to **Live Mode** (real money, per-transaction fees apply — no monthly cost, Razorpay only takes a cut per successful payment) once you're actually ready to accept real payments — repeat steps 3–5 in Live Mode to get a second set of live keys.
 
+**`TURNSTILE_SECRET_KEY`** — enables bot-protection (captcha) verification on register/login/password-reset. Leave blank to skip verification entirely (fine for local dev; you should set this in production). Free, no card needed, no usage cap for standard traffic.
+
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) and sign up/log in (a free Cloudflare account, no domain required — Turnstile works standalone).
+2. Go to **Turnstile** in the left sidebar → **Add Site**. Give it any name, add your frontend domain (e.g. `devtoolbox.vercel.app`, or `localhost` for testing), and choose the **Managed** widget mode.
+3. After creating it, you'll see a **Site Key** and a **Secret Key**. Copy the **Secret Key** into `TURNSTILE_SECRET_KEY` (backend). The **Site Key** goes into `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (frontend, §4) — that one is public, safe to expose in the browser.
+4. Once both keys are set (backend `TURNSTILE_SECRET_KEY`, frontend `NEXT_PUBLIC_TURNSTILE_SITE_KEY`) and both services redeploy, the captcha checkbox shows up automatically on the register/login/reset-password forms and starts being enforced — no further steps needed.
+
 **`OBJECT_STORAGE_ENDPOINT`** / **`OBJECT_STORAGE_BUCKET`** / **`OBJECT_STORAGE_ACCESS_KEY`** / **`OBJECT_STORAGE_SECRET_KEY`** — not currently used by any shipped feature (scaffolded for future use per `ARCHITECTURE.md`). Leave all blank; nothing in the app reads them yet.
 
 ---
@@ -147,6 +156,7 @@ Set these in the Vercel dashboard (**Project → Settings → Environment Variab
 | `NEXT_PUBLIC_ANALYTICS_HOST` | Product analytics | Not wired up to any provider yet — leave blank |
 | `NEXT_PUBLIC_GITHUB_CLIENT_ID` | "Continue with GitHub" button | Same value as backend `GITHUB_OAUTH_CLIENT_ID` above |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | "Continue with Google" button | Same value as backend `GOOGLE_OAUTH_CLIENT_ID` above |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Captcha widget on auth forms | Same **Site Key** from the Turnstile steps above (§3) — safe to expose publicly, that's what a site key is for |
 
 Anything prefixed `NEXT_PUBLIC_` is visible to anyone who views your site's source — never put a secret (API key, password, client *secret*) in one of these. That's why only client *IDs* (not secrets) appear on this list.
 
@@ -235,3 +245,5 @@ One geographic trade-off worth knowing: Render's closest region to India is Sing
 - [x] **GitHub Actions secrets set (§8) so `git push` to `main` deploys automatically** — done; still need to silence Vercel's redundant failing auto-deploy via §7 step 9 (Ignored Build Step)
 - [ ] Domain verified
 - [ ] Razorpay account verified (currently Test Mode only)
+- [ ] **Post-launch auth hardening (2026-08-19):** set `CSRF_SECRET` and `TURNSTILE_SECRET_KEY`/`NEXT_PUBLIC_TURNSTILE_SITE_KEY` in Render/Vercel and run `backend/prisma/migrations/20260819104352_add_account_lockout_and_security_log` against production (`npm run db:migrate` / Render's release command already runs `prisma migrate deploy`, so this applies automatically on the next deploy — just confirm it went through). `CSRF_SECRET` alone is optional (falls back safely) but should be set for real. `TURNSTILE_SECRET_KEY` left unset just means captcha verification stays off, not a boot failure — see §3.
+- [ ] Run `scripts/create-least-privilege-db-role.sql` against the production database (see DATABASE.md §6.1) — requires the current DB admin credential; can't be automated from this repo.

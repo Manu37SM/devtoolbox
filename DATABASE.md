@@ -566,6 +566,10 @@ model SsoIdentity {
 - Every migration reviewed in PR alongside the schema change; migration files committed to `backend/src/database/migrations`.
 - Seed data (`backend/src/database/seeds`) provides local dev fixtures only — never runs against production.
 
+## 6.1 Least-Privilege Runtime Role (checklist item #40)
+
+Today both migrations and runtime queries use the same Postgres role (`devtoolbox` locally; whatever Render provisions in production), which can run DDL. `scripts/create-least-privilege-db-role.sql` provisions a second `devtoolbox_app` role scoped to `SELECT/INSERT/UPDATE/DELETE` only, with default-privilege grants so future migrated tables inherit the same scoping automatically. This has to be run manually against the production database by whoever holds the current admin/migration credential (Claude doesn't have access to Render's production database) — the script itself documents the steps. Once applied, point the app's runtime `DATABASE_URL` at `devtoolbox_app` and keep the original role's connection string reserved for `prisma migrate deploy` only.
+
 ## 7. Local Client Storage (not in Postgres)
 
 For completeness — most "data" in this product lives on-device, not in this schema:

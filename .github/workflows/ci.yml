@@ -28,6 +28,26 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
+  # Checklist item #20 — dependency scanning. Dependabot (dependabot.yml)
+  # catches this on a weekly cadence; this job catches it on every PR/push,
+  # which matters most right before a deploy. `continue-on-error` so a newly
+  # disclosed advisory in a transitive dep doesn't block unrelated PRs from
+  # merging — it still surfaces loudly in the job summary/annotations for a
+  # human to triage, per npm's own guidance that audit failures need
+  # judgment (a dep with no available fix shouldn't hard-block CI forever).
+  audit:
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+        continue-on-error: true
+
   typecheck:
     needs: install
     runs-on: ubuntu-latest

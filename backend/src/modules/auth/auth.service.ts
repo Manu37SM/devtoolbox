@@ -5,10 +5,13 @@ import * as argon2 from "argon2";
 import type { AuthTokenResponse, LoginDto, RegisterDto, UserProfile } from "@devtoolbox/shared";
 import { PrismaService } from "../../database/prisma.service";
 import { generateOpaqueToken, hashIp, hashToken } from "../../common/crypto/token-hash";
+import { SecurityLogService } from "../../common/security-log/security-log.service";
 import { EmailService } from "./email.service";
 import {
   ACCESS_TOKEN_TTL_SECONDS,
+  ACCOUNT_LOCKOUT_MINUTES,
   EMAIL_VERIFY_TTL_HOURS,
+  MAX_FAILED_LOGIN_ATTEMPTS,
   PASSWORD_RESET_TTL_MINUTES,
   REFRESH_TOKEN_TTL_DAYS,
 } from "./auth.constants";
@@ -33,6 +36,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly email: EmailService,
+    private readonly securityLog: SecurityLogService,
   ) {}
 
   async register(dto: RegisterDto, meta: { userAgent?: string; ip?: string }): Promise<{
@@ -61,13 +65,66 @@ export class AuthService {
   }> {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user || !user.passwordHash || user.deletedAt) {
+      await this.securityLog.record({
+        type: "LOGIN_FAILED",
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+        metadata: { reason: "no_such_account" },
+      });
       throw new UnauthorizedException("Invalid email or password.");
+    }
+
+    // Account lockout (checklist item #37). Checked before verifying the
+    // password so a locked account can't be used to keep guessing.
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      await this.securityLog.record({
+        type: "LOGIN_FAILED",
+        userId: user.id,
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+        metadata: { reason: "account_locked" },
+      });
+      throw new UnauthorizedException(
+        "This account is temporarily locked due to repeated failed login attempts. Please try again later or reset your password.",
+      );
     }
 
     const valid = await argon2.verify(user.passwordHash, dto.password);
     if (!valid) {
-      throw new UnauthorizedException("Invalid email or password.");
+      const attempts = user.failedLoginAttempts + 1;
+      const locking = attempts >= MAX_FAILED_LOGIN_ATTEMPTS;
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: locking ? 0 : attempts,
+          lockedUntil: locking ? new Date(Date.now() + ACCOUNT_LOCKOUT_MINUTES * 60_000) : null,
+        },
+      });
+
+      await this.securityLog.record({
+        type: locking ? "ACCOUNT_LOCKED" : "LOGIN_FAILED",
+        userId: user.id,
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+        metadata: { reason: "bad_password", attempts },
+      });
+
+      throw new UnauthorizedException(
+        locking
+          ? "This account is temporarily locked due to repeated failed login attempts. Please try again later or reset your password."
+          : "Invalid email or password.",
+      );
     }
+
+    // Successful login clears any accumulated failure count/lock.
+    if (user.failedLoginAttempts !== 0 || user.lockedUntil) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
+    }
+    await this.securityLog.record({ type: "LOGIN_SUCCEEDED", userId: user.id, ip: meta.ip, userAgent: meta.userAgent });
 
     const refreshToken = await this.createSession(user.id, meta);
     return { tokens: this.buildAuthResponse(user), refreshToken };
@@ -96,6 +153,12 @@ export class AuthService {
       await this.prisma.session.updateMany({
         where: { userId: session.userId, revokedAt: null },
         data: { revokedAt: new Date() },
+      });
+      await this.securityLog.record({
+        type: "REFRESH_TOKEN_REUSE_DETECTED",
+        userId: session.userId,
+        ip: meta.ip,
+        userAgent: meta.userAgent,
       });
       throw new UnauthorizedException("Refresh token reuse detected; all sessions revoked.");
     }
@@ -147,8 +210,17 @@ export class AuthService {
 
   /** Always resolves with no error, regardless of whether the email
    * exists — prevents account enumeration via response timing/shape. */
-  async requestPasswordReset(email: string): Promise<void> {
+  async requestPasswordReset(email: string, meta: { userAgent?: string; ip?: string } = {}): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email } });
+    // Logged even when the account doesn't exist (userId omitted) — an
+    // unusual volume of these for one IP is itself a signal worth having,
+    // even without a userId to attach it to.
+    await this.securityLog.record({
+      type: "PASSWORD_RESET_REQUESTED",
+      userId: user?.id,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
     if (!user || user.deletedAt || !user.passwordHash) return;
 
     const { raw, hash } = generateOpaqueToken();
@@ -165,7 +237,11 @@ export class AuthService {
     await this.email.sendPasswordResetEmail(user.email, link);
   }
 
-  async confirmPasswordReset(rawToken: string, newPassword: string): Promise<void> {
+  async confirmPasswordReset(
+    rawToken: string,
+    newPassword: string,
+    meta: { userAgent?: string; ip?: string } = {},
+  ): Promise<void> {
     const tokenHash = hashToken(rawToken);
     const record = await this.prisma.verificationToken.findUnique({ where: { tokenHash } });
 
@@ -177,7 +253,14 @@ export class AuthService {
 
     await this.prisma.$transaction([
       this.prisma.verificationToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
-      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+      // Also clears any account lockout — a successful password reset is a
+      // stronger proof of ownership than the lockout mechanism is guarding
+      // against, so there's no reason to leave a legitimate owner locked
+      // out after they've proven control of the mailbox.
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
+      }),
       // Password change invalidates every existing session (defense in
       // depth in case the reset was triggered because a session leaked).
       this.prisma.session.updateMany({
@@ -185,6 +268,13 @@ export class AuthService {
         data: { revokedAt: new Date() },
       }),
     ]);
+
+    await this.securityLog.record({
+      type: "PASSWORD_RESET_COMPLETED",
+      userId: record.userId,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
   }
 
   // ── Internal helpers, also used by OAuthService ───────────────────────

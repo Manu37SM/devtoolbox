@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthTokenResponse } from "@devtoolbox/shared";
@@ -8,8 +8,13 @@ import { apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/auth/TurnstileWidget";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
+// See login/page.tsx's identical constant for why this mirrors the backend
+// env var name.
+const TURNSTILE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export default function RegisterPage() {
   return (
@@ -31,6 +36,8 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,12 +48,15 @@ function RegisterForm() {
         email,
         password,
         displayName: displayName || undefined,
+        captchaToken: captchaToken ?? undefined,
       });
       setSession(res.accessToken, res.user);
       void syncFavoritesOnSignIn();
       router.push(redirectTo);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong. Please try again.");
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setSubmitting(false);
     }
@@ -83,9 +93,11 @@ function RegisterForm() {
           <span className="text-xs text-text-secondary">At least 10 characters.</span>
         </label>
 
+        <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || (TURNSTILE_CONFIGURED && !captchaToken)}>
           {submitting ? "Creating account…" : "Create account"}
         </Button>
       </form>

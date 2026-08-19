@@ -37,6 +37,10 @@ DevToolbox is deployed continuously from `main` — there is no versioned releas
 A few things worth knowing before reporting, so a report can focus on an actual gap rather than documented, deliberate behavior:
 
 - Passwords: Argon2id-hashed, never logged. Sessions: refresh tokens are opaque, hashed at rest (`Session.refreshTokenHash`), rotated on use, revoked entirely on password change.
+- Accounts lock for 15 minutes after 5 consecutive failed login attempts (`User.failedLoginAttempts`/`lockedUntil`, enforced in `AuthService.login`) — defense-in-depth on top of the existing 10/min/IP rate limit, since a distributed credential-stuffing attempt can rotate IPs but not accounts. Cleared automatically by a successful password reset.
+- Auth-relevant events (failed logins, lockouts, password resets, refresh-token reuse) are persisted to `SecurityEventLog` and logged structurally (`SecurityLogService`) — see AUDIT_REPORT.md's 2026-08-19 entry. Never includes tool input/output content, per CLAUDE.md rule 8.
+- Register/login/password-reset-request are gated by Cloudflare Turnstile (`CaptchaService`) when `TURNSTILE_SECRET_KEY` is configured; a request without a valid token is rejected in that case.
+- `POST /auth/refresh` and `POST /auth/logout` (the two cookie-authenticated, state-changing routes) require a double-submit CSRF token (`GET /auth/csrf-token`, `common/csrf/csrf.ts`) in addition to the existing strict CORS allowlist + `sameSite` cookie.
 - Org SSO client secrets and history-sync previews are encrypted at rest (AES-256-GCM, per-org/per-user key derivation) — see DATABASE.md §4 and AUDIT_REPORT.md §23/§24.
 - Org-level SSO connections are scoped to the email domain they claim (AUDIT_REPORT.md §23.5); full DNS-based domain-ownership verification is a known, disclosed gap, not yet built — an org OWNER can still self-attest a domain for *new* account provisioning (not takeover of an existing account, which is blocked).
 - The plugin marketplace executes third-party WASM inside a sandboxed, opaque-origin iframe with `sandbox="allow-scripts"` only and `connect-src 'none'` — see ARCHITECTURE.md §16.

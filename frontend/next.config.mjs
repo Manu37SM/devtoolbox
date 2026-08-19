@@ -115,18 +115,24 @@ const nextConfig = {
       // checkout.razorpay.com serves checkout.js (loaded from the Pro/Team
       // upgrade buttons — account/page.tsx) — without it here the script
       // is blocked outright and upgrade always fails with "Couldn't start
-      // checkout."
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://checkout.razorpay.com",
+      // checkout." challenges.cloudflare.com serves the Turnstile widget
+      // script (login/register/reset-password captcha — checklist item
+      // #12, TurnstileWidget.tsx).
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://checkout.razorpay.com https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.razorpay.com",
       "font-src 'self' data:",
       "worker-src 'self' blob:",
-      "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io https://*.razorpay.com " +
+      // challenges.cloudflare.com: Turnstile's own verification calls from
+      // inside its iframe.
+      "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io https://*.razorpay.com https://challenges.cloudflare.com " +
         apiOrigin,
       // Razorpay's Checkout.js opens its payment UI in an iframe from
       // api.razorpay.com; with no frame-src set this fell back to
       // default-src 'self' and got silently blocked same as the script.
-      "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
+      // challenges.cloudflare.com: the Turnstile widget itself renders
+      // inside an iframe from this origin.
+      "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://challenges.cloudflare.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

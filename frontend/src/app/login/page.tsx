@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthTokenResponse } from "@devtoolbox/shared";
@@ -9,8 +9,16 @@ import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { SsoLoginForm } from "@/components/auth/SsoLoginForm";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/auth/TurnstileWidget";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
+// Whether the backend will actually enforce a captcha token — mirrors
+// CaptchaService's own "configured?" check (same env var, just the
+// NEXT_PUBLIC_ twin). Used to require a solved widget before submit only
+// when Turnstile is actually turned on; local dev (no site key) is
+// unaffected.
+const TURNSTILE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export default function LoginPage() {
   return (
@@ -35,18 +43,28 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      const res = await apiPost<AuthTokenResponse>("/auth/login", { email, password });
+      const res = await apiPost<AuthTokenResponse>("/auth/login", {
+        email,
+        password,
+        captchaToken: captchaToken ?? undefined,
+      });
       setSession(res.accessToken, res.user);
       void syncFavoritesOnSignIn();
       router.push(redirectTo);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong. Please try again.");
+      // Turnstile tokens are single-use — clear the stale one and make the
+      // user solve it again before the next attempt.
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setSubmitting(false);
     }
@@ -79,9 +97,11 @@ function LoginForm() {
           />
         </label>
 
+        <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || (TURNSTILE_CONFIGURED && !captchaToken)}>
           {submitting ? "Logging in…" : "Log in"}
         </Button>
       </form>
