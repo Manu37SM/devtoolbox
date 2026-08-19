@@ -71,4 +71,18 @@ EXPOSE 4000
 # a devDependency but is still present here — the installer stage above
 # runs a full `npm ci`, not `--omit=dev`, and that node_modules carries
 # through builder into this runtime image.
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=backend/prisma/schema.prisma && node backend/dist/backend/src/main.js"]
+#
+# `MIGRATE_DATABASE_URL` (DATABASE.md §6.1, checklist item #40) — migrations
+# need DDL (CREATE/ALTER TABLE) privileges, which the app's day-to-day
+# runtime role (`devtoolbox_app`, the whole point of the least-privilege
+# split) deliberately does NOT have. Since this migration step and the app
+# process both start from the same CMD/env, they can't just share
+# `DATABASE_URL` once that's pointed at the restricted role — so this line
+# only overrides `DATABASE_URL` for the `prisma migrate deploy` invocation
+# (from `MIGRATE_DATABASE_URL`, the original admin/migration-role
+# connection string), then the app itself starts with whatever
+# `DATABASE_URL` actually is (the restricted role). Falls back to
+# `DATABASE_URL` itself when `MIGRATE_DATABASE_URL` isn't set, so this is a
+# no-op / fully backward compatible until that env var is actually added in
+# Render — nothing breaks for anyone who hasn't done the role split yet.
+CMD ["sh", "-c", "DATABASE_URL=\"${MIGRATE_DATABASE_URL:-$DATABASE_URL}\" npx prisma migrate deploy --schema=backend/prisma/schema.prisma && node backend/dist/backend/src/main.js"]

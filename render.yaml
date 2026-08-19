@@ -84,8 +84,21 @@ services:
       # devtoolbox-only database on your existing free Postgres instance
       # (see the note above `services:` at the top of this file) — not the
       # instance's default/primary database, which belongs to whatever app
-      # already uses it.
+      # already uses it. As of the least-privilege DB role split
+      # (DATABASE.md §6.1), this should hold the restricted `devtoolbox_app`
+      # role's connection string, not the original admin role's — the app
+      # process itself only ever needs SELECT/INSERT/UPDATE/DELETE.
       - key: DATABASE_URL
+        sync: false
+      # Only used for the one-time `prisma migrate deploy` step at container
+      # start (backend/Dockerfile's CMD) — holds the *original, admin* role's
+      # connection string (the one DATABASE_URL used to hold before the
+      # least-privilege split), since migrations need DDL privileges the
+      # restricted `devtoolbox_app` role deliberately doesn't have. Optional:
+      # if unset, the Dockerfile CMD falls back to DATABASE_URL, so this is
+      # only required once you've actually done the role split in
+      # DATABASE.md §6.1 — leave unset until then.
+      - key: MIGRATE_DATABASE_URL
         sync: false
       - key: JWT_ACCESS_SECRET
         sync: false

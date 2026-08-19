@@ -16,12 +16,29 @@
 -- then:
 --   1. Set a real password below (replace 'REPLACE_ME') before running, or
 --      run `\password devtoolbox_app` afterward.
---   2. Point the app's runtime DATABASE_URL (Render env var) at this new
---      role instead of the migration role.
---   3. Keep using the original (migration) role's connection string only
---      for `prisma migrate deploy` (e.g. in the deploy-backend.yml
---      workflow / Render's release/pre-deploy command), never for the
---      running app process.
+--   2. IMPORTANT — check you're connected to the right database before
+--      running this. If this Postgres *instance* also hosts another app's
+--      database (see render.yaml's `databases:` note — this account's free
+--      tier only allows one instance, shared across apps via separate
+--      databases on it), running this while `\c`'d into the WRONG database
+--      grants these DML permissions on that other app's tables instead of
+--      devtoolbox's, and devtoolbox_app ends up with no actual table access
+--      of its own (GRANT CONNECT ON DATABASE below is the only line that's
+--      database-qualified by name — everything else applies to "whichever
+--      database this session is currently in"). Run `\c devtoolbox` (or
+--      check with `\l` first if you're not sure of the exact name) before
+--      the `GRANT USAGE ON SCHEMA public` line onward.
+--   3. Point the app's runtime `DATABASE_URL` (Render env var) at this new
+--      role's connection string instead of the admin role's.
+--   4. Add a NEW Render env var, `MIGRATE_DATABASE_URL`, holding the
+--      ORIGINAL admin role's connection string (what `DATABASE_URL` used to
+--      be) — `backend/Dockerfile`'s CMD uses this to run
+--      `prisma migrate deploy` with admin/DDL privileges, then starts the
+--      app itself with `DATABASE_URL` (the restricted role). Migrations
+--      run on every container boot here (Render's free-tier web service
+--      plan doesn't support `preDeployCommand`), so this split is required,
+--      not optional, once `DATABASE_URL` points at the restricted role — if
+--      you skip this step the app will fail to boot at all.
 --
 -- This can't be run automatically from this codebase — it needs to execute
 -- against the actual production database with admin credentials Claude
