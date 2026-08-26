@@ -30,7 +30,7 @@ export function base32Encode(bytes: Uint8Array): string {
   let output = "";
   for (let i = 0; i < bits.length; i += 5) {
     const chunk = bits.slice(i, i + 5).padEnd(5, "0");
-    output += BASE32_ALPHABET[parseInt(chunk, 2)];
+    output += BASE32_ALPHABET[parseInt(chunk, 2)]!;
   }
   return output;
 }
@@ -55,12 +55,12 @@ export async function hotp(keyBytes: Uint8Array, counter: number, digits: number
   );
   const signature = await crypto.subtle.sign("HMAC", cryptoKey, counterToBytes(counter) as BufferSource);
   const hmac = new Uint8Array(signature);
-  const offset = hmac[hmac.length - 1] & 0x0f;
+  const offset = hmac[hmac.length - 1]! & 0x0f;
   const binCode =
-    ((hmac[offset] & 0x7f) << 24) |
-    ((hmac[offset + 1] & 0xff) << 16) |
-    ((hmac[offset + 2] & 0xff) << 8) |
-    (hmac[offset + 3] & 0xff);
+    ((hmac[offset]! & 0x7f) << 24) |
+    ((hmac[offset + 1]! & 0xff) << 16) |
+    ((hmac[offset + 2]! & 0xff) << 8) |
+    (hmac[offset + 3]! & 0xff);
   const otp = binCode % 10 ** digits;
   return otp.toString().padStart(digits, "0");
 }

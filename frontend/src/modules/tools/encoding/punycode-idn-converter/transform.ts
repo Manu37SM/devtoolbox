@@ -90,7 +90,7 @@ export function decodeLabel(input: string): string {
   for (let j = 0; j < basicEnd; j++) {
     const code = input.charCodeAt(j);
     if (code >= 0x80) throw new RangeError("Illegal input >= 0x80 in basic-code portion.");
-    output.push(input[j]);
+    output.push(input[j]!);
   }
 
   let index = basicEnd > 0 ? basicEnd + 1 : 0;

@@ -30,7 +30,7 @@ export function simulateColorBlindness(color: RgbColor, type: ColorBlindnessType
 export function applyColorBlindnessToImageData(imageData: ImageData, type: ColorBlindnessType): void {
   const { data } = imageData;
   for (let i = 0; i < data.length; i += 4) {
-    const result = simulateColorBlindness({ r: data[i], g: data[i + 1], b: data[i + 2] }, type);
+    const result = simulateColorBlindness({ r: data[i]!, g: data[i + 1]!, b: data[i + 2]! }, type);
     data[i] = result.r;
     data[i + 1] = result.g;
     data[i + 2] = result.b;

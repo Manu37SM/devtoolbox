@@ -36,7 +36,7 @@ const OPENERS: Record<PlaceholderTextVariant, string> = {
 };
 
 function pick(bank: string[], rng: () => number): string {
-  return bank[Math.floor(rng() * bank.length) % bank.length];
+  return bank[Math.floor(rng() * bank.length) % bank.length]!;
 }
 
 function capitalize(word: string): string {

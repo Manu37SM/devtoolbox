@@ -47,7 +47,7 @@ export function dataUrlByteLength(dataUrl: string): number {
   const base64 = dataUrl.slice(commaIndex + 1);
   if (base64.length === 0) return 0;
   const paddingMatch = base64.match(/=+$/);
-  const padding = paddingMatch ? paddingMatch[0].length : 0;
+  const padding = paddingMatch?.[0]?.length ?? 0;
   return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
 }
 

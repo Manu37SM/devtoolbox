@@ -137,16 +137,16 @@ const WIDTH_HEIGHT_KEYWORDS: Record<string, string> = {
   "min-content": "min",
 };
 
+function parseUnitValue(v: string, suffix: string, multiplier: number): number | null {
+  const match = v.match(new RegExp(`^(-?[\d.]+)${suffix}$`));
+  const group = match?.[1];
+  return group !== undefined ? parseFloat(group) * multiplier : null;
+}
+
 export function parseLengthToPx(value: string): number | null {
   const v = value.trim();
   if (v === "0") return 0;
-  const rem = v.match(/^(-?[\d.]+)rem$/);
-  if (rem) return parseFloat(rem[1]) * 16;
-  const px = v.match(/^(-?[\d.]+)px$/);
-  if (px) return parseFloat(px[1]);
-  const em = v.match(/^(-?[\d.]+)em$/);
-  if (em) return parseFloat(em[1]) * 16;
-  return null;
+  return parseUnitValue(v, "rem", 16) ?? parseUnitValue(v, "px", 1) ?? parseUnitValue(v, "em", 16);
 }
 
 function matchScale(scale: [string, number][], px: number): string | null {
@@ -291,7 +291,8 @@ function tailwindClassToCss(cls: string): string | null {
 
   const arbitrary = cls.match(/^([a-zA-Z-]+)-\[(.+)\]$/);
   if (arbitrary) {
-    const [, prefix, value] = arbitrary;
+    const prefix = arbitrary[1]!;
+    const value = arbitrary[2]!;
     const looksLikeColor = /^#|^rgb|^hsl/.test(value);
 
     if (prefix === "text") return `${looksLikeColor ? "color" : "font-size"}: ${value};`;

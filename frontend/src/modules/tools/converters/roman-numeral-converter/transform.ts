@@ -36,11 +36,11 @@ export function romanToNumber(input: string): number {
   let total = 0;
   let i = 0;
   while (i < s.length) {
-    const cur = ROMAN_VALUES[s[i]];
+    const cur = ROMAN_VALUES[s[i]!];
     if (cur === undefined) {
       throw new Error(`Invalid Roman numeral character: "${s[i]}"`);
     }
-    const next = i + 1 < s.length ? ROMAN_VALUES[s[i + 1]] : undefined;
+    const next = i + 1 < s.length ? ROMAN_VALUES[s[i + 1]!] : undefined;
     if (next !== undefined && cur < next) {
       total += next - cur;
       i += 2;
