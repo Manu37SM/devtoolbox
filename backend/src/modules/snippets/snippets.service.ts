@@ -5,17 +5,6 @@ import { PrismaService } from "../../database/prisma.service";
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
-/** Saved code/text snippets — API.md §6. Ownership enforced in the
- * service layer (CLAUDE.md rule 6 / DATABASE.md §1), not just the
- * controller: `getOne` is the one method reachable by non-owners, and it
- * only ever returns `isPublic` snippets (or org-shared ones to fellow
- * members) to them.
- *
- * Team workspaces (API.md §17): `organizationId` is additive to `userId`
- * ownership, never a replacement for it — every row still has exactly one
- * `userId` creator. Setting `organizationId` only widens *who else* can
- * view/edit it (any member for viewing; creator or org OWNER/ADMIN for
- * editing), it doesn't transfer ownership. */
 @Injectable()
 export class SnippetsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -33,12 +22,6 @@ export class SnippetsService {
     return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
   }
 
-  /** Snippets shared into an org the caller belongs to — separate from
-   * `list()` (the caller's own snippets) since the two have different
-   * visibility rules and are shown in different UI sections. Same
-   * cursor/limit pagination as `list()` — this originally ran an unbounded
-   * `findMany`, flagged in this session's audit-hardening pass
-   * (AUDIT_REPORT.md §19) as a low-cost DoS lever for a large org. */
   async listForOrganization(userId: string, organizationId: string, opts: CursorQueryDto = {}) {
     await this.assertMember(userId, organizationId);
     const limit = Math.min(opts.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
@@ -55,13 +38,7 @@ export class SnippetsService {
 
   async create(userId: string, dto: CreateSnippetDto) {
     if (dto.organizationId) await this.assertMember(userId, dto.organizationId);
-    // Spelled out explicitly rather than `{ userId, ...dto }` — Prisma's
-    // generated `create` input is `XOR<SnippetCreateInput,
-    // SnippetUncheckedCreateInput>` (relation-based vs. scalar-FK-based),
-    // and TypeScript can't discriminate that union against a generic
-    // spread of a DTO type that has `organizationId` typed as `string |
-    // undefined` (see pipelines.service.ts's `create` for the same
-    // pattern, same reason).
+
     return this.prisma.snippet.create({
       data: {
         userId,
@@ -74,12 +51,6 @@ export class SnippetsService {
     });
   }
 
-  // Returns the same 404 for "doesn't exist" and "exists but you can't see
-  // it" — same convention as ApiKeysService.revokeKey. Originally returned
-  // 403 for the private-and-not-mine case, which let an authenticated
-  // caller distinguish "exists but private" from "doesn't exist" for any
-  // guessed UUID; flagged in this session's audit-hardening pass
-  // (AUDIT_REPORT.md §19) and unified here.
   async getOne(id: string, requesterUserId: string | undefined) {
     const snippet = await this.prisma.snippet.findUnique({ where: { id } });
     if (!snippet || snippet.deletedAt) throw new NotFoundException("Snippet not found.");
@@ -100,8 +71,6 @@ export class SnippetsService {
     await this.prisma.snippet.update({ where: { id: snippet.id }, data: { deletedAt: new Date() } });
   }
 
-  /** Editable by the creator, or by an OWNER/ADMIN of the org it's shared
-   * into (not by ordinary members, who only get view/duplicate). */
   private async getEditable(userId: string, id: string) {
     const snippet = await this.prisma.snippet.findUnique({ where: { id } });
     if (!snippet || snippet.deletedAt) throw new NotFoundException("Snippet not found.");

@@ -59,9 +59,7 @@ describe("formatSql", () => {
   it("handles multi-statement input", () => {
     const result = formatSql("SELECT 1; SELECT 2;", defaultOptions);
     expect(result.error).toBeNull();
-    // sql-formatter breaks each short SELECT onto its own line rather than
-    // keeping "SELECT 1" on one line, so match across whitespace instead of
-    // asserting an exact substring.
+
     expect(result.output).toMatch(/SELECT\s+1/);
     expect(result.output).toMatch(/SELECT\s+2/);
     expect(result.output.match(/SELECT/g)).toHaveLength(2);

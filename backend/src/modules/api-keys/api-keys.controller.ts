@@ -7,16 +7,13 @@ import { CurrentUser, type AuthenticatedUser } from "../auth/decorators/current-
 import { PlanThrottle } from "../../common/rate-limit/plan-throttle.decorator";
 import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 
-/** API.md §11 — session-authed key management for §12's Public API.
- * Every route requires a signed-in user (JwtAuthGuard); there's no
- * anonymous or API-key-authed access to these routes themselves. */
 @Controller("api-keys")
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 
   @PlanThrottle({
     route: "api-keys-create",
-    anonymous: { limit: 1, ttlSeconds: 3_600 }, // unreachable — JwtAuthGuard blocks anonymous callers first
+    anonymous: { limit: 1, ttlSeconds: 3_600 },
     free: { limit: 30, ttlSeconds: 3_600 },
     pro: { limit: 30, ttlSeconds: 3_600 },
   })

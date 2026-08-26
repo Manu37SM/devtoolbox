@@ -14,9 +14,6 @@ export interface UserAgentParserResult {
   error: { message: string } | null;
 }
 
-/** Parses a User-Agent string into structured browser/OS/device/engine/CPU
- * info via ua-parser-js. Returns the raw structured object for UI table
- * rendering, keeping this function pure and DOM-free. */
 export function parseUserAgentStructured(uaString: string): UserAgentParsedResult {
   const parser = new UAParser(uaString);
   const result = parser.getResult();
@@ -30,8 +27,6 @@ export function parseUserAgentStructured(uaString: string): UserAgentParsedResul
   };
 }
 
-/** Parses a User-Agent string and returns pretty-printed JSON, following the
- * standard {output, error} tool contract. */
 export function parseUserAgent(uaString: string): UserAgentParserResult {
   if (!uaString.trim()) {
     return { output: "", error: { message: "Enter a User-Agent string to parse." } };

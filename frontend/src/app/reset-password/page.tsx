@@ -8,11 +8,6 @@ import { TurnstileWidget, type TurnstileHandle } from "@/components/auth/Turnsti
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// See login/page.tsx's identical constant for why this mirrors the backend
-// env var name. Only RequestStep below uses this — the confirm step
-// (POST /auth/password-reset/confirm) isn't captcha-gated on the backend,
-// since a valid, unguessable emailed token is already a much stronger
-// signal than a login/register attempt.
 const TURNSTILE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export default function ResetPasswordPage() {

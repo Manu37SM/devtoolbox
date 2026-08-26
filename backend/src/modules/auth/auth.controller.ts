@@ -17,7 +17,6 @@ import { REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_PATH } from "./auth.con
 import { CaptchaService } from "../../common/captcha/captcha.service";
 import { generateCsrfToken } from "../../common/csrf/csrf";
 
-// 10/min/IP per API.md §12 "Auth endpoints" row.
 const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 
 @Controller("auth")
@@ -104,7 +103,7 @@ export class AuthController {
     const { email, captchaToken } = dto as { email: string; captchaToken?: string };
     await this.captcha.verify(captchaToken, req.ip);
     await this.authService.requestPasswordReset(email, { userAgent: req.get("user-agent"), ip: req.ip });
-    // Always the same response — no account-enumeration signal.
+
     return { ok: true };
   }
 
@@ -126,10 +125,6 @@ export class AuthController {
     return this.authService.me(user.userId);
   }
 
-  // Issues the CSRF token + cookie pair a client needs before it can call
-  // POST /auth/refresh or /auth/logout — see csrf.ts. GET is exempt from
-  // CSRF protection itself (mutates nothing), so this can't be used to
-  // forge anything on its own.
   @Get("csrf-token")
   @HttpCode(200)
   csrfToken(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
@@ -138,21 +133,7 @@ export class AuthController {
 
   private setRefreshCookie(res: Response, token: IssuedRefreshToken): void {
     const isProduction = this.config.get<string>("NODE_ENV") === "production";
-    // sameSite: "none" (production only) — frontend (Vercel) and backend
-    // (Render) are different registrable domains, so every request between
-    // them is cross-site as far as cookies are concerned. "strict" (or even
-    // "lax") silently drops this cookie on every cross-site request, which
-    // doesn't break the *first* login (the access token lives in memory,
-    // not the cookie) but breaks every subsequent session-restore: a page
-    // reload, or the full-page redirect round trip for OAuth
-    // login/account-linking (see frontend/src/app/auth/callback/[provider]/
-    // page.tsx's "waiting-for-session" branch, which surfaced this as
-    // "Your session expired before the connection could finish"). "none"
-    // requires `secure: true` (browsers reject `SameSite=None` without
-    // Secure) — true here since this only applies when isProduction, which
-    // is also when `secure` below is true. Local dev keeps "lax": frontend
-    // and backend are both on localhost (same site, different ports), so
-    // "lax" already works there and doesn't require HTTPS.
+
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, token.raw, {
       httpOnly: true,
       secure: isProduction,

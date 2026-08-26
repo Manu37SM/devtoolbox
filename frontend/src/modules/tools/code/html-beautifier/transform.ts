@@ -7,12 +7,6 @@ import { minify } from "html-minifier-terser";
 import type { HtmlBeautifierOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Formats HTML using Prettier's standalone build + html plugin; minifies
- * using html-minifier-terser (both approved per ARCHITECTURE.md §8.2).
- * CSS/JS plugins are included in beautify mode too since Prettier formats
- * embedded <style>/<script> blocks when they're available; minify mode
- * likewise minifies embedded CSS/JS via html-minifier-terser's
- * minifyCSS/minifyJS options (which delegate to csso/terser internally). */
 export async function beautifyHtml(input: string, options: HtmlBeautifierOptions): Promise<TransformResult> {
   if (input.trim().length === 0) return { output: "", error: null };
 

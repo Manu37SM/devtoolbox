@@ -11,9 +11,6 @@ import { useCommandPaletteStore } from "@/store/command-palette-store";
 import { useNavStore } from "@/store/nav-store";
 import { useAuthStore } from "@/store/auth-store";
 
-// One shell, sixty tools (UI_GUIDELINES.md §1.2): fixed top bar (56px) +
-// persistent left nav (240px, collapsible to 64px icon rail — see
-// LeftNav.tsx) + main content area, per UI_GUIDELINES.md §3.
 export function AppShell({ children }: { children: React.ReactNode }) {
   const openPalette = useCommandPaletteStore((s) => s.open);
   const openMobileNav = useNavStore((s) => s.openMobile);

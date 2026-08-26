@@ -12,12 +12,6 @@ import { SecurityLogModule } from "../../common/security-log/security-log.module
 import { CaptchaModule } from "../../common/captcha/captcha.module";
 import { doubleCsrfProtection } from "../../common/csrf/csrf";
 
-/**
- * Registration, login, OAuth, JWT access/refresh token issuance and
- * rotation. See API.md §2, ARCHITECTURE.md §9. Security-sensitive per
- * CLAUDE.md rule 6 — cross-reference those docs before changing anything
- * here (ownership checks, rate limiting, no plaintext secret persistence).
- */
 @Module({
   imports: [
     PassportModule,
@@ -33,15 +27,11 @@ import { doubleCsrfProtection } from "../../common/csrf/csrf";
   ],
   controllers: [AuthController, OAuthController],
   providers: [AuthService, OAuthService, EmailService, JwtAccessStrategy],
-  // EmailService exported so other modules with their own transactional
-  // email needs (OrganizationsModule's invite emails) reuse this one
-  // Resend-backed instance instead of standing up a second one.
+
   exports: [AuthService, EmailService],
 })
 export class AuthModule implements NestModule {
-  // CSRF protection (checklist item #22) scoped to just the two
-  // cookie-authenticated, state-changing routes — see csrf.ts's doc
-  // comment for why this isn't applied API-wide.
+
   configure(consumer: MiddlewareConsumer): void {
     consumer
       .apply(doubleCsrfProtection)

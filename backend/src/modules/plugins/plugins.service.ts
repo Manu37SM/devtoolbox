@@ -10,26 +10,9 @@ import type {
 } from "@devtoolbox/shared";
 import { PrismaService } from "../../database/prisma.service";
 
-const MAX_WASM_BYTES = 2 * 1024 * 1024; // 2MB decoded — ARCHITECTURE.md §16.2
-const WASM_MAGIC = Buffer.from([0x00, 0x61, 0x73, 0x6d]); // "\0asm"
+const MAX_WASM_BYTES = 2 * 1024 * 1024;
+const WASM_MAGIC = Buffer.from([0x00, 0x61, 0x73, 0x6d]);
 
-/**
- * Plugin marketplace v1 — API.md §18, ARCHITECTURE.md §16. First
- * untrusted-third-party-code surface in this codebase; flagged and
- * confirmed before implementation per CLAUDE.md rule 10.
- *
- * Static inspection here is intentionally minimal: size cap + WASM magic
- * number only. The fuller import-section allowlist check §16.2 describes
- * (reject any WASM import beyond a single `abort` host function) is NOT
- * implemented — that requires parsing the WASM binary's import section,
- * which is a real parser, not a few lines, and the sandbox's own runtime
- * enclosure (frontend PluginRunner: opaque-origin iframe, `sandbox`
- * attribute, `connect-src 'none'` CSP) is the actual security boundary
- * regardless of what a plugin's import section claims — static analysis is
- * defense-in-depth on top of that, not the only thing standing between a
- * hostile plugin and the user. Documented as a real, disclosed gap in
- * AUDIT_REPORT.md §18.2, not silently skipped.
- */
 @Injectable()
 export class PluginsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -66,10 +49,7 @@ export class PluginsService {
           checksumSha256,
         },
       });
-      // A new submission always goes back through review, even for an
-      // already-PUBLISHED plugin's next version — never auto-publish
-      // (ARCHITECTURE.md §16.2's "never auto-publish" rule applies per
-      // version, not just once per plugin).
+
       await tx.plugin.update({ where: { id: pluginId }, data: { status: "IN_REVIEW" } });
       return created;
     });
@@ -86,8 +66,6 @@ export class PluginsService {
     return plugins.map((p: Parameters<PluginsService["toSummary"]>[0]) => this.toSummary(p));
   }
 
-  /** Own plugins in any status, or anyone's PUBLISHED ones — same
-   * owner-or-public shape as SnippetsService.getOne. */
   async getDetail(slug: string, requesterUserId: string | undefined): Promise<PluginDetail> {
     const plugin = await this.prisma.plugin.findUnique({
       where: { slug },
@@ -111,9 +89,6 @@ export class PluginsService {
     };
   }
 
-  /** What the frontend PluginRunner actually fetches to execute a plugin —
-   * the latest PUBLISHED version for anyone, or the latest version in any
-   * status for the author/an admin (preview before publish). */
   async getRunPayload(slug: string, requesterUserId: string | undefined): Promise<PluginRunPayload> {
     const plugin = await this.prisma.plugin.findUnique({
       where: { slug },
@@ -132,7 +107,6 @@ export class PluginsService {
     return { version: latest.version, wasmBase64: latest.wasmBase64, checksumSha256: latest.checksumSha256 };
   }
 
-  /** Admin-only review queue — API.md §18. */
   async listReviewQueue(userId: string): Promise<PluginSummary[]> {
     await this.requireAdmin(userId);
     const plugins = await this.prisma.plugin.findMany({
@@ -170,8 +144,6 @@ export class PluginsService {
     return this.toSummary(updated);
   }
 
-  /** Hides a previously-published plugin without deleting it — rows are
-   * never deleted, matching DATABASE.md §1's soft-delete/audit-trail habit. */
   async suspend(userId: string, pluginId: string): Promise<PluginSummary> {
     await this.requireAdmin(userId);
     const updated = await this.prisma.plugin.update({

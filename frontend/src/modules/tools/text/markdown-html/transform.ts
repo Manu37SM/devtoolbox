@@ -1,13 +1,4 @@
-/** Hand-rolled Markdown -> HTML converter covering the common GFM-lite
- * subset (headings, emphasis, inline code, links, images, lists,
- * blockquotes, fenced code blocks, horizontal rules, paragraphs).
- *
- * Deliberately does NOT sanitize its output — sanitization needs a real
- * DOM (DOMPurify requires `window`), which would violate the "transform.ts
- * has zero DOM dependency, must run in Workers/SSR/CLI" rule in
- * DEVELOPMENT_GUIDE.md §5. The ToolView (browser-only) is responsible for
- * calling DOMPurify.sanitize() on this output before rendering it, per
- * ARCHITECTURE.md §9. Never render this function's output directly. */
+
 export function markdownToHtml(markdown: string): string {
   if (markdown.trim().length === 0) return "";
 
@@ -23,7 +14,6 @@ export function markdownToHtml(markdown: string): string {
       continue;
     }
 
-    // Fenced code block
     if (/^```/.test(line)) {
       const lang = line.slice(3).trim();
       const codeLines: string[] = [];
@@ -32,20 +22,18 @@ export function markdownToHtml(markdown: string): string {
         codeLines.push(lines[i]!);
         i++;
       }
-      i++; // skip closing fence
+      i++;
       const langAttr = lang ? ` class="language-${escapeHtml(lang)}"` : "";
       htmlBlocks.push(`<pre><code${langAttr}>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
       continue;
     }
 
-    // Horizontal rule
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
       htmlBlocks.push("<hr />");
       i++;
       continue;
     }
 
-    // Heading
     const headingMatch = /^(#{1,6})\s+(.*)$/.exec(line);
     if (headingMatch) {
       const level = headingMatch[1]!.length;
@@ -54,7 +42,6 @@ export function markdownToHtml(markdown: string): string {
       continue;
     }
 
-    // Blockquote
     if (/^>\s?/.test(line)) {
       const quoteLines: string[] = [];
       while (i < lines.length && /^>\s?/.test(lines[i]!)) {
@@ -65,7 +52,6 @@ export function markdownToHtml(markdown: string): string {
       continue;
     }
 
-    // Unordered list
     if (/^[-*]\s+/.test(line)) {
       const items: string[] = [];
       while (i < lines.length && /^[-*]\s+/.test(lines[i]!)) {
@@ -76,7 +62,6 @@ export function markdownToHtml(markdown: string): string {
       continue;
     }
 
-    // Ordered list
     if (/^\d+\.\s+/.test(line)) {
       const items: string[] = [];
       while (i < lines.length && /^\d+\.\s+/.test(lines[i]!)) {
@@ -87,7 +72,6 @@ export function markdownToHtml(markdown: string): string {
       continue;
     }
 
-    // Paragraph (collect until blank line)
     const paraLines: string[] = [];
     while (i < lines.length && lines[i]!.trim().length > 0 && !isBlockStart(lines[i]!)) {
       paraLines.push(lines[i]!);
@@ -113,11 +97,9 @@ function isBlockStart(line: string): boolean {
 function inlineToHtml(text: string): string {
   let html = escapeHtml(text);
 
-  // Images before links (image syntax is link syntax prefixed with !)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt: string, url: string) => `<img src="${url}" alt="${alt}" />`);
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label: string, url: string) => `<a href="${url}">${label}</a>`);
 
-  // Inline code (before bold/italic so markers inside code aren't parsed)
   html = html.replace(/`([^`]+)`/g, (_m, code: string) => `<code>${code}</code>`);
 
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");

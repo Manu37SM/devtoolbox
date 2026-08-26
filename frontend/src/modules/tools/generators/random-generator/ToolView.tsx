@@ -9,11 +9,7 @@ import type { RandomGeneratorOptions } from "./schema";
 export function RandomGeneratorToolView() {
   const [kind, setKind] = useState<"number" | "string">("number");
   const [numberOpts, setNumberOpts] = useState({ min: 1, max: 100, count: 10, allowDuplicates: true });
-  // Explicit type annotation required here: without it, TypeScript infers
-  // `charset` as the narrow literal type "alphanumeric" (from the initial
-  // value) rather than the full schema union, which then rejects the
-  // onChange handler's broader assignment below — see AUDIT_REPORT.md
-  // §7.10 for the build failure this caused.
+
   const [stringOpts, setStringOpts] = useState<
     Omit<Extract<RandomGeneratorOptions, { kind: "string" }>, "kind">
   >({
@@ -26,13 +22,10 @@ export function RandomGeneratorToolView() {
   const options: RandomGeneratorOptions =
     kind === "number" ? { kind: "number", ...numberOpts } : { kind: "string", ...stringOpts };
 
-  // Generated only on the client, after mount, to avoid a server/client
-  // hydration mismatch: generateRandom() uses crypto.getRandomValues, which
-  // returns a different value on every call, including the SSR pass.
   const [result, setResult] = useState<RandomGeneratorResult>({ values: [], error: null });
   useEffect(() => {
     setResult(generateRandom(options));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [options, seed]);
   const joined = result.values.join("\n");
 

@@ -1,18 +1,4 @@
-// Manifest V3 service worker. Registers one context-menu item per curated
-// tool, runs the matching transform against the page's current text
-// selection, then injects a tiny result-display function into the page via
-// chrome.scripting.executeScript.
-//
-// Why executeScript instead of a persistent content script + message
-// passing: it keeps the extension's page footprint at zero until the user
-// actually invokes it (no script runs on every page load), and it avoids
-// clipboard-write permission ambiguity — the injected function only writes
-// to the clipboard from an explicit in-page button click, which is a
-// guaranteed user gesture in the tab's own context.
-//
-// No network calls anywhere in this file. The only inputs are the page's
-// selected text and this extension's own pure transforms.ts; the only
-// output is a DOM overlay injected into the current tab.
+
 
 import { TOOLS, type ToolId } from "./transforms.ts";
 
@@ -50,8 +36,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   });
 });
 
-// Injected into the page — must be a fully self-contained function with no
-// closure references, per chrome.scripting.executeScript's `func` contract.
 function showDevToolboxOverlay(title: string, ok: boolean, output: string): void {
   const existing = document.getElementById("devtoolbox-overlay");
   existing?.remove();

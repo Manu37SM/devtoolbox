@@ -19,14 +19,10 @@ import { REDIS_CLIENT } from "../../common/redis/redis.module";
 import type Redis from "ioredis";
 
 const HTTP_PROXY_TIMEOUT_MS = 10_000;
-const HTTP_PROXY_MAX_BODY_BYTES = 2_000_000; // 2MB cap on both request and response body echoed back
-const WEBHOOK_INBOX_TTL_SECONDS = 30 * 60; // 30 minutes, per API.md's "temporary inbox URL" description
-const WEBHOOK_MAX_EVENTS = 50; // cap stored events per inbox so a spammed inbox can't grow unbounded in Redis
+const HTTP_PROXY_MAX_BODY_BYTES = 2_000_000;
+const WEBHOOK_INBOX_TTL_SECONDS = 30 * 60;
+const WEBHOOK_MAX_EVENTS = 50;
 
-// Hop-by-hop / connection-management headers that must never be forwarded
-// verbatim from the user's requested headers — either meaningless outside
-// the original connection or actively dangerous to let a client control
-// on our outbound request (RFC 7230 §6.1 hop-by-hop list, plus Host).
 const BLOCKED_REQUEST_HEADERS = new Set([
   "host",
   "connection",
@@ -44,7 +40,6 @@ const BLOCKED_REQUEST_HEADERS = new Set([
 export class NetService {
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
-  // ── HTTP Request Tester (API.md: POST /net/http-request) ────────────────
   async proxyHttpRequest(dto: HttpRequestProxyDto): Promise<HttpRequestProxyResult> {
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(dto.headers ?? {})) {
@@ -77,7 +72,6 @@ export class NetService {
     };
   }
 
-  // ── DNS Lookup (API.md: GET /net/dns) ────────────────────────────────────
   async dnsLookup(dto: DnsLookupDto): Promise<DnsLookupResult> {
     let records: string[];
     try {
@@ -113,14 +107,6 @@ export class NetService {
     return { domain: dto.domain, recordType: dto.recordType, records };
   }
 
-  // ── IP Lookup (API.md: GET /net/ip-lookup) ───────────────────────────────
-  // Uses ip-api.com's free, keyless tier (45 req/min, non-commercial use —
-  // acceptable for this tool's rate-limited, low-volume usage per API.md
-  // §12's 60/hour-per-user cap; documented here since it's a real external
-  // dependency this tool relies on, not something to silently assume works
-  // forever). The target host is fixed/trusted (not user-controlled), so
-  // this call intentionally does NOT go through `safeFetch`/the SSRF guard
-  // — that guard is for user-supplied URLs only.
   async ipLookup(dto: IpLookupDto, callerIp: string): Promise<IpLookupResult> {
     const ip = dto.ip?.trim() || callerIp;
 
@@ -152,24 +138,17 @@ export class NetService {
         timezone: data.timezone,
       };
     } catch {
-      // Geolocation is best-effort — a failed lookup still returns the IP
-      // itself rather than erroring the whole request.
+
       return { ip };
     }
   }
 
-  // ── Webhook Tester (API.md: POST /net/webhook-inbox, GET .../events) ────
-  /** `originUrl` is the full scheme+host the caller reached us on (built by
-   * the controller from the request, since the service layer has no
-   * request context) — used to hand back an absolute, paste-into-a-third-
-   * -party-webhook-config URL rather than a bare path. */
   async createWebhookInbox(originUrl: string): Promise<WebhookInboxCreateResultDto> {
     const id = randomUUID();
     const key = webhookInboxKey(id);
-    // Store a placeholder so `getWebhookEvents` can distinguish "inbox
-    // exists but is empty" from "inbox never existed/expired".
+
     await this.redis.set(webhookInboxMetaKey(id), "1", "EX", WEBHOOK_INBOX_TTL_SECONDS);
-    await this.redis.del(key); // in case of (astronomically unlikely) UUID reuse
+    await this.redis.del(key);
 
     return {
       id,
@@ -198,7 +177,6 @@ export class NetService {
     return raw.map((entry) => JSON.parse(entry) as WebhookInboxEvent);
   }
 
-  // ── URL/Meta Tag Previewer (API.md: POST /net/url-preview) ──────────────
   async urlPreview(dto: UrlPreviewDto): Promise<UrlPreviewResult> {
     try {
       const response = await safeFetch(dto.url, {
@@ -206,9 +184,9 @@ export class NetService {
         headers: { Accept: "text/html" },
         timeoutMs: 8_000,
       });
-      const { text } = await readBodyWithCap(response, 500_000); // meta tags live in <head>, don't need the whole page
+      const { text } = await readBodyWithCap(response, 500_000);
       const $ = cheerio.load(text);
-      const safeUrl = await assertUrlIsSafe(dto.url); // re-validated URL object for resolving relative favicon/image paths
+      const safeUrl = await assertUrlIsSafe(dto.url);
 
       const og = (prop: string) => $(`meta[property="${prop}"]`).attr("content");
       const meta = (name: string) => $(`meta[name="${name}"]`).attr("content");
@@ -246,9 +224,6 @@ function resolveMaybeRelative(href: string | undefined, base: URL): string | und
   }
 }
 
-/** Reads a Response body up to `maxBytes`, aborting the read (not just
- * truncating after the fact) once the cap is hit so a malicious/huge
- * response can't consume unbounded server memory/time. */
 async function readBodyWithCap(response: Response, maxBytes: number): Promise<{ text: string; truncated: boolean }> {
   const reader = response.body?.getReader();
   if (!reader) return { text: "", truncated: false };

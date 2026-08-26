@@ -77,9 +77,9 @@ describe("detectToolForContent", () => {
   });
 
   it("detects a hash digest by length", () => {
-    // MD5("hello") — 32 hex chars
+
     expect(detectToolForContent("5d41402abc4b2a76b9719d911017c592")?.toolSlug).toBe("hash-generator");
-    // SHA-1("hello") — 40 hex chars
+
     expect(detectToolForContent("aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d")?.toolSlug).toBe("hash-generator");
   });
 

@@ -22,13 +22,6 @@ export interface IssuedRefreshToken {
   expiresAt: Date;
 }
 
-/**
- * Email/password auth per API.md §2, ARCHITECTURE.md §9. OAuth lives in
- * oauth.service.ts (task-split for reviewability). Security-sensitive —
- * see CLAUDE.md rule 6: ownership checks, no plaintext secrets persisted
- * (passwords via argon2, refresh/verification tokens hashed with SHA-256
- * before storage), rotating refresh tokens with reuse detection.
- */
 @Injectable()
 export class AuthService {
   constructor(
@@ -74,8 +67,6 @@ export class AuthService {
       throw new UnauthorizedException("Invalid email or password.");
     }
 
-    // Account lockout (checklist item #37). Checked before verifying the
-    // password so a locked account can't be used to keep guessing.
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       await this.securityLog.record({
         type: "LOGIN_FAILED",
@@ -117,7 +108,6 @@ export class AuthService {
       );
     }
 
-    // Successful login clears any accumulated failure count/lock.
     if (user.failedLoginAttempts !== 0 || user.lockedUntil) {
       await this.prisma.user.update({
         where: { id: user.id },
@@ -130,13 +120,6 @@ export class AuthService {
     return { tokens: this.buildAuthResponse(user), refreshToken };
   }
 
-  /**
-   * Rotates the refresh token. Reuse detection: a session row is never
-   * deleted on rotation, only marked `revokedAt`. If a caller presents a
-   * refresh token whose session is already revoked, that's a replay of a
-   * stolen/already-used token — every session for that user is revoked as
-   * a precaution and the request is rejected.
-   */
   async refresh(rawRefreshToken: string, meta: { userAgent?: string; ip?: string }): Promise<{
     tokens: AuthTokenResponse;
     refreshToken: IssuedRefreshToken;
@@ -149,7 +132,7 @@ export class AuthService {
     }
 
     if (session.revokedAt) {
-      // Reuse of an already-rotated-out token — treat as compromise.
+
       await this.prisma.session.updateMany({
         where: { userId: session.userId, revokedAt: null },
         data: { revokedAt: new Date() },
@@ -208,13 +191,9 @@ export class AuthService {
     ]);
   }
 
-  /** Always resolves with no error, regardless of whether the email
-   * exists — prevents account enumeration via response timing/shape. */
   async requestPasswordReset(email: string, meta: { userAgent?: string; ip?: string } = {}): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    // Logged even when the account doesn't exist (userId omitted) — an
-    // unusual volume of these for one IP is itself a signal worth having,
-    // even without a userId to attach it to.
+
     await this.securityLog.record({
       type: "PASSWORD_RESET_REQUESTED",
       userId: user?.id,
@@ -253,16 +232,12 @@ export class AuthService {
 
     await this.prisma.$transaction([
       this.prisma.verificationToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
-      // Also clears any account lockout — a successful password reset is a
-      // stronger proof of ownership than the lockout mechanism is guarding
-      // against, so there's no reason to leave a legitimate owner locked
-      // out after they've proven control of the mailbox.
+
       this.prisma.user.update({
         where: { id: record.userId },
         data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
       }),
-      // Password change invalidates every existing session (defense in
-      // depth in case the reset was triggered because a session leaked).
+
       this.prisma.session.updateMany({
         where: { userId: record.userId, revokedAt: null },
         data: { revokedAt: new Date() },
@@ -277,7 +252,6 @@ export class AuthService {
     });
   }
 
-  // ── Internal helpers, also used by OAuthService ───────────────────────
   async createSession(userId: string, meta: { userAgent?: string; ip?: string }): Promise<IssuedRefreshToken> {
     const { raw, hash } = generateOpaqueToken();
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60_000);

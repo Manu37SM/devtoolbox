@@ -1,7 +1,4 @@
-// Maps tool slug -> its ToolView component. Kept separate from
-// registry.ts (which only carries serializable metadata used by
-// server-rendered pages/sitemap/command palette) so registry.ts stays
-// safe to import from server components and route handlers.
+
 
 import type { ComponentType } from "react";
 import { JsonFormatterToolView } from "@/modules/tools/data-format/json-formatter/ToolView";
@@ -33,7 +30,7 @@ import { CronBuilderToolView } from "@/modules/tools/code/cron-builder/ToolView"
 import { QrCodeGeneratorToolView } from "@/modules/tools/image/qr-code-generator/ToolView";
 import { RandomGeneratorToolView } from "@/modules/tools/generators/random-generator/ToolView";
 import { UuidBulkToolView } from "@/modules/tools/generators/uuid-bulk/ToolView";
-// Phase 2 (P1) tools
+
 import { JsonTomlToolView } from "@/modules/tools/data-format/json-toml/ToolView";
 import { JsonPathTesterToolView } from "@/modules/tools/data-format/json-path-tester/ToolView";
 import { JsonDiffToolView } from "@/modules/tools/data-format/json-diff/ToolView";
@@ -59,6 +56,18 @@ import { UserAgentParserToolView } from "@/modules/tools/network/user-agent-pars
 import { CidrSubnetCalculatorToolView } from "@/modules/tools/network/cidr-subnet-calculator/ToolView";
 import { FakeDataGeneratorToolView } from "@/modules/tools/generators/fake-data-generator/ToolView";
 import { UrlParserToolView } from "@/modules/tools/network/url-parser/ToolView";
+import { RomanNumeralConverterToolView } from "@/modules/tools/converters/roman-numeral-converter/ToolView";
+import { BoxShadowBorderRadiusGeneratorToolView } from "@/modules/tools/converters/box-shadow-border-radius-generator/ToolView";
+import { PunycodeIdnConverterToolView } from "@/modules/tools/encoding/punycode-idn-converter/ToolView";
+import { CertificateDecoderToolView } from "@/modules/tools/encoding/certificate-decoder/ToolView";
+import { RsaEcKeyPairGeneratorToolView } from "@/modules/tools/security/rsa-ec-key-pair-generator/ToolView";
+import { TotpGeneratorToolView } from "@/modules/tools/security/totp-generator/ToolView";
+import { BcryptArgon2HashVerifyToolView } from "@/modules/tools/security/bcrypt-argon2-hash-verify/ToolView";
+import { CssTailwindHelperToolView } from "@/modules/tools/code/css-tailwind-helper/ToolView";
+import { PlaceholderImageGeneratorToolView } from "@/modules/tools/image/placeholder-image-generator/ToolView";
+import { ColorBlindnessSimulatorToolView } from "@/modules/tools/image/color-blindness-simulator/ToolView";
+import { PlaceholderTextGeneratorToolView } from "@/modules/tools/generators/placeholder-text-generator/ToolView";
+import { MockApiResponseGeneratorToolView } from "@/modules/tools/generators/mock-api-response-generator/ToolView";
 import { ImageCompressorToolView } from "@/modules/tools/image/image-compressor/ToolView";
 import { ImageFormatConverterToolView } from "@/modules/tools/image/image-format-converter/ToolView";
 import { SvgExporterToolView } from "@/modules/tools/image/svg-exporter/ToolView";
@@ -111,7 +120,7 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "qr-code-generator": QrCodeGeneratorToolView,
   "random-generator": RandomGeneratorToolView,
   "uuid-bulk-generator": UuidBulkToolView,
-  // Phase 2 (P1) tools
+
   "json-toml": JsonTomlToolView,
   "json-path-tester": JsonPathTesterToolView,
   "json-diff": JsonDiffToolView,
@@ -137,6 +146,18 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "cidr-subnet-calculator": CidrSubnetCalculatorToolView,
   "fake-data-generator": FakeDataGeneratorToolView,
   "url-parser": UrlParserToolView,
+  "roman-numeral-converter": RomanNumeralConverterToolView,
+  "box-shadow-border-radius-generator": BoxShadowBorderRadiusGeneratorToolView,
+  "punycode-idn-converter": PunycodeIdnConverterToolView,
+  "certificate-decoder": CertificateDecoderToolView,
+  "rsa-ec-key-pair-generator": RsaEcKeyPairGeneratorToolView,
+  "totp-generator": TotpGeneratorToolView,
+  "bcrypt-argon2-hash-verify": BcryptArgon2HashVerifyToolView,
+  "css-tailwind-helper": CssTailwindHelperToolView,
+  "placeholder-image-generator": PlaceholderImageGeneratorToolView,
+  "color-blindness-simulator": ColorBlindnessSimulatorToolView,
+  "placeholder-text-generator": PlaceholderTextGeneratorToolView,
+  "mock-api-response-generator": MockApiResponseGeneratorToolView,
   "image-compressor": ImageCompressorToolView,
   "image-format-converter": ImageFormatConverterToolView,
   "svg-exporter": SvgExporterToolView,

@@ -39,7 +39,7 @@ describe("analyzeText", () => {
 
   it("computes UTF-8 byte size accounting for multi-byte characters", () => {
     const result = analyzeText("café");
-    expect(result.bytesUtf8).toBe(5); // c-a-f-é(2 bytes)
+    expect(result.bytesUtf8).toBe(5);
   });
 
   it("estimates reading time from word count", () => {

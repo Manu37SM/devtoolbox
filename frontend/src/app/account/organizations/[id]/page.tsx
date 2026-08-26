@@ -21,10 +21,6 @@ interface OrganizationDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-// Org detail: member management (OWNER/ADMIN) and the AI-usage dashboard
-// (OWNER/ADMIN only — API.md §17). A plain MEMBER sees the roster but not
-// the usage numbers or the edit controls; the 403 from GET /usage is
-// treated as "not available to you," not an error to surface.
 export default function OrganizationDetailPage({ params }: OrganizationDetailPageProps) {
   const { id } = use(params);
   const router = useRouter();
@@ -77,7 +73,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   useEffect(() => {
     if (status !== "authenticated") return;
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [status, id]);
 
   useEffect(() => {
@@ -98,7 +94,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   useEffect(() => {
     if (!org || (org.role !== "OWNER" && org.role !== "ADMIN")) return;
     void loadInvites();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [org, id]);
 
   async function loadSso() {
@@ -122,7 +118,7 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
   useEffect(() => {
     if (!org || org.role !== "OWNER") return;
     void loadSso();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [org, id]);
 
   async function onSaveSso() {
@@ -217,9 +213,6 @@ export default function OrganizationDetailPage({ params }: OrganizationDetailPag
     }
   }
 
-  // No account with this email yet? Falls back to an email-token invite
-  // instead of erroring — the backend decides which happened, this just
-  // reflects it back (AUDIT_REPORT.md §21).
   async function onAddMember() {
     setError(null);
     setInviteMessage(null);

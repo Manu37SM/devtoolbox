@@ -26,12 +26,7 @@ export type CodeEditorLanguage =
 
 export interface CodeEditorProps {
   value: string;
-  /** Mirrors Textarea's onChange contract (DOM ChangeEvent with
-   * `target.value`) so ToolView code can swap `<Textarea>` for
-   * `<CodeEditor>` without changing its onChange handler — see
-   * DEVELOPMENT_GUIDE.md's note that a CodeMirror wrapper should be a
-   * drop-in replacement. The event is synthesized since CodeMirror
-   * doesn't dispatch real textarea DOM events. */
+
   onChange: (e: { target: { value: string } }) => void;
   language?: CodeEditorLanguage;
   "aria-label"?: string;
@@ -63,10 +58,6 @@ function languageExtension(language: CodeEditorLanguage | undefined): Extension[
   }
 }
 
-// One shared theme extension reading the app's CSS custom properties
-// (tailwind.config.ts §"colors") directly, so light/dark switches for
-// free via the existing `.dark` class toggle on <html> — no JS theme
-// sync needed between ThemeToggle and the editor.
 const appTheme = EditorView.theme({
   "&": {
     height: "100%",
@@ -105,38 +96,12 @@ const appTheme = EditorView.theme({
     backgroundColor: "var(--color-accent) !important",
     opacity: "0.25",
   },
-  // The blinking caret CodeMirror actually renders isn't the native text
-  // caret — CM6's `drawSelection` (part of `basicSetup`) draws its own
-  // `.cm-cursor` overlay and hides the real one, so setting `caretColor`
-  // above (on `.cm-content`) has no visible effect on it. `drawSelection`
-  // ships its own baseTheme rule — `.cm-cursor, .cm-dropCursor { borderLeft:
-  // "1.2px solid black" }` (checked directly in
-  // node_modules/@codemirror/view) — as a single `border-left` shorthand.
-  // It also has a `"&dark .cm-cursor"` variant, but that only applies when
-  // the editor is constructed with `EditorView.theme(styles, {dark: true})`,
-  // which this app doesn't do (colors switch via the `.dark` class on
-  // <html> + CSS custom properties instead, not CodeMirror's own dark
-  // flag) — so that variant never engages and the plain black default wins
-  // regardless of the app's theme. A previous fix here only set
-  // `borderLeftColor`, which lost to the base theme's `border-left`
-  // shorthand once actually loaded in the browser (its longhand write can
-  // still land after ours depending on StyleModule insertion order) —
-  // still invisible against the dark editor background (reported again:
-  // "the blinking cursor is not visible"). Setting the full `borderLeft`
-  // shorthand here, `!important`, removes any ordering ambiguity.
+
   ".cm-cursor, .cm-dropCursor": {
     borderLeft: "2px solid var(--color-accent) !important",
   },
 });
 
-/** CodeMirror 6 wrapper — the real `CodeEditor` referenced by
- * UI_GUIDELINES.md §4 / DEVELOPMENT_GUIDE.md §5, replacing the plain
- * `<textarea>` stand-in (`Textarea`) for tools whose content benefits
- * from syntax highlighting, line numbers, and bracket matching (JSON,
- * JS/TS, CSS, HTML, XML, YAML, Markdown). Tools without a natural
- * "code" shape (plain text, case conversion, counters, etc.) should
- * keep using `Textarea` — this isn't a universal replacement, it's an
- * option for the tools that benefit from it. */
 export function CodeEditor({
   value,
   onChange,
@@ -180,16 +145,9 @@ export function CodeEditor({
       view.destroy();
       viewRef.current = null;
     };
-    // Intentionally re-creating the editor only when the container mounts;
-    // `value`/`language`/`readOnly` changes are handled by the effects
-    // below via dispatch rather than a full remount, which would blow
-    // away undo history and cursor position on every keystroke.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
-  // Sync external `value` changes (e.g. loading a sample, clearing input)
-  // without clobbering the cursor when the change originated from typing
-  // in the editor itself (in which case `value` already matches doc).
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;

@@ -1,14 +1,6 @@
 import type { ApiErrorBody, AuthTokenResponse } from "@devtoolbox/shared";
 import { useAuthStore } from "@/store/auth-store";
 
-/** Thin fetch wrapper for the handful of things that must call the
- * backend: Module 8 tools (ARCHITECTURE.md §8.4 tier 2 — server-assisted,
- * ephemeral; API.md §10) and now Auth/Sync/Snippets/Pipelines/Share
- * (Phase 3, tier 3 — server-persisted, opt-in). Every other tool in this
- * app is client-only; this helper exists specifically for the exceptions,
- * not as a general-purpose data layer. Throws `ApiClientError` with the
- * server's message on any non-2xx response, parsed from the standard
- * error envelope (API.md §1) when present. */
 export class ApiClientError extends Error {
   status: number;
   code?: string;
@@ -33,19 +25,12 @@ function apiBaseUrl(): string {
 }
 
 interface RequestOptions extends RequestInit {
-  /** Attach the current access token and, on a 401, try one silent
-   * `/auth/refresh` + retry before giving up. Off by default so the
-   * existing anonymous Module 8 tool calls are unaffected. */
+
   authenticated?: boolean;
 }
 
 async function rawRequest<T>(path: string, init: RequestInit): Promise<T> {
-  // `init.headers` may already be a `Headers` instance (built in
-  // `request()` below to attach the Authorization header) — object-spread
-  // on a `Headers` instance silently copies nothing, since it doesn't
-  // expose its entries as own enumerable properties. Always go through the
-  // `Headers` API so both plain-object and `Headers`-instance callers merge
-  // correctly.
+
   const headers = new Headers(init.headers);
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
 
@@ -53,9 +38,7 @@ async function rawRequest<T>(path: string, init: RequestInit): Promise<T> {
   try {
     response = await fetch(`${apiBaseUrl()}${path}`, {
       ...init,
-      // Refresh token travels as an httpOnly cookie (ARCHITECTURE.md §9) —
-      // every request includes credentials so the browser sends/receives
-      // it; this is a no-op for anonymous Module 8 calls.
+
       credentials: "include",
       headers,
     });
@@ -71,7 +54,7 @@ async function rawRequest<T>(path: string, init: RequestInit): Promise<T> {
       if (body?.error?.message) message = body.error.message;
       code = body?.error?.code;
     } catch {
-      // response wasn't JSON — keep the generic message
+
     }
     throw new ApiClientError(message, response.status, code);
   }
@@ -82,9 +65,6 @@ async function rawRequest<T>(path: string, init: RequestInit): Promise<T> {
 
 let refreshInFlight: Promise<void> | null = null;
 
-/** Calls `/auth/refresh` at most once concurrently (later callers await
- * the same promise) and updates the auth store on success, clears it on
- * failure. */
 async function refreshSession(): Promise<void> {
   if (!refreshInFlight) {
     refreshInFlight = rawRequest<AuthTokenResponse>("/auth/refresh", { method: "POST" })

@@ -8,8 +8,6 @@ import { useAuthStore } from "@/store/auth-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-// Plugin marketplace listing — API.md §18. Public, no auth required to
-// browse or run a published plugin.
 export default function PluginsPage() {
   const { status } = useAuthStore();
   const [plugins, setPlugins] = useState<PluginSummary[] | null>(null);

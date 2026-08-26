@@ -1,6 +1,5 @@
 import { decryptPreview, encryptPreview } from "./history-encryption";
 
-// 32-byte key, base64-encoded — same shape HISTORY_ENCRYPTION_KEY must be.
 const TEST_KEY = Buffer.alloc(32, 7).toString("base64");
 const USER_A = "user-aaaa";
 const USER_B = "user-bbbb";

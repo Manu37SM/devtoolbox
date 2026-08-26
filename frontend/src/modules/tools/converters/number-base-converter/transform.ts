@@ -15,8 +15,6 @@ const DIGIT_PATTERN: Record<NumberBase, RegExp> = {
   16: /^[0-9a-fA-F]+$/,
 };
 
-/** Converts an arbitrary-precision integer string (using BigInt, so it
- * isn't limited to 53-bit safe integers) between base 2/8/10/16. */
 export function convertNumberBase(input: string, fromBase: NumberBase): NumberBaseResult {
   const empty: NumberBaseResult = { binary: "", octal: "", decimal: "", hex: "", error: null };
   const trimmed = input.trim();

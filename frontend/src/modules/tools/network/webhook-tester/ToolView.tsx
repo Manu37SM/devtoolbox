@@ -34,7 +34,7 @@ export function WebhookTesterToolView() {
         setExpired(true);
         stopPolling();
       }
-      // Transient errors (network blip) are silently retried on the next tick.
+
     }
   }
 
@@ -43,7 +43,7 @@ export function WebhookTesterToolView() {
     void pollEvents(inbox.id);
     intervalRef.current = setInterval(() => void pollEvents(inbox.id), POLL_INTERVAL_MS);
     return () => stopPolling();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [inbox]);
 
   async function handleCreateInbox() {

@@ -8,8 +8,6 @@ export interface JwtDecodeResult {
   error: string | null;
 }
 
-/** Pure JWT decode (no signature verification — that's a separate,
- * explicitly opt-in step per FEATURE.md). Decodes header/payload only. */
 export function decodeJwt(input: string): JwtDecodeResult {
   const empty: JwtDecodeResult = {
     header: null,
@@ -66,8 +64,6 @@ function base64UrlDecode(segment: string): string {
   return new TextDecoder().decode(bytes);
 }
 
-// Manual base64 decode so this stays DOM-free (works outside a browser,
-// e.g. in Vitest/SSR) rather than depending on global atob.
 function atobPolyfill(input: string): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   const clean = input.replace(/=+$/, "");

@@ -4,10 +4,6 @@ import Link from "next/link";
 import { User } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 
-/** Small header link that swaps between "Log in" and the signed-in user's
- * name/avatar — mirrors ThemeToggle's placement in AppShell's header.
- * Renders nothing while auth status is still hydrating to avoid a
- * flash-of-wrong-state. */
 export function AccountNavLink() {
   const { user, status } = useAuthStore();
 

@@ -23,9 +23,6 @@ import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 const PROVIDER_LABEL: Record<string, string> = { github: "GitHub", google: "Google" };
 
-// Minimal shape of what this page actually calls on the Razorpay Checkout.js
-// global — the SDK ships no official TypeScript types, so this is asserted
-// at the boundary rather than pulling in an untyped `any`.
 interface RazorpayCheckoutOptions {
   key: string;
   subscription_id: string;
@@ -46,9 +43,6 @@ declare global {
 
 const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
-// Loaded once and cached — a second call to onUpgrade() (e.g. after a
-// dismissed modal) reuses the already-loaded script instead of injecting a
-// duplicate <script> tag.
 let razorpayScriptPromise: Promise<void> | null = null;
 function loadRazorpayCheckoutScript(): Promise<void> {
   if (typeof window !== "undefined" && window.Razorpay) return Promise.resolve();
@@ -58,7 +52,7 @@ function loadRazorpayCheckoutScript(): Promise<void> {
       script.src = RAZORPAY_CHECKOUT_SRC;
       script.onload = () => resolve();
       script.onerror = () => {
-        razorpayScriptPromise = null; // allow retrying on a transient network failure
+        razorpayScriptPromise = null;
         reject(new Error("Couldn't load the payment provider. Check your connection and try again."));
       };
       document.body.appendChild(script);
@@ -149,10 +143,6 @@ export default function AccountPage() {
       .catch(() => setSubscription(null));
   }, [status, user?.plan]);
 
-  // Razorpay has no hosted Checkout page like Stripe's — Checkout.js is a
-  // client-side modal loaded from Razorpay's CDN (AUDIT_REPORT.md §20).
-  // Loaded lazily on first upgrade attempt rather than on every page load,
-  // since most visitors to /account never click "Upgrade."
   async function onUpgrade(plan: BillablePlan) {
     setBillingError(null);
     setBillingActionPlan(plan);
@@ -189,7 +179,7 @@ export default function AccountPage() {
           }
         },
         modal: {
-          ondismiss: () => setBillingActionPlan(null), // user closed the modal without paying — not an error
+          ondismiss: () => setBillingActionPlan(null),
         },
       });
       checkout.open();
@@ -199,9 +189,6 @@ export default function AccountPage() {
     }
   }
 
-  // No Razorpay-hosted billing portal to redirect to (AUDIT_REPORT.md §20)
-  // — cancellation is a direct API call instead, taking effect at the end
-  // of the current billing cycle (mirrors the old Stripe flow's default).
   async function onCancelSubscription() {
     setBillingError(null);
     setBillingActionPlan("cancel");
@@ -407,12 +394,7 @@ export default function AccountPage() {
           <Button variant="secondary" size="sm" onClick={onExport} disabled={exporting}>
             {exporting ? "Preparing…" : "Export data (JSON)"}
           </Button>
-          {/* "secondary" (bordered) rather than "ghost" — "ghost" renders as
-           * plain text with no visible boundary, easy to miss next to the
-           * bordered "Export data" button beside it (reported: hard to find).
-           * Not "destructive" — logging out isn't a dangerous/irreversible
-           * action like account deletion, so it shouldn't share that button's
-           * red danger styling. */}
+          {}
           <Button variant="secondary" size="sm" onClick={onLogout}>
             Log out
           </Button>

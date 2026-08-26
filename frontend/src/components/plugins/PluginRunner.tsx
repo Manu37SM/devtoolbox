@@ -8,14 +8,6 @@ import { DualPane } from "@/components/tools/DualPane";
 
 const RUN_TIMEOUT_MS = 3_000;
 
-// Runs inside a Web Worker spawned by the sandboxed iframe (not the iframe's
-// own main thread — see SANDBOX_HTML below for why). Same minimal calling
-// convention as before (v1, documented — not wasm-bindgen): the module must
-// export `memory`, `alloc(len) -> ptr`, and `transform(ptr, len) -> resultPtr`,
-// where the result is a 4-byte little-endian length prefix followed by
-// UTF-8 bytes at `resultPtr`. No options object is marshaled into the WASM
-// call in v1 (ARCHITECTURE.md §16.5's open question on the permission model
-// applies here too; left unresolved rather than guessed at).
 const WORKER_SRC = `
 self.onmessage = async function (ev) {
   var msg = ev.data;
@@ -46,31 +38,6 @@ self.onmessage = async function (ev) {
 };
 `;
 
-// The sandboxed runner document — loaded via `srcdoc` so it gets a unique,
-// opaque per-frame origin automatically (no cookies, no localStorage, no
-// access to the parent's origin at all), with no dedicated subdomain to
-// deploy or maintain. `sandbox="allow-scripts"` only — no
-// `allow-same-origin`, no `allow-forms`, no `allow-popups`,
-// no `allow-top-navigation`. The CSP meta tag blocks all network egress
-// (`connect-src 'none'`) as defense-in-depth on top of the WASM import
-// allowlist a plugin is supposed to be validated against at submission
-// time (ARCHITECTURE.md §16.1/§16.2). `worker-src`/`child-src blob:` are
-// the only relaxations from a fully locked-down policy — needed to spawn
-// the Worker below from a Blob URL, since blob: isn't covered by
-// `default-src 'none'`.
-//
-// The actual WASM execution runs inside a Web Worker, not this document's
-// own main thread — this session's audit-hardening pass (AUDIT_REPORT.md
-// §19.1) flagged that the previous single-threaded design meant a plugin
-// stuck in a synchronous infinite loop couldn't be interrupted: the
-// timeout could reload the iframe, but nothing could stop code already
-// blocking the one JS thread inside it. Running the WASM in a Worker keeps
-// this document's own thread free to receive the parent's "cancel"
-// message and call `worker.terminate()` — an immediate, forcible stop —
-// even while the worker itself is wedged in an infinite loop. A fresh
-// Worker is spawned for every run (never reused after a timeout, same
-// "never trust a frame/thread that's misbehaved" posture as the original
-// per-run iframe reload).
 const SANDBOX_HTML = `<!doctype html>
 <html><head>
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; connect-src 'none'; frame-src 'none'; img-src 'none'; style-src 'none'; worker-src blob:; child-src blob:">
@@ -111,10 +78,6 @@ interface PluginRunnerProps {
   wasmBase64: string;
 }
 
-/** Runs a plugin's WASM module against user-entered text, entirely inside
- * an opaque-origin sandboxed iframe — see SANDBOX_HTML's comment above for
- * the security model. No network call anywhere in this component; the
- * plugin's own code has no network access either. */
 export function PluginRunner({ slug, wasmBase64 }: PluginRunnerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [input, setInput] = useState("");
@@ -126,7 +89,7 @@ export function PluginRunner({ slug, wasmBase64 }: PluginRunnerProps) {
 
   useEffect(() => {
     function onMessage(ev: MessageEvent) {
-      if (ev.source !== iframeRef.current?.contentWindow) return; // ignore anything not from our own sandbox frame
+      if (ev.source !== iframeRef.current?.contentWindow) return;
       const data = ev.data as { type: string; output?: string; error?: string };
       if (data.type === "ready") {
         setReady(true);
@@ -153,15 +116,7 @@ export function PluginRunner({ slug, wasmBase64 }: PluginRunnerProps) {
     timeoutRef.current = setTimeout(() => {
       setRunning(false);
       setError(`Plugin didn't respond within ${RUN_TIMEOUT_MS / 1000}s — cancelled.`);
-      // Forcibly stop the hung run: the sandboxed document's own thread is
-      // free (the blocking WASM call runs in its Worker, not there), so it
-      // can act on this "cancel" message immediately and call
-      // `worker.terminate()` even though the worker itself is wedged in a
-      // synchronous infinite loop (AUDIT_REPORT.md §19.1). This actually
-      // stops the runaway code, unlike the old approach of just reloading
-      // the iframe's `srcdoc` — that abandoned the hung thread without ever
-      // terminating it, since a single-threaded document can't preempt its
-      // own blocking call.
+
       iframeRef.current?.contentWindow?.postMessage({ type: "cancel" }, "*");
     }, RUN_TIMEOUT_MS);
   }

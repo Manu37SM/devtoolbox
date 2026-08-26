@@ -8,14 +8,6 @@ import { toolRegistry, getToolsByModule } from "@/lib/registry";
 import { MODULE_META, MODULE_ORDER } from "@/lib/module-meta";
 import { useNavStore } from "@/store/nav-store";
 
-/** Persistent left nav (UI_GUIDELINES.md §3): 240px full width (~ `w-64`
- * in Tailwind's scale), collapsible to a 64px icon rail (`w-16`) on
- * desktop. Below `lg` (UI_GUIDELINES.md §7) it becomes a
- * hamburger-triggered drawer instead — the `collapsed` state only ever
- * applies at `lg`+ so the drawer is always shown at full width with
- * labels on mobile, regardless of the desktop collapse preference. One
- * component renders both cases so there's a single source of truth for
- * the tool list instead of two nav implementations to keep in sync. */
 export function LeftNav() {
   const pathname = usePathname();
   const { collapsed, toggleCollapsed, isMobileOpen, closeMobile } = useNavStore();
@@ -38,10 +30,7 @@ export function LeftNav() {
             <X className="h-4 w-4" />
           </button>
         </div>
-        {/* Pipelines lives outside the module-grouped tool list (it's not a
-            tool itself) — the top bar links to it on desktop (`lg`+), so
-            mirror that here for the mobile drawer where the top bar's nav
-            is hidden. */}
+        {}
         <Link
           href="/pipelines"
           onClick={closeMobile}
@@ -114,6 +103,4 @@ export function LeftNav() {
   );
 }
 
-// Total tool count exported for a lightweight sanity check other code
-// (e.g. a future "N tools" footer) can rely on without recomputing.
 export const totalToolCount = toolRegistry.length;

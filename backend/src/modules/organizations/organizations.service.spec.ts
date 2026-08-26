@@ -179,8 +179,8 @@ describe("OrganizationsService", () => {
         organizationMember: {
           findUnique: jest
             .fn()
-            .mockResolvedValueOnce({ role: "OWNER" }) // caller's own membership (requireRole)
-            .mockResolvedValueOnce({ userId: "user-2" }), // existing target membership
+            .mockResolvedValueOnce({ role: "OWNER" })
+            .mockResolvedValueOnce({ userId: "user-2" }),
         },
         user: { findUnique: jest.fn().mockResolvedValue({ id: "user-2", email: "a@b.com", displayName: null }) },
       });
@@ -225,8 +225,8 @@ describe("OrganizationsService", () => {
         organizationMember: {
           findUnique: jest
             .fn()
-            .mockResolvedValueOnce({ role: "OWNER" }) // caller's own membership
-            .mockResolvedValueOnce({ role: "OWNER" }), // target membership
+            .mockResolvedValueOnce({ role: "OWNER" })
+            .mockResolvedValueOnce({ role: "OWNER" }),
           count: jest.fn().mockResolvedValue(1),
         },
       });
@@ -240,8 +240,8 @@ describe("OrganizationsService", () => {
         organizationMember: {
           findUnique: jest
             .fn()
-            .mockResolvedValueOnce({ role: "MEMBER" }) // requireMembership for self-removal
-            .mockResolvedValueOnce({ role: "MEMBER" }), // target membership
+            .mockResolvedValueOnce({ role: "MEMBER" })
+            .mockResolvedValueOnce({ role: "MEMBER" }),
         },
       });
       const service = new OrganizationsService(prisma as never, makeConfig() as never, makeEmail() as never);
@@ -256,8 +256,8 @@ describe("OrganizationsService", () => {
         organizationMember: {
           findUnique: jest
             .fn()
-            .mockResolvedValueOnce({ role: "OWNER" }) // caller
-            .mockResolvedValueOnce({ role: "OWNER" }), // target
+            .mockResolvedValueOnce({ role: "OWNER" })
+            .mockResolvedValueOnce({ role: "OWNER" }),
           count: jest.fn().mockResolvedValue(1),
         },
       });

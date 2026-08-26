@@ -1,8 +1,6 @@
 import type { HtmlEntityOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-// Named entities for the five XML-reserved characters plus common
-// typographic ones; numeric character references cover everything else.
 const NAMED_ENTITIES: Record<string, string> = {
   "&": "&amp;",
   "<": "&lt;",

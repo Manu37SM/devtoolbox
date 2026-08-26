@@ -12,9 +12,6 @@ import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 export class ShareController {
   constructor(private readonly shareService: ShareService) {}
 
-  // Per API.md §12: 20/hour anonymous, 100/hour Free, 1000/hour Pro/Team.
-  // OptionalJwtAuthGuard runs first so PlanThrottleGuard sees `req.user`
-  // when a valid token is present.
   @PlanThrottle({
     route: "shares-create",
     anonymous: { limit: 20, ttlSeconds: 3_600 },

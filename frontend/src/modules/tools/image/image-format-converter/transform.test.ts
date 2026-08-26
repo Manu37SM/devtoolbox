@@ -1,18 +1,5 @@
-// `convertImageFormat` draws through a real `<canvas>` 2D context and
-// decodes images via `createImageBitmap`/`HTMLImageElement`, neither of
-// which jsdom (this repo's Vitest environment — vitest.config.ts doesn't
-// enable jsdom at all) implements. A true "upload a PNG, get back a WebP"
-// round trip can't be exercised here; that's covered by manual/browser
-// testing instead.
-//
-// What IS unit-tested:
-//   - `isQualityRelevant` (schema.ts), a small pure rule shared between
-//     transform.ts and the ToolView's conditional quality slider.
-//   - the pure helpers this transform depends on, in
-//     `src/lib/image-canvas.test.ts`.
-//   - that `convertImageFormat` fails gracefully (returns an error result,
-//     never throws) when the DOM APIs it needs are unavailable, which is
-//     exactly the case under Vitest — doubling as a real error-path test.
+
+
 import { describe, expect, it } from "vitest";
 import { convertImageFormat } from "./transform";
 import { isQualityRelevant } from "./schema";

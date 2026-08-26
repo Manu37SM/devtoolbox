@@ -15,25 +15,6 @@ interface OidcDiscoveryDocument {
   jwks_uri: string;
 }
 
-/**
- * Org-level SSO (AUDIT_REPORT.md §23) — the last item deferred from the
- * original team workspaces MVP pass. One connection per org (MVP: single
- * IdP per org). Both protocols converge on the same JIT (just-in-time)
- * provisioning + session-issuance path as OAuthService — a first-time SSO
- * login creates a User (if none exists for the IdP-supplied email) and an
- * OrganizationMember row for the connection's org, then reuses
- * AuthService.createSession/buildAuthResponse exactly like OAuth does.
- *
- * OIDC verification uses `jose` (JWKS fetch + RS256 id_token signature
- * verification) rather than hand-rolling RSA verification — a genuinely
- * security-sensitive primitive not worth re-implementing, unlike the plain
- * fetch-based token/profile exchange OAuthService already hand-rolls for
- * GitHub/Google (those don't require verifying a signed token, just trusting
- * a direct HTTPS response from the provider's own API).
- *
- * SAML verification uses `@node-saml/node-saml` for the same reason — XML
- * signature verification is not something to hand-roll.
- */
 @Injectable()
 export class SsoService {
   constructor(
@@ -41,8 +22,6 @@ export class SsoService {
     private readonly config: ConfigService,
     private readonly authService: AuthService,
   ) {}
-
-  // ── Admin configuration (OWNER-only) ──────────────────────────────────
 
   async getConnection(userId: string, organizationId: string): Promise<SsoConnectionSummary | null> {
     await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
@@ -60,11 +39,7 @@ export class SsoService {
       if (!masterKey) {
         throw new ServiceUnavailableException("SSO is not configured on this server (missing SSO_SECRET_ENCRYPTION_KEY).");
       }
-      // The secret is required on first create (a connection can't
-      // authenticate without one); optional on update — omitting it leaves
-      // whatever's already encrypted-at-rest unchanged, same "omit = don't
-      // touch" convention as UpdateOrganizationBrandingSchema, just enforced
-      // here instead of in the Zod schema since Zod can't see prior state.
+
       if (!existing && !dto.oidcClientSecret) {
         throw new BadRequestException("oidcClientSecret is required when first configuring OIDC SSO.");
       }
@@ -109,21 +84,11 @@ export class SsoService {
     await this.prisma.ssoConnection.deleteMany({ where: { organizationId } });
   }
 
-  /** Public, unauthenticated — GET /sso/discover?domain=. Tells the login
-   * page whether an email domain has SSO to route to. Returns the owning
-   * `organizationId` because the client needs it to kick off the
-   * authorize-redirect; this does disclose "an org with this domain has SSO
-   * configured" to anyone who guesses a domain, which is judged an
-   * acceptable, minor disclosure — no member list, email, or org name is
-   * returned, and the same information is inherent to SSO working at all
-   * (the login page has to know *something* to redirect to). */
   async discover(domain: string): Promise<SsoDiscoveryResult> {
     const conn = await this.prisma.ssoConnection.findUnique({ where: { domain: domain.toLowerCase() } });
     if (!conn || !conn.enabled) return { available: false, protocol: null, organizationId: null };
     return { available: true, protocol: conn.protocol, organizationId: conn.organizationId };
   }
-
-  // ── OIDC login flow ────────────────────────────────────────────────────
 
   async buildOidcAuthorizeUrl(domain: string, redirectUri: string): Promise<{ url: string; state: string }> {
     this.requireOwnOriginRedirect(redirectUri);
@@ -184,8 +149,6 @@ export class SsoService {
       throw new BadRequestException(`SSO sign-in failed: ${tokenData.error ?? "no id_token returned"}.`);
     }
 
-    // RS256 signature verification against the IdP's live JWKS, plus
-    // issuer/audience/nonce checks — the actual security boundary of OIDC.
     const jwks = createRemoteJWKSet(new URL(discovery.jwks_uri));
     const { payload } = await jwtVerify(tokenData.id_token, jwks, {
       issuer: conn.oidcIssuer!,
@@ -205,13 +168,10 @@ export class SsoService {
     return { tokens: this.authService.buildAuthResponse(user), refreshToken };
   }
 
-  // ── SAML login flow ────────────────────────────────────────────────────
-
   async buildSamlAuthorizeUrl(domain: string, callbackUrl: string): Promise<string> {
     const conn = await this.requireEnabledConnection(domain, "SAML");
     const saml = this.buildSamlClient(conn, callbackUrl);
-    // RelayState carries the connection id through the IdP round-trip, same
-    // role `state` plays in the OIDC flow above.
+
     return saml.getAuthorizeUrlAsync(conn.id, undefined, {});
   }
 
@@ -241,37 +201,6 @@ export class SsoService {
     return { tokens: this.authService.buildAuthResponse(user), refreshToken };
   }
 
-  // ── Shared helpers ─────────────────────────────────────────────────────
-
-  /** Mirrors OAuthService.findOrCreateUser, plus JIT org membership: an
-   * external identity that's never signed in before either links to an
-   * existing account (matched by email) or creates one, and — either way —
-   * is added as a MEMBER of the connection's org if not already a member.
-   * Unlike personal OAuth, SSO login is always in the context of one
-   * specific org (the one the domain/connection belongs to), so auto-join
-   * is the whole point rather than a side effect to guard against.
-   *
-   * SECURITY-CRITICAL (fixed after an audit flagged this as account-takeover
-   * risk, see AUDIT_REPORT.md §23.5): `domain` here is `SsoConnection.domain`
-   * — the email domain this specific connection is *supposed* to represent.
-   * An org OWNER fully controls their own connection's IdP config (issuer,
-   * client secret, or SAML cert/entry point), so a malicious or compromised
-   * OWNER could otherwise stand up a connection at an IdP they control and
-   * assert *any* email in a token/assertion — including an existing
-   * DevToolbox user's address at a completely different domain — since
-   * `jwtVerify`/SAML signature checks only prove the token was signed by
-   * that connection's own configured IdP, not that the IdP is authoritative
-   * for the asserted email's domain. Without this check, that would let the
-   * attacker's IdP silently link an `SsoIdentity` onto a victim's existing
-   * account and log in as them. Requiring the asserted email to end in
-   * `@{domain}` closes that gap: a connection can only ever provision or
-   * link accounts for its own claimed domain, which is the actual security
-   * boundary SSO domain-scoping is supposed to provide. This does not by
-   * itself prove the org *owns* that domain (no DNS/file verification step
-   * exists yet — a real follow-up, noted in AUDIT_REPORT.md §23.5), but it
-   * does close the specific attacker-picks-any-victim-email vector the
-   * audit found, since the attacker's connection is still confined to
-   * accounts at the domain the attacker themselves configured. */
   private async findOrProvisionUser(
     ssoConnectionId: string,
     organizationId: string,
@@ -307,7 +236,7 @@ export class SsoService {
               email,
               displayName,
               avatarUrl,
-              emailVerified: true, // IdP already verified it
+              emailVerified: true,
               ssoIdentities: { create: { ssoConnectionId, externalId } },
             },
           });
@@ -330,17 +259,10 @@ export class SsoService {
     if (!conn.samlEntryPoint || !conn.samlIssuer || !conn.samlCert) {
       throw new BadRequestException("This SSO connection is missing required SAML configuration.");
     }
-    // `issuer` here is DevToolbox's own SP entity id (fixed, not the IdP's) —
-    // node-saml's option naming is IdP-agnostic ("issuer" = "this SP's own
-    // identity" from the library's point of view, distinct from the IdP
-    // entity id we store as `samlIssuer` for reference/future metadata use.
+
     return new SAML({
       entryPoint: conn.samlEntryPoint,
-      // node-saml's SamlConfig names this `idpCert` (the IdP's public
-      // signing certificate), not `cert` — caught by `tsc` locally once the
-      // real package was installed (this sandbox has no network access to
-      // install it, so this couldn't be verified until the user ran
-      // `npm install`; see AUDIT_REPORT.md §23.4's disclosed gap).
+
       idpCert: conn.samlCert,
       issuer: this.config.get<string>("FRONTEND_URL") ?? "https://devtoolbox.dev",
       callbackUrl,
@@ -355,14 +277,6 @@ export class SsoService {
     return (await res.json()) as OidcDiscoveryDocument;
   }
 
-  /** Defense-in-depth per AUDIT_REPORT.md §23.5: `redirectUri` is an
-   * unauthenticated, client-supplied query param forwarded verbatim to the
-   * IdP as `redirect_uri` and reused at token-exchange time. The primary
-   * protection is the IdP's own exact-match redirect_uri allowlisting, but
-   * that's config on a system this codebase doesn't control — pinning it to
-   * this app's own origin here means a misconfigured or permissive IdP
-   * registration can't be abused to redirect an authorization code
-   * somewhere else. */
   private requireOwnOriginRedirect(redirectUri: string): void {
     const frontendUrl = this.config.get<string>("FRONTEND_URL") ?? "https://devtoolbox.dev";
     let expectedOrigin: string;
@@ -416,8 +330,7 @@ export class SsoService {
         ? await this.prisma.ssoConnection.update({ where: { id: existingId }, data })
         : await this.prisma.ssoConnection.create({ data: { organizationId, ...data } });
     } catch (err) {
-      // Prisma P2002 — the domain unique constraint, most likely cause:
-      // another org already registered this email domain for SSO.
+
       if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
         throw new ConflictException("This domain is already registered to another organization's SSO connection.");
       }
@@ -455,9 +368,6 @@ export class SsoService {
 }
 
 function cryptoRandomString(): string {
-  // Local, tiny helper — a nonce just needs to be unguessable and short-lived,
-  // not the full generateOpaqueToken()/hashToken() pattern (that's for
-  // long-lived tokens persisted server-side; this one is never stored, only
-  // round-tripped through the IdP inside the id_token's `nonce` claim).
+
   return randomBytes(16).toString("hex");
 }

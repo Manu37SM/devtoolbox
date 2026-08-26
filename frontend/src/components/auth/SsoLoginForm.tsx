@@ -6,14 +6,6 @@ import { apiGet, ApiClientError } from "@/lib/api-client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-/**
- * Org SSO sign-in entry point (API.md §17.5, AUDIT_REPORT.md §23) — a
- * separate, collapsed-by-default section on /login rather than merged into
- * the email/password form, since most visitors aren't SSO users and the
- * "type your work email" flow only makes sense once someone opts into it.
- * Domain lookup (`GET /sso/discover`) tells us which protocol to route to
- * without the user needing to know or care.
- */
 export function SsoLoginForm() {
   const [expanded, setExpanded] = useState(false);
   const [domain, setDomain] = useState("");
@@ -41,10 +33,6 @@ export function SsoLoginForm() {
         return;
       }
 
-      // SAML is SP-initiated but IdP-terminated — the backend's authorize
-      // endpoint just hands back the IdP's own login URL to navigate to;
-      // the round-trip back to DevToolbox lands on the backend's ACS
-      // callback directly, not a frontend route (see sso.controller.ts).
       const { url } = await apiGet<{ url: string }>(`/sso/saml/authorize?domain=${encodeURIComponent(cleanDomain)}`);
       window.location.assign(url);
     } catch (err) {

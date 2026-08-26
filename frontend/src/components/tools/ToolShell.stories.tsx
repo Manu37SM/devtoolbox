@@ -24,12 +24,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// ToolShell owns the page-level title/description chrome every tool page
-// shares (UI_GUIDELINES.md §4) plus the history-recording/favorite-toggle
-// effects (ToolPageEffects) — this story exercises the real component
-// tree, not a mock, including its IndexedDB-backed favorite button (works
-// here because Storybook renders in a real browser with real IndexedDB,
-// unlike a jsdom-based unit test).
 export const Default: Story = {
   args: {
     tool: sampleTool,

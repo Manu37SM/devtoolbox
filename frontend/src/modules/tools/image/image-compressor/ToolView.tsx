@@ -17,7 +17,6 @@ export function ImageCompressorToolView() {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Preview of the ORIGINAL image, shown inside the dropzone once loaded.
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
@@ -65,7 +64,7 @@ export function ImageCompressorToolView() {
           onClear={() => setFile(null)}
           previewSlot={
             previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
+
               <img src={previewUrl} alt="Original preview" className="max-h-[200px] max-w-full object-contain" />
             ) : null
           }
@@ -85,7 +84,7 @@ export function ImageCompressorToolView() {
               {reductionPercent > 0 ? ` (${reductionPercent}% smaller)` : ""}
             </p>
             <div className="flex items-center justify-center rounded-md border border-border-subtle bg-bg-raised p-6">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {}
               <img src={result.dataUrl} alt="Compressed result" className="max-w-full" />
             </div>
             <a href={result.dataUrl} download={`compressed.${mimeToExtension(options.format)}`}>

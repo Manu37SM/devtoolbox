@@ -2,22 +2,11 @@ import { UnauthorizedException } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { MAX_FAILED_LOGIN_ATTEMPTS } from "./auth.constants";
 
-// argon2's native binding can't be `jest.spyOn`'d (its exports aren't
-// writable/configurable), so the whole module is mocked instead — same
-// approach the codebase already uses for external I/O in sibling specs
-// (see oauth.service.spec.ts's mocked global `fetch`).
 jest.mock("argon2", () => ({
   verify: jest.fn((_hash: string, plain: string) => Promise.resolve(plain === "correct-password")),
   hash: jest.fn((plain: string) => Promise.resolve(`hashed:${plain}`)),
 }));
 
-// Covers only the new account-lockout logic (checklist item #37) added to
-// AuthService.login — the rest of AuthService (register/refresh/password
-// reset) has no prior spec file either and is exercised by e2e/manual
-// testing per this backend's existing pattern (see oauth.service.spec.ts's
-// header comment for the same note). Prisma/JwtService/EmailService/
-// SecurityLogService are all hand-mocked rather than pulled through Nest's
-// TestingModule, matching this file's sibling specs.
 describe("AuthService.login — account lockout", () => {
   const HASH = "argon2-hash-placeholder";
 

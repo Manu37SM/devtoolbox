@@ -8,11 +8,6 @@ interface ThemeState {
   setTheme: (theme: ThemePreference) => void;
 }
 
-// Persisted to localStorage (standard zustand-persist JSON envelope) under
-// this key. The blocking inline script in app/layout.tsx (themeInitScript)
-// reads the SAME key/format before first paint to avoid a
-// flash-of-unstyled-theme — if this key ever changes, update that script
-// too.
 export const THEME_STORAGE_KEY = "devtoolbox-theme";
 
 export const useThemeStore = create<ThemeState>()(

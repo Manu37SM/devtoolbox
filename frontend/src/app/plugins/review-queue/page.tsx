@@ -8,11 +8,6 @@ import { apiGet, apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
 
-// Admin-only review queue — API.md §18. There's no client-side admin flag
-// to gate this page on (User.isAdmin isn't in UserProfile yet), so this
-// page is reachable by anyone signed in and simply surfaces the backend's
-// 403 ("Admin access required") for non-admins rather than trying to hide
-// itself — the API is the actual enforcement point either way.
 export default function PluginReviewQueuePage() {
   const router = useRouter();
   const { status } = useAuthStore();
@@ -37,7 +32,7 @@ export default function PluginReviewQueuePage() {
   useEffect(() => {
     if (status !== "authenticated") return;
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [status]);
 
   async function onReview(id: string, decision: "APPROVE" | "REJECT") {

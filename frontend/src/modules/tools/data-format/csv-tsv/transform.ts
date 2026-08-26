@@ -1,10 +1,6 @@
 import type { CsvTsvOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Converts between CSV and TSV, and offers a "clean" mode that trims cell
- * whitespace, drops fully-empty rows, and removes duplicate header rows.
- * Hand-rolled RFC-4180-ish parser: handles quoted fields, escaped `""`
- * quotes, and delimiters/newlines embedded inside quoted fields. */
 export function convertCsvTsv(input: string, options: CsvTsvOptions): TransformResult {
   if (input.trim().length === 0) return { output: "", error: null };
 
@@ -19,7 +15,6 @@ export function convertCsvTsv(input: string, options: CsvTsvOptions): TransformR
       return { output: stringifyDelimited(rows, ","), error: null };
     }
 
-    // clean mode: auto-detect the delimiter and normalize the data.
     const delimiter = detectDelimiter(input);
     const rows = parseDelimited(input, delimiter);
     const cleaned = cleanRows(rows);
@@ -57,8 +52,6 @@ function cleanRows(rows: string[][]): string[][] {
   return result;
 }
 
-/** Parses delimited text into rows of string cells. Supports quoted fields
- * (`"..."`) that may contain the delimiter, newlines, or escaped `""`. */
 function parseDelimited(input: string, delimiter: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -110,9 +103,7 @@ function stringifyDelimited(rows: string[][], delimiter: string): string {
 }
 
 function escapeCell(value: string, delimiter: string): string {
-  // Only the target delimiter is a reserved character worth quoting for —
-  // TSV in particular has no quoting convention, so a bare `"` or embedded
-  // newline in a value is written through literally rather than re-quoted.
+
   if (value.includes(delimiter)) {
     return `"${value.replace(/"/g, '""')}"`;
   }

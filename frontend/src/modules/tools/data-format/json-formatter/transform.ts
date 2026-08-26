@@ -5,11 +5,6 @@ export interface TransformResult {
   error: { message: string; line?: number; column?: number } | null;
 }
 
-/**
- * Pure transform function — no DOM/React dependency, per the tool contract
- * in DEVELOPMENT_GUIDE.md §5. Must be safe to run in a Web Worker, on the
- * server (SSR/tests), or in a future CLI without modification.
- */
 export function formatJson(input: string, options: JsonFormatterOptions): TransformResult {
   if (input.trim().length === 0) {
     return { output: "", error: null };

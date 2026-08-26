@@ -12,8 +12,6 @@ import { TurnstileWidget, type TurnstileHandle } from "@/components/auth/Turnsti
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// See login/page.tsx's identical constant for why this mirrors the backend
-// env var name.
 const TURNSTILE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export default function RegisterPage() {
@@ -27,7 +25,7 @@ export default function RegisterPage() {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Same `next` convention as /login — see that page's comment.
+
   const next = searchParams.get("next");
   const redirectTo = next && next.startsWith("/") && !next.startsWith("//") ? next : "/account";
   const setSession = useAuthStore((s) => s.setSession);

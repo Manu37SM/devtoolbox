@@ -1,8 +1,5 @@
 import type { UuidGeneratorOptions } from "./schema";
 
-/** Generates UUIDs using the platform CSPRNG (`crypto.getRandomValues`),
- * available in browsers, Node (Vitest), and Workers alike. Accepts an
- * injectable random source purely for deterministic testing. */
 export function generateUuids(
   options: UuidGeneratorOptions,
   randomBytes: (length: number) => Uint8Array = (n) => crypto.getRandomValues(new Uint8Array(n)),
@@ -46,8 +43,6 @@ function bytesToUuidString(bytes: Uint8Array): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-/** Detects the UUID version/variant from an existing UUID string, for the
- * "Inspector" half of the tool. */
 export function inspectUuid(input: string): { version: number | null; variant: string | null; valid: boolean } {
   const match = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$/i.exec(
     input.trim(),

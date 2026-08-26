@@ -1,18 +1,5 @@
-// `exportSvg`'s rasterization step loads the SVG into a real
-// `HTMLImageElement` and draws it through a `<canvas>` 2D context, neither
-// of which jsdom (this repo's Vitest environment — vitest.config.ts
-// doesn't enable jsdom) implements. A true "paste SVG, get back a PNG"
-// round trip can't be exercised here; that's covered by manual/browser
-// testing instead.
-//
-// What IS unit-tested:
-//   - `isLikelySvgMarkup` and `resolveCanvasBackground`, the fully pure
-//     helper functions extracted specifically so this logic doesn't ride
-//     along unexercised inside the DOM-dependent code path.
-//   - that `exportSvg` rejects garbage input BEFORE attempting to load it
-//     as an image (the whole point of the early sanity check), and that it
-//     otherwise fails gracefully rather than throwing when the DOM APIs it
-//     needs are unavailable.
+
+
 import { describe, expect, it } from "vitest";
 import { exportSvg, isLikelySvgMarkup, resolveCanvasBackground } from "./transform";
 

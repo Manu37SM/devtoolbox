@@ -5,12 +5,6 @@ export interface QrDecodeResult {
   error: string | null;
 }
 
-/** Decodes a QR code from an uploaded image file, entirely client-side.
- * `jsQR` needs raw RGBA pixel data (`Uint8ClampedArray`) + dimensions, so
- * this draws the image to an offscreen canvas via `createImageBitmap` to
- * get at `ImageData`. Not a pure function (touches `document`/canvas), so
- * unlike most transform.ts files this can't run in a Worker or under
- * jsdom — see transform.test.ts for what's tested instead and why. */
 export async function decodeQrCode(file: File): Promise<QrDecodeResult> {
   let bitmap: ImageBitmap;
   try {

@@ -1,45 +1,38 @@
 # Render Blueprint — defines the backend web service and its Redis (Key
-# Value) cache, all on Render's free tier, in the Oregon region.
+# Value) cache, all on Render's free tier, in the Oregon region. Postgres is
+# NOT on Render — see the Neon note below.
 #
 # Region note: Render's Internal connection URLs (the fast/private/free
 # ones — see PROD_READY.md §6) only resolve within the same region's
-# private network. This app's Postgres database lives on a free instance
-# shared with another app on this account (see the `databases:` note
-# below), and that instance is in Oregon — so every service here that talks
-# to it over an Internal URL (this web service directly, and this Redis
-# instance indirectly, since the web service reaches Redis internally too)
-# must also be in Oregon, or Prisma fails to connect at all (`P1001: Can't
-# reach database server`) rather than just being slower. Singapore would
-# otherwise be the closer region for India-based users (Render has no
-# Mumbai region as of this writing — see PROD_READY.md's "Why Render"
-# note), but that only matters if every service can actually reach the
-# database; matching the database's region is the harder requirement.
+# private network. Since Postgres now lives on Neon (a separate provider,
+# reached over the public internet either way), this "must match the
+# database's region" constraint no longer applies to Postgres — only Redis
+# needs to stay in the same Render region as the web service. Pick your
+# Neon project's region for lowest latency to your users instead (see
+# PROD_READY.md §6 step 3).
 #
-# Switched from Fly.io to Render (AUDIT_REPORT.md §25) specifically because
-# Fly.io no longer offers a real free tier and now requires a credit
-# card after a ~2-hour trial, while Render's free web service + free
-# Postgres + free Key Value require no card at all. Trade-off, disclosed in
-# PROD_READY.md: free web services sleep after 15 min idle (cold start ~30-60s
-# on the next request) and the free Postgres instance auto-deletes 30+14
-# days after creation unless upgraded to a paid instance — genuinely
-# different from Fly's "always-on" free-tier machines, not a strictly better
-# swap, but the one that costs nothing.
+# Switched from Fly.io to Render for the API/Redis (AUDIT_REPORT.md §25)
+# specifically because Fly.io no longer offers a real free tier and now
+# requires a credit card after a ~2-hour trial, while Render's free web
+# service + free Key Value require no card at all.
+#
+# Postgres moved from Render to Neon (AUDIT_REPORT.md — see the dated infra
+# entry) at the user's explicit direction, superseding the project's
+# earlier "leave Postgres alone, use Render only" decision. Neon is
+# serverless Postgres with its own free tier (no card required) and isn't
+# subject to Render's one-free-Postgres-instance-per-account limit, so this
+# app now gets a fully dedicated database rather than a second database
+# sharing an instance with another app.
 #
 # Deploy: connect this repo to Render as a Blueprint (dashboard → New →
 # Blueprint → pick this repo → Render reads this file). Set every `sync:
 # false` env var's real value in the Render dashboard after creation — never
 # commit real secrets here. See PROD_READY.md for where to get each one.
 #
-# No `databases:` block here. Render's free tier allows only one active free
-# Postgres *instance* per account — if you already have one backing another
-# app, this Blueprint's own `devtoolbox-db` fails to create ("cannot have
-# more than one active free tier database") and takes the web service down
-# with it. Instead of provisioning a new instance, this app runs its own
-# separate database on your existing free instance (one Postgres instance
-# can host multiple independent databases with no data sharing between
-# them) — `DATABASE_URL` below is `sync: false` so you paste that database's
-# connection string in yourself. See PROD_READY.md §6 for the exact steps to
-# create that second database and get its connection string.
+# No `databases:` block here — Postgres isn't a Render resource in this
+# setup. `DATABASE_URL` / `MIGRATE_DATABASE_URL` below are `sync: false` so
+# you paste in your Neon connection strings yourself. See PROD_READY.md §6
+# for the exact Neon setup steps.
 services:
   - type: keyvalue
     name: devtoolbox-redis
@@ -80,19 +73,20 @@ services:
       # `sync: false` tells Render "don't manage this value, ask the human."
       # Full step-by-step for every one of these is in PROD_READY.md.
       #
-      # DATABASE_URL specifically: the connection string for the second,
-      # devtoolbox-only database on your existing free Postgres instance
-      # (see the note above `services:` at the top of this file) — not the
-      # instance's default/primary database, which belongs to whatever app
-      # already uses it. As of the least-privilege DB role split
-      # (DATABASE.md §6.1), this should hold the restricted `devtoolbox_app`
-      # role's connection string, not the original admin role's — the app
-      # process itself only ever needs SELECT/INSERT/UPDATE/DELETE.
+      # DATABASE_URL specifically: your Neon project's connection string
+      # (PROD_READY.md §6 step 3) — use the *direct* (non-pooled) connection
+      # string, not the "-pooler" one, since this is a single long-running
+      # server (not serverless/edge functions juggling many short-lived
+      # connections), and Prisma already pools connections internally. As
+      # of the least-privilege DB role split (DATABASE.md §6.1), this
+      # should hold the restricted `devtoolbox_app` role's connection
+      # string, not the original admin role's — the app process itself
+      # only ever needs SELECT/INSERT/UPDATE/DELETE.
       - key: DATABASE_URL
         sync: false
       # Only used for the one-time `prisma migrate deploy` step at container
       # start (backend/Dockerfile's CMD) — holds the *original, admin* role's
-      # connection string (the one DATABASE_URL used to hold before the
+      # Neon connection string (the one DATABASE_URL used to hold before the
       # least-privilege split), since migrations need DDL privileges the
       # restricted `devtoolbox_app` role deliberately doesn't have. Optional:
       # if unset, the Dockerfile CMD falls back to DATABASE_URL, so this is

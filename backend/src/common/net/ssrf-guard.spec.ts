@@ -1,8 +1,5 @@
 import { assertUrlIsSafe, SsrfBlockedError } from "./ssrf-guard";
 
-// Mock node:dns/promises so hostname-resolution tests don't depend on real
-// network access (flaky in CI) — literal-IP cases below don't need DNS at
-// all and exercise the real code path unmocked.
 jest.mock("node:dns/promises", () => ({
   lookup: jest.fn(),
 }));

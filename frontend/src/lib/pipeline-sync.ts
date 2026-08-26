@@ -26,19 +26,6 @@ function toDto(local: PipelineRecord): CreateSyncedPipelineDto {
   };
 }
 
-/**
- * Pushes a local pipeline to the signed-in user's account — creates a new
- * server pipeline the first time (records `syncedId`), updates it on
- * subsequent pushes. Before updating, re-fetches the server copy's
- * `updatedAt` and compares it against what we recorded at the last
- * successful sync (`syncedUpdatedAt`): if they don't match, someone/
- * something changed the server copy since we last saw it (another device,
- * a duplicate, etc.) and this throws `PipelineConflictError` instead of
- * silently overwriting — the caller (PipelineBuilder) shows a confirm
- * prompt and can retry with `force: true`. This is the "user-visible
- * conflict prompt for pipelines" DATABASE.md §7 calls for; it's
- * last-write-wins once the user confirms, not a real merge.
- */
 export async function pushPipelineToAccount(
   local: PipelineRecord,
   opts: { force?: boolean } = {},
@@ -54,7 +41,7 @@ export async function pushPipelineToAccount(
   if (!opts.force) {
     const current = await apiGet<SyncedPipeline>(`/pipelines/${local.syncedId}`, { authenticated: true }).catch(
       (err) => {
-        // Deleted server-side since we last synced — treat like "never synced".
+
         if (err instanceof ApiClientError && err.status === 404) return null;
         throw err;
       },

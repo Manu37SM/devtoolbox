@@ -13,8 +13,6 @@ export interface JsonDiffResult {
   error: { message: string; line?: number; column?: number } | null;
 }
 
-/** Hand-rolled structural diff between two parsed JSON values. Pure and
- * DOM-free, so it's safe for Workers/SSR/tests. */
 export function diffJson(
   beforeInput: string,
   afterInput: string,

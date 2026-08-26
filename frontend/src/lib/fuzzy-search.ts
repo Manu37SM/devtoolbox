@@ -1,9 +1,5 @@
 import type { ToolRegistryEntry } from "@devtoolbox/shared";
 
-/** Simple, dependency-free fuzzy search over the tool registry: scores by
- * substring match against name/aliases/description, name matches ranked
- * highest. Good enough for a registry of tens of tools — a real fuzzy
- * (subsequence) matcher would be needed at hundreds+. */
 export function searchTools(tools: ToolRegistryEntry[], query: string): ToolRegistryEntry[] {
   const q = query.trim().toLowerCase();
   if (q.length === 0) return tools;

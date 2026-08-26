@@ -1,8 +1,4 @@
-// Toolbar popup — a quick version of the same curated tools available from
-// the context menu, for when there's no page selection to right-click (e.g.
-// pasting from another app). Runs entirely in the popup's own DOM; no
-// messaging to background/content needed since transforms.ts is pure and
-// side-effect-free.
+
 
 import { TOOLS } from "./transforms.ts";
 

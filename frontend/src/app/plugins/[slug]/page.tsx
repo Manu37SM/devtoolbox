@@ -37,7 +37,7 @@ export default function PluginDetailPage({ params }: PluginDetailPageProps) {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [slug, status]);
 
   useEffect(() => {

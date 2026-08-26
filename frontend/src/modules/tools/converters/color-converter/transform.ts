@@ -8,8 +8,6 @@ export interface ColorFormats {
 
 const EMPTY: ColorFormats = { hex: "", rgb: "", hsl: "", cmyk: "", error: null };
 
-/** Parses a color in hex, rgb()/rgba(), or hsl()/hsla() form and returns
- * it in every supported format. */
 export function convertColor(input: string): ColorFormats {
   const trimmed = input.trim();
   if (trimmed.length === 0) return EMPTY;

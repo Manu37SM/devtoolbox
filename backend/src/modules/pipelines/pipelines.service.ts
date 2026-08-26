@@ -3,12 +3,6 @@ import { Prisma } from "@prisma/client";
 import type { CreateSyncedPipelineDto, CursorQueryDto, UpdateSyncedPipelineDto } from "@devtoolbox/shared";
 import { PrismaService } from "../../database/prisma.service";
 
-// Zod validates `optionsJson` as `Record<string, unknown>` (packages/shared),
-// but Prisma's generated `Json` field input type is the stricter
-// `Prisma.InputJsonValue` (no `unknown`s allowed, only JSON-serializable
-// values) — the payload is already JSON-serializable by construction
-// (it came from a parsed request body), so this cast is safe, just not
-// something Prisma's types can prove on their own.
 function toInputJson(value: Record<string, unknown>): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
@@ -16,10 +10,6 @@ function toInputJson(value: Record<string, unknown>): Prisma.InputJsonValue {
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
-/** Server-synced pipelines — API.md §7. Distinct from the client-only
- * pipeline builder (frontend/src/lib/pipeline*); this is what "save to my
- * account" persists. Ownership enforced in the service layer, same
- * public-or-owner model as Snippets for `getOne`/`duplicate`. */
 @Injectable()
 export class PipelinesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -38,10 +28,6 @@ export class PipelinesService {
     return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
   }
 
-  /** Pipelines shared into an org the caller belongs to (API.md §17) —
-   * separate from `list()`, same split as SnippetsService.listForOrganization.
-   * Paginated the same way `list()` is — originally an unbounded `findMany`,
-   * flagged in this session's audit-hardening pass (AUDIT_REPORT.md §19). */
   async listForOrganization(userId: string, organizationId: string, opts: CursorQueryDto = {}) {
     await this.assertMember(userId, organizationId);
     const limit = Math.min(opts.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
@@ -77,9 +63,6 @@ export class PipelinesService {
     });
   }
 
-  // Returns the same 404 for "doesn't exist" and "exists but you can't see
-  // it" — see SnippetsService.getOne's identical comment/fix
-  // (AUDIT_REPORT.md §19).
   async getOne(id: string, requesterUserId: string | undefined) {
     const pipeline = await this.prisma.pipeline.findUnique({
       where: { id },
@@ -97,7 +80,6 @@ export class PipelinesService {
     throw new NotFoundException("Pipeline not found.");
   }
 
-  /** Full replace of the steps array, per API.md §7's PATCH note. */
   async update(userId: string, id: string, dto: UpdateSyncedPipelineDto) {
     await this.getEditable(userId, id);
 
@@ -133,7 +115,7 @@ export class PipelinesService {
   }
 
   async duplicate(userId: string, id: string) {
-    const source = await this.getOne(id, userId); // throws if neither owned nor public
+    const source = await this.getOne(id, userId);
     return this.prisma.pipeline.create({
       data: {
         userId,
@@ -143,8 +125,7 @@ export class PipelinesService {
           create: source.steps.map((step) => ({
             order: step.order,
             toolSlug: step.toolSlug,
-            // Read back as Prisma.JsonValue, re-cast to feed straight into
-            // another create — see toInputJson's comment above.
+
             optionsJson: step.optionsJson as Prisma.InputJsonValue,
           })),
         },
@@ -153,7 +134,6 @@ export class PipelinesService {
     });
   }
 
-  /** Editable by the creator, or by an OWNER/ADMIN of the org it's shared into. */
   private async getEditable(userId: string, id: string) {
     const pipeline = await this.prisma.pipeline.findUnique({ where: { id } });
     if (!pipeline || pipeline.deletedAt) throw new NotFoundException("Pipeline not found.");

@@ -2,8 +2,6 @@ import { parse as parseToml, stringify as stringifyToml } from "smol-toml";
 import type { JsonTomlOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Converts between JSON and TOML using smol-toml. Synchronous and
- * DOM-free, so this stays a pure function safe for Workers/SSR/tests. */
 export function convertJsonToml(input: string, options: JsonTomlOptions): TransformResult {
   if (input.trim().length === 0) return { output: "", error: null };
 

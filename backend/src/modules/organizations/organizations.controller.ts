@@ -13,28 +13,13 @@ import { CurrentUser, type AuthenticatedUser } from "../auth/decorators/current-
 import { PlanThrottle } from "../../common/rate-limit/plan-throttle.decorator";
 import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 
-// One shared 60/hour budget across every route on this controller (API.md
-// §17's "/organizations/*" rate limit row) — every method below reuses this
-// exact same `route` string so they all key into one Redis counter, rather
-// than each getting an independent budget.
 const ORG_THROTTLE = {
   route: "organizations",
-  anonymous: { limit: 1, ttlSeconds: 3_600 }, // unreachable — JwtAuthGuard blocks anonymous callers first
+  anonymous: { limit: 1, ttlSeconds: 3_600 },
   free: { limit: 60, ttlSeconds: 3_600 },
   pro: { limit: 60, ttlSeconds: 3_600 },
 } as const;
 
-/** Team workspaces — API.md §17. Every route requires a signed-in user;
- * there's no anonymous or API-key-authed access to org management.
- *
- * `@PlanThrottle` is applied per-method here, not per-class: `PlanThrottleGuard`
- * reads its config off `context.getHandler()` only (see plan-throttle.guard.ts),
- * so a class-level `@PlanThrottle` — what this controller originally had — is
- * silently never read. Caught in this session's audit-hardening pass
- * (AUDIT_REPORT.md §19); every method now carries its own `@PlanThrottle`
- * (all sharing `ORG_THROTTLE`'s `route` string, preserving the single shared
- * budget this was always meant to have) instead of relying on the class-level
- * decorator that never actually took effect. */
 @Controller("organizations")
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
@@ -169,9 +154,6 @@ export class OrganizationsController {
     await this.organizationsService.revokeInvite(user.userId, id, inviteId);
   }
 
-  // Deliberately not nested under ":id" — the token alone identifies both
-  // the org and the invite; requiring the org id in the URL too would add
-  // nothing but a second thing that could disagree with the token.
   @PlanThrottle(ORG_THROTTLE)
   @UseGuards(JwtAuthGuard, PlanThrottleGuard)
   @Post("invites/:token/accept")

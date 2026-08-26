@@ -1,10 +1,5 @@
 import type { ColorPaletteGeneratorOptions } from "./schema";
 
-/** Hand-rolled hex↔HSL math (duplicated rather than imported from
- * converters/color-converter/transform.ts, since that module's rgb/hsl
- * helpers are private, unexported implementation details — only its
- * top-level `convertColor` is exported). */
-
 export interface PaletteColor {
   hex: string;
   h: number;
@@ -101,8 +96,6 @@ function makeColor(h: number, s: number, l: number): PaletteColor {
   return { hex: rgbToHex(r, g, b), h: hue, s, l: lightness };
 }
 
-/** monochromatic/shades: fixed hue and saturation, lightness stepped
- * evenly from dark to light across `count` swatches. */
 function shadesPalette(h: number, s: number, count: number): PaletteColor[] {
   const minL = 12;
   const maxL = 88;
@@ -114,8 +107,6 @@ function shadesPalette(h: number, s: number, count: number): PaletteColor[] {
   return colors;
 }
 
-/** analogous: hues stepped outward from the base by `step` degrees on
- * alternating sides (0, +step, -step, +2*step, -2*step, ...). */
 function analogousPalette(h: number, s: number, l: number, count: number, step = 30): PaletteColor[] {
   const offsets: number[] = [0];
   let n = 1;
@@ -127,10 +118,6 @@ function analogousPalette(h: number, s: number, l: number, count: number, step =
   return offsets.slice(0, count).map((offset) => makeColor(h + offset, s, l));
 }
 
-/** complementary/triadic/tetradic: cycle through a fixed set of
- * characteristic hue offsets; once `count` exceeds the number of
- * characteristic hues, repeat the cycle with a shifted lightness so
- * repeated hues remain visually distinct. */
 function cyclicHuePalette(h: number, s: number, l: number, count: number, offsets: number[]): PaletteColor[] {
   const colors: PaletteColor[] = [];
   for (let i = 0; i < count; i++) {

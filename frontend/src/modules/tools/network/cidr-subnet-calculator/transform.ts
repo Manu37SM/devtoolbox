@@ -66,8 +66,6 @@ function parseCidr(input: string): { octets: number[]; prefix: number } | { erro
   return { octets, prefix };
 }
 
-/** Computes IPv4 subnet details (network/broadcast/mask/host range) from
- * CIDR notation using 32-bit unsigned bitwise arithmetic. */
 export function calculateCidrSubnet(cidr: string): CidrSubnetResult {
   const parsed = parseCidr(cidr);
   if ("error" in parsed) return errorResult(parsed.error);

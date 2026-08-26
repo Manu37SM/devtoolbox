@@ -16,8 +16,6 @@ interface ObjectType {
   fields: { key: string; type: FieldType }[];
 }
 
-/** Hand-rolled JSON -> type-definition generator supporting TypeScript,
- * Go, and Python. Pure and DOM-free, so it's safe for Workers/SSR/tests. */
 export function generateTypes(input: string, options: JsonToTypesOptions): TransformResult {
   if (input.trim().length === 0) return { output: "", error: null };
 
@@ -118,8 +116,6 @@ function sanitizeIdentifier(input: string): string {
   return pascal.length > 0 ? pascal : "Root";
 }
 
-// ---------- TypeScript ----------
-
 function tsType(type: FieldType): string {
   switch (type.kind) {
     case "string":
@@ -157,8 +153,6 @@ function renderTypeScript(rootType: FieldType, rootName: string, registry: Objec
   }
   return blocks.join("\n\n");
 }
-
-// ---------- Go ----------
 
 function goType(type: FieldType): string {
   switch (type.kind) {
@@ -198,8 +192,6 @@ function renderGo(rootType: FieldType, rootName: string, registry: ObjectType[])
   }
   return blocks.join("\n\n");
 }
-
-// ---------- Python ----------
 
 function pythonType(type: FieldType, imports: Set<string>): string {
   switch (type.kind) {

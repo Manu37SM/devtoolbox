@@ -3,10 +3,6 @@ import { cn } from "@/lib/utils";
 
 export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-/** Plain textarea used as the CodeEditor fallback for tools that don't
- * need syntax highlighting yet. See DEVELOPMENT_GUIDE.md — a CodeMirror 6
- * wrapper (`CodeEditor`) can replace this without changing tool code, since
- * ToolView only depends on the `value`/`onChange` contract. */
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => (
     <textarea

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const urlEncodeOptionsSchema = z.object({
   mode: z.enum(["encode", "decode"]).default("encode"),
-  component: z.boolean().default(true), // true = encodeURIComponent, false = encodeURI
+  component: z.boolean().default(true),
 });
 export type UrlEncodeOptions = z.infer<typeof urlEncodeOptionsSchema>;
 

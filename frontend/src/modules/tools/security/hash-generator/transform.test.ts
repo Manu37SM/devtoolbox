@@ -58,9 +58,7 @@ describe("hashFile", () => {
     const file = new File([], "empty.txt");
     const result = await hashFile(file, { algorithm: "SHA-256", uppercase: false });
     expect(result.error).toBeNull();
-    // An empty file hashes to SHA-256's known empty-input digest, distinct
-    // from `hashText("")`'s early-return `{ output: "", error: null }" —
-    // an empty *file* is still a real (zero-byte) input worth hashing.
+
     expect(result.output).toBe("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
   });
 

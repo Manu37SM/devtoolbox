@@ -8,10 +8,6 @@ export interface TimestampConversion {
   error: string | null;
 }
 
-/** Converts a Unix timestamp (seconds or milliseconds) to human-readable
- * formats. Pure aside from reading the ambient clock/timezone, which is
- * acceptable here since the tool's entire purpose is "what time is it" —
- * still fully deterministic given `now`. */
 export function timestampToHuman(
   input: string,
   unit: UnixTimestampUnit,
@@ -42,7 +38,6 @@ export function timestampToHuman(
   };
 }
 
-/** Converts a human date string to Unix timestamps in both units. */
 export function humanToTimestamp(input: string): { seconds: string; milliseconds: string; error: string | null } {
   const trimmed = input.trim();
   if (trimmed.length === 0) return { seconds: "", milliseconds: "", error: null };

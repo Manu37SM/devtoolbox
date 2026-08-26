@@ -3,8 +3,6 @@ import type { TransformResult } from "@/lib/tool-transform";
 
 type JsonSchemaNode = Record<string, unknown>;
 
-/** Infers a draft-07 JSON Schema from a sample JSON value. Pure and
- * DOM-free, so it's safe for Workers/SSR/tests. */
 export function generateJsonSchema(input: string, options: JsonSchemaGeneratorOptions): TransformResult {
   if (input.trim().length === 0) return { output: "", error: null };
 

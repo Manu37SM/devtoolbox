@@ -1,6 +1,4 @@
-// Single source of truth for the tool catalog: powers the command palette,
-// sitemap.xml, /tools index page, and related-tools linking. See
-// DEVELOPMENT_GUIDE.md §5 — every new tool's `index.ts` gets registered here.
+
 
 import type { ToolRegistryEntry } from "@devtoolbox/shared";
 import { jsonFormatterTool } from "@/modules/tools/data-format/json-formatter";
@@ -32,7 +30,7 @@ import { cronBuilderTool } from "@/modules/tools/code/cron-builder";
 import { qrCodeGeneratorTool } from "@/modules/tools/image/qr-code-generator";
 import { randomGeneratorTool } from "@/modules/tools/generators/random-generator";
 import { uuidBulkTool } from "@/modules/tools/generators/uuid-bulk";
-// Phase 2 (P1) tools — see FEATURE.md's "Phased Roadmap" §Phase 2.
+
 import { jsonTomlTool } from "@/modules/tools/data-format/json-toml";
 import { jsonPathTesterTool } from "@/modules/tools/data-format/json-path-tester";
 import { jsonDiffTool } from "@/modules/tools/data-format/json-diff";
@@ -58,7 +56,19 @@ import { userAgentParserTool } from "@/modules/tools/network/user-agent-parser";
 import { cidrSubnetCalculatorTool } from "@/modules/tools/network/cidr-subnet-calculator";
 import { fakeDataGeneratorTool } from "@/modules/tools/generators/fake-data-generator";
 import { urlParserTool } from "@/modules/tools/network/url-parser";
-// Module 7 (image/graphics) tools
+import { romanNumeralConverterTool } from "@/modules/tools/converters/roman-numeral-converter";
+import { boxShadowBorderRadiusGeneratorTool } from "@/modules/tools/converters/box-shadow-border-radius-generator";
+import { punycodeIdnConverterTool } from "@/modules/tools/encoding/punycode-idn-converter";
+import { certificateDecoderTool } from "@/modules/tools/encoding/certificate-decoder";
+import { rsaEcKeyPairGeneratorTool } from "@/modules/tools/security/rsa-ec-key-pair-generator";
+import { totpGeneratorTool } from "@/modules/tools/security/totp-generator";
+import { bcryptArgon2HashVerifyTool } from "@/modules/tools/security/bcrypt-argon2-hash-verify";
+import { cssTailwindHelperTool } from "@/modules/tools/code/css-tailwind-helper";
+import { placeholderImageGeneratorTool } from "@/modules/tools/image/placeholder-image-generator";
+import { colorBlindnessSimulatorTool } from "@/modules/tools/image/color-blindness-simulator";
+import { placeholderTextGeneratorTool } from "@/modules/tools/generators/placeholder-text-generator";
+import { mockApiResponseGeneratorTool } from "@/modules/tools/generators/mock-api-response-generator";
+
 import { imageCompressorTool } from "@/modules/tools/image/image-compressor";
 import { imageFormatConverterTool } from "@/modules/tools/image/image-format-converter";
 import { svgExporterTool } from "@/modules/tools/image/svg-exporter";
@@ -66,13 +76,13 @@ import { svgOptimizerTool } from "@/modules/tools/image/svg-optimizer";
 import { qrCodeReaderTool } from "@/modules/tools/image/qr-code-reader";
 import { faviconGeneratorTool } from "@/modules/tools/image/favicon-generator";
 import { cssGradientGeneratorTool } from "@/modules/tools/converters/css-gradient-generator";
-// Module 8 server-proxied tools (isClientOnly: false — see API.md §10)
+
 import { httpRequestTesterTool } from "@/modules/tools/network/http-request-tester";
 import { dnsLookupTool } from "@/modules/tools/network/dns-lookup";
 import { ipLookupTool } from "@/modules/tools/network/ip-lookup";
 import { webhookTesterTool } from "@/modules/tools/network/webhook-tester";
 import { metaTagPreviewerTool } from "@/modules/tools/network/meta-tag-previewer";
-// Module 10 AI-powered tools (isClientOnly: false — see API.md §9)
+
 import { explainThisTool } from "@/modules/tools/ai/explain-this";
 import { nlToCronTool } from "@/modules/tools/ai/nl-to-cron";
 import { nlToRegexTool } from "@/modules/tools/ai/nl-to-regex";
@@ -113,7 +123,7 @@ export const toolRegistry: ToolRegistryEntry[] = [
   qrCodeGeneratorTool,
   randomGeneratorTool,
   uuidBulkTool,
-  // Phase 2 (P1) tools
+
   jsonTomlTool,
   jsonPathTesterTool,
   jsonDiffTool,
@@ -139,6 +149,18 @@ export const toolRegistry: ToolRegistryEntry[] = [
   cidrSubnetCalculatorTool,
   fakeDataGeneratorTool,
   urlParserTool,
+  romanNumeralConverterTool,
+  boxShadowBorderRadiusGeneratorTool,
+  punycodeIdnConverterTool,
+  certificateDecoderTool,
+  rsaEcKeyPairGeneratorTool,
+  totpGeneratorTool,
+  bcryptArgon2HashVerifyTool,
+  cssTailwindHelperTool,
+  placeholderImageGeneratorTool,
+  colorBlindnessSimulatorTool,
+  placeholderTextGeneratorTool,
+  mockApiResponseGeneratorTool,
   imageCompressorTool,
   imageFormatConverterTool,
   svgExporterTool,

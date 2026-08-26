@@ -64,13 +64,10 @@ export function MetaTagPreviewerToolView() {
           </p>
         ) : result ? (
           <div className="flex flex-col gap-4">
-            {/* Social-card-style visual preview mimicking Twitter/Slack link
-                unfurls. tailwind.config.ts doesn't configure the line-clamp
-                plugin, so the description uses a fixed max-height +
-                overflow-hidden fallback instead of `line-clamp-2`. */}
+            {}
             <div className="overflow-hidden rounded-md border border-border-default">
               {result.image && (
-                // eslint-disable-next-line @next/next/no-img-element
+
                 <img
                   src={result.image}
                   alt=""

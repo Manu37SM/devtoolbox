@@ -12,9 +12,6 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: "?", description: "Show this shortcuts overlay" },
 ];
 
-/** Keyboard shortcuts overlay — P0 cross-cutting feature per FEATURE.md.
- * Opens on "?" (ignored while focus is in a text input/textarea so it
- * doesn't fire while typing a literal "?" into a tool). */
 export function KeyboardShortcutsOverlay() {
   const { isOpen, open, close } = useShortcutsOverlayStore();
 

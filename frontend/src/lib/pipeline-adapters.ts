@@ -1,49 +1,4 @@
-// Pipelines (Phase 2, P1 — FEATURE.md "Pipelines (chain tools, client-only)").
-//
-// A pipeline chains tools by feeding one tool's text output into the next
-// tool's text input. That only works for tools whose `transform.ts` matches
-// the standard `(input: string, options) => { output: string, error }`
-// contract (or an async version of it) — see `TransformResult` in
-// `frontend/src/lib/tool-transform.ts`. Not every tool matches: several
-// take a second required input (a diff's "before"/"after", HMAC's secret
-// key, regex's pattern), and a few return structured/non-string results for
-// dedicated UIs. This module hand-picks the subset that's genuinely
-// single-string-input/single-string-output and wraps each in a uniform
-// async `run()` so the pipeline runner doesn't need to know about any
-// individual tool's shape.
-//
-// ── Included (single input -> single output, TransformResult-shaped) ──────
-// json-formatter, json-yaml, json-xml, json-csv, xml-formatter,
-// yaml-formatter, json-toml, csv-tsv, base64, url-encode-decode,
-// html-entity, hex-text, gzip-deflate (async), hash-generator (async;
-// produces exactly one hash string per its `algorithm` option, not multiple
-// at once, so it fits), slugify, line-sort-dedupe, sql-formatter,
-// dotenv-formatter (extra `warnings` field ignored, `output`/`error` still
-// present), js-ts-beautifier (async), css-beautifier (async),
-// html-beautifier (async), text-table, html-jsx.
-//
-// ── Excluded, and why ───────────────────────────────────────────────────
-// - text-diff, json-diff, code-diff: need two independent inputs
-//   (before/after), not a single piped string.
-// - hmac-generator: needs a secret key in addition to the piped text —
-//   not a pure single-input transform.
-// - regex-tester: needs a separate regex pattern input; its
-//   `testRegex`/`replaceRegex` don't take `(input, options)` alone.
-// - regex-cheatsheet: not a text transform at all (filters a static list
-//   of pattern reference entries).
-// - case-converter, string-counter, markdown-html: their transform
-//   functions return a bare `string`/stats object, not the
-//   `{ output, error }` shape (`convertCase` -> string, `analyzeText` ->
-//   `StringStats`, `markdownToHtml` -> string) — could be wrapped, but per
-//   the "only tools that genuinely match the standard shape" rule for v1
-//   we leave them out rather than special-case non-conforming exports.
-// - color-converter, number-base-converter: return structured
-//   multi-representation objects (`ColorFormats`, `NumberBaseResult`), not
-//   a single string output.
-// - password-strength-analyzer, unit-converter, timezone-converter,
-//   cidr-subnet-calculator, user-agent-parser, color-palette-generator:
-//   documented in this task's brief as structured-output tools built for
-//   dedicated result UIs, not string-to-string transforms.
+
 
 import { toolRegistry } from "@/lib/registry";
 
@@ -98,7 +53,6 @@ import { dotenvFormatterOptionsSchema } from "@/modules/tools/code/dotenv-format
 import { htmlToJsx } from "@/modules/tools/code/html-jsx/transform";
 import { htmlJsxOptionsSchema } from "@/modules/tools/code/html-jsx/schema";
 
-/** Uniform per-step result shape every adapter's `run()` resolves to. */
 export interface PipelineStepOutcome {
   output: string;
   error: { message: string } | null;
@@ -109,9 +63,6 @@ export interface PipelineAdapter {
   getDefaultOptions: () => unknown;
 }
 
-/** Normalizes a (possibly richer) transform result down to the outcome
- * shape pipelines care about — drops extra fields like dotenv's
- * `warnings` or a result's `line`/`column` error detail. */
 function toOutcome(result: { output: string; error: { message: string } | null }): PipelineStepOutcome {
   return { output: result.output, error: result.error ? { message: result.error.message } : null };
 }
@@ -211,10 +162,6 @@ export const PIPELINE_COMPATIBLE_TOOLS: Record<string, PipelineAdapter> = {
   },
 };
 
-// Cross-check every adapter slug actually exists in the tool registry —
-// a typo here would otherwise silently create a dead pipeline step (a
-// select option with no matching tool name/route). Fail loudly at module
-// load instead.
 const registrySlugs = new Set(toolRegistry.map((t) => t.slug));
 for (const slug of Object.keys(PIPELINE_COMPATIBLE_TOOLS)) {
   if (!registrySlugs.has(slug)) {

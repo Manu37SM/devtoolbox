@@ -21,9 +21,6 @@ interface SnippetsPage {
   nextCursor: string | null;
 }
 
-// Server-synced snippets — API.md §6. Signed-in only (list/create are
-// always scoped to the caller; a *specific* snippet page can be public,
-// see /snippets/[id]), same account-required pattern as /account.
 export default function SnippetsPage() {
   const router = useRouter();
   const status = useAuthStore((s) => s.status);

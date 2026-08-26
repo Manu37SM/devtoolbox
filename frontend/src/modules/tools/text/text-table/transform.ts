@@ -5,11 +5,6 @@ export interface TextTableResult {
   error: { message: string } | null;
 }
 
-// ── Parsing ────────────────────────────────────────────────────────────
-
-/** RFC4180-ish delimited parser (handles quoted cells, escaped quotes `""`,
- * and delimiters/newlines inside quotes). Used for both CSV (`,`) and
- * TSV (`\t`). */
 function parseDelimited(text: string, delimiter: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -39,7 +34,7 @@ function parseDelimited(text: string, delimiter: string): string[][] {
       row.push(cell);
       cell = "";
     } else if (char === "\r") {
-      // skip, handled with \n
+
     } else if (char === "\n") {
       row.push(cell);
       rows.push(row);
@@ -50,7 +45,6 @@ function parseDelimited(text: string, delimiter: string): string[][] {
     }
   }
 
-  // Flush trailing cell/row if the input didn't end with a newline.
   if (cell.length > 0 || row.length > 0) {
     row.push(cell);
     rows.push(row);
@@ -89,8 +83,6 @@ function parseTable(text: string, from: TextTableOptions["from"]): string[][] {
       return parseMarkdown(text);
   }
 }
-
-// ── Rendering ──────────────────────────────────────────────────────────
 
 function escapeDelimitedCell(cell: string, delimiter: string): string {
   if (cell.includes(delimiter) || cell.includes('"') || cell.includes("\n") || cell.includes("\r")) {

@@ -4,17 +4,6 @@ import { Github } from "lucide-react";
 import { startOAuthFlow, type OAuthFlowMode } from "@/lib/oauth";
 import { Button } from "@/components/ui/button";
 
-/** Shared "Continue with GitHub/Google" row for login and register —
- * both flows are identical (startOAuthFlow → provider's own authorize
- * page → /auth/callback/[provider] does the rest), so there's nothing
- * page-specific to parameterize beyond layout. No Google brand mark here
- * (lucide-react doesn't ship one, for trademark reasons) — a plain "G"
- * glyph stands in instead of a inaccurate substitute icon.
- *
- * `mode: "link"` reuses this same component for the "Connect GitHub/Google"
- * buttons on /account (already-signed-in users adding a provider to their
- * existing account) — `startOAuthFlow` stashes the mode so the callback
- * page knows to call the link endpoint instead of the sign-in one. */
 export function OAuthButtons({
   mode = "signin",
   connectedProviders = [],

@@ -12,8 +12,6 @@ export interface RandomGeneratorResult {
   error: string | null;
 }
 
-/** Generates random numbers or strings using the platform CSPRNG. Accepts
- * an injectable random source for deterministic testing. */
 export function generateRandom(
   options: RandomGeneratorOptions,
   randomBytes: (length: number) => Uint8Array = (n) => crypto.getRandomValues(new Uint8Array(n)),
@@ -67,8 +65,6 @@ function generateStrings(
   return { values: results, error: null };
 }
 
-// Draws a uniformly distributed integer in [0, range) via rejection
-// sampling, using enough random bytes to cover the range without bias.
 function uniformRandomInt(range: number, randomBytes: (length: number) => Uint8Array): number {
   if (range <= 1) return 0;
   const bytesNeeded = Math.max(1, Math.ceil(Math.log2(range) / 8));

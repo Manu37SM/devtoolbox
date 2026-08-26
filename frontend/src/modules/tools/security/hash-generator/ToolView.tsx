@@ -10,11 +10,6 @@ import type { HashAlgorithm, HashGeneratorOptions } from "./schema";
 
 const ALGORITHMS: HashAlgorithm[] = ["MD5", "SHA-1", "SHA-256", "SHA-512"];
 
-/** FEATURE.md's Module 3 row specifies "Text + file input" for this tool —
- * file support (checksumming a downloaded file/artifact) was missing until
- * this cleanup pass. Text and file inputs are mutually exclusive modes
- * rather than both feeding the same hash simultaneously, since hashing
- * "text + a file" together isn't a coherent single operation. */
 type InputMode = "text" | "file";
 
 export function HashGeneratorToolView() {

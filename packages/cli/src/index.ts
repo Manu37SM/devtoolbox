@@ -113,8 +113,6 @@ export async function main(argv: string[]): Promise<number> {
   return 1;
 }
 
-// Only run when invoked directly (the `devtoolbox` bin) — not when
-// `main`/other exports are imported by tests.
 if (require.main === module) {
   main(process.argv.slice(2))
     .then((code) => {

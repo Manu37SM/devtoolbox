@@ -8,9 +8,6 @@ import { useThemeStore, applyThemeClass, type ThemePreference } from "@/store/th
 const CYCLE: ThemePreference[] = ["light", "dark", "system"];
 const ICONS: Record<ThemePreference, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
 
-/** Theme toggle (UI_GUIDELINES.md §3: light/dark/system, no layout shift).
- * Renders nothing meaningful until mounted client-side to avoid a
- * hydration mismatch, since the resolved icon depends on localStorage. */
 export function ThemeToggle() {
   const { theme, setTheme } = useThemeStore();
   const [mounted, setMounted] = useState(false);

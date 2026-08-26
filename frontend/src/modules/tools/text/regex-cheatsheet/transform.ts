@@ -5,9 +5,6 @@ export interface RegexPatternEntry {
   category: string;
 }
 
-/** Static reference data for common regular expression syntax, grouped by
- * category (anchors, character classes, quantifiers, groups, lookarounds,
- * flags). */
 export const REGEX_PATTERNS: RegexPatternEntry[] = [
   { pattern: "^", description: "Start of string (or line, with the m flag).", example: "^Hello", category: "Anchors" },
   { pattern: "$", description: "End of string (or line, with the m flag).", example: "world$", category: "Anchors" },
@@ -46,8 +43,6 @@ export const REGEX_PATTERNS: RegexPatternEntry[] = [
   { pattern: "u", description: "Unicode flag: treats the pattern as a sequence of Unicode code points.", example: "/\\u{1F600}/u", category: "Flags" },
 ];
 
-/** Case-insensitive substring search over pattern and description fields.
- * A blank query returns the full list unchanged. */
 export function filterPatterns(patterns: RegexPatternEntry[], query: string): RegexPatternEntry[] {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return patterns;

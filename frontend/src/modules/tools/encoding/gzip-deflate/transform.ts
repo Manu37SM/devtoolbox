@@ -1,11 +1,6 @@
 import type { GzipDeflateOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Compresses/decompresses text using the browser-native
- * CompressionStream/DecompressionStream APIs. Unlike every other tool's
- * transform, this one is async because those APIs are stream-based —
- * ToolView.tsx handles this with useEffect + a request-id guard instead
- * of useMemo. Compressed bytes are shown/accepted as base64 text. */
 export async function compressText(input: string, options: GzipDeflateOptions): Promise<TransformResult> {
   if (input.trim().length === 0) return { output: "", error: null };
 
@@ -20,9 +15,7 @@ export async function compressText(input: string, options: GzipDeflateOptions): 
     const decompressed = await runStream(inputBytes, new DecompressionStream(options.format));
     return { output: new TextDecoder("utf-8", { fatal: false }).decode(decompressed), error: null };
   } catch (err) {
-    // Some runtimes reject the decompression stream with an Error/DOMException
-    // that has an empty `.message` (e.g. a bad gzip header), so fall back to
-    // a descriptive default whenever the caught error has no usable message.
+
     const caughtMessage = err instanceof Error ? err.message : "";
     return {
       output: "",
@@ -52,8 +45,6 @@ async function runStream(bytes: Uint8Array, stream: CompressionStream | Decompre
   return new Uint8Array(buffer);
 }
 
-/** Encodes bytes as base64 in chunks to avoid call-stack limits on
- * `String.fromCharCode(...bytes)` for large inputs. */
 export function bytesToBase64(bytes: Uint8Array): string {
   const chunkSize = 8000;
   let binary = "";

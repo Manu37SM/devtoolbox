@@ -1,16 +1,5 @@
-/** This tool's natural shape is "compute a table of converted times" rather
- * than a single input→output string, so `convertTimezones` returns
- * `{ rows, error }` instead of the standard `{ output, error }` contract —
- * see DEVELOPMENT_GUIDE.md's allowance for a different return shape when
- * the string-in/string-out pattern genuinely doesn't fit. Everything here
- * is pure (no DOM access): it only reads the `datetime-local` string and
- * timezone names passed in and uses the standard `Intl` API. */
 
-// A curated list of commonly used IANA timezone names, used instead of the
-// runtime `Intl.supportedValuesOf("timeZone")` API — that API isn't covered
-// by this project's `tsconfig.base.json` `lib` array (`["ES2022"]`, no
-// `"ES2024.Intl"|"DOM"`), so referencing it would fail strict type-checking
-// without editing tsconfig (out of scope for this change).
+
 export const COMMON_TIMEZONES = [
   "UTC",
   "America/New_York",
@@ -58,11 +47,6 @@ export interface TimezoneConversionResult {
   error: { message: string } | null;
 }
 
-/** Returns the offset (in minutes, UTC minus local) that `timeZone` has at
- * the instant `date` represents — i.e. how many minutes must be added to a
- * UTC timestamp to get that zone's wall-clock reading. Throws a
- * `RangeError` if `timeZone` isn't a recognized IANA zone name, which
- * callers use to validate user-supplied zone names. */
 function getOffsetMinutes(date: Date, timeZone: string): number {
   const dtf = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -90,10 +74,6 @@ function getOffsetMinutes(date: Date, timeZone: string): number {
   return (asUtcMs - date.getTime()) / 60000;
 }
 
-/** Interprets a `datetime-local`-shaped string (`YYYY-MM-DDTHH:mm[:ss]`,
- * no timezone info) as wall-clock time *in* `timeZone`, returning the
- * corresponding absolute `Date`. Returns `null` if the string doesn't
- * parse or `timeZone` isn't recognized. */
 export function parseAsZonedTime(datetimeLocal: string, timeZone: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(datetimeLocal);
   if (!match) return null;

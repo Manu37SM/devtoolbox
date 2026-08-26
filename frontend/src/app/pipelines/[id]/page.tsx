@@ -10,10 +10,6 @@ interface PipelineEditPageProps {
   params: Promise<{ id: string }>;
 }
 
-// Edit/run an existing pipeline. Dexie/IndexedDB is browser-only, so this
-// route is a client component (matches how favorites/history hooks read
-// via `useLiveQuery` rather than a server-side loader) — see
-// hooks/useFavorites.ts and hooks/useLocalHistory.ts for the pattern.
 export default function PipelineEditPage({ params }: PipelineEditPageProps) {
   const { id } = use(params);
   const numericId = Number(id);

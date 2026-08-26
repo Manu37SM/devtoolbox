@@ -4,11 +4,6 @@ import { minify } from "csso";
 import type { CssBeautifierOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Formats CSS using Prettier's standalone build + postcss parser plugin;
- * minifies using csso (both approved per ARCHITECTURE.md §8.2). csso's
- * `minify` is synchronous, unlike Prettier's async `format` — the
- * function stays `async` regardless so callers don't need to branch on
- * mode. */
 export async function beautifyCss(input: string, options: CssBeautifierOptions): Promise<TransformResult> {
   if (input.trim().length === 0) return { output: "", error: null };
 

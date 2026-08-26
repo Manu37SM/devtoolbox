@@ -21,14 +21,6 @@ const USAGE_PERIOD_DAYS = 30;
 const MAX_MEMBERS_FOR_USAGE = 500;
 const ORG_INVITE_TTL_DAYS = 7;
 
-/**
- * Team workspaces (API.md §17, Phase 4 MVP scope). Deliberately narrow —
- * see ARCHITECTURE.md §14.2 and AUDIT_REPORT.md §17.2 for what's out of
- * scope in this pass (SSO, custom branding, org-level Razorpay billing).
- * Members with an existing DevToolbox account are added directly by email;
- * `addMember` falls back to an email-token invite (AUDIT_REPORT.md §21) for
- * anyone who doesn't have an account yet, rather than erroring.
- */
 @Injectable()
 export class OrganizationsService {
   constructor(
@@ -95,9 +87,6 @@ export class OrganizationsService {
     };
   }
 
-  /** OWNER only — same gate as `rename`. Either field can be explicitly
-   * cleared by passing `null`; omitting a field leaves it unchanged
-   * (standard PATCH semantics, same as `rename`'s `name`). */
   async updateBranding(userId: string, organizationId: string, dto: UpdateOrganizationBrandingDto): Promise<OrganizationSummary> {
     await this.requireRole(userId, organizationId, ["OWNER"]);
     const org = await this.prisma.organization.update({
@@ -132,17 +121,10 @@ export class OrganizationsService {
 
   async delete(userId: string, organizationId: string): Promise<void> {
     await this.requireRole(userId, organizationId, ["OWNER"]);
-    // Snippet.organizationId / Pipeline.organizationId are ON DELETE SET
-    // NULL (DATABASE.md) — members keep their own content, only the
-    // org-shared *visibility* is removed, per API.md §17's DELETE note.
+
     await this.prisma.organization.delete({ where: { id: organizationId } });
   }
 
-  /** Adds an existing DevToolbox account directly, or — if no account
-   * exists for that email yet — creates/refreshes a pending email-token
-   * invite and sends it instead of erroring (AUDIT_REPORT.md §21; this used
-   * to just 404 "they'll need to sign up first" with no way to actually
-   * invite them). */
   async addMember(userId: string, organizationId: string, dto: AddOrganizationMemberDto): Promise<AddOrganizationMemberResult> {
     await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
 
@@ -172,8 +154,6 @@ export class OrganizationsService {
     };
   }
 
-  /** OWNER/ADMIN only — pending (not yet accepted, not revoked, not
-   * expired) invites for the org, most recent first. */
   async listInvites(userId: string, organizationId: string): Promise<OrganizationInviteSummary[]> {
     await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
     const invites = await this.prisma.organizationInvite.findMany({
@@ -184,9 +164,6 @@ export class OrganizationsService {
     return invites.map((i: Parameters<OrganizationsService["toInviteSummary"]>[0]) => this.toInviteSummary(i));
   }
 
-  /** OWNER/ADMIN only. Idempotent-ish: revoking an already-revoked invite
-   * is a no-op rather than an error; revoking an already-accepted one is
-   * rejected since there's no membership left to "un-invite." */
   async revokeInvite(userId: string, organizationId: string, inviteId: string): Promise<void> {
     await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
     const invite = await this.prisma.organizationInvite.findUnique({ where: { id: inviteId } });
@@ -196,16 +173,11 @@ export class OrganizationsService {
     if (invite.acceptedAt) {
       throw new ConflictException("This invite has already been accepted — remove the member instead.");
     }
-    if (invite.revokedAt) return; // already revoked — nothing to do
+    if (invite.revokedAt) return;
 
     await this.prisma.organizationInvite.update({ where: { id: inviteId }, data: { revokedAt: new Date() } });
   }
 
-  /** Any signed-in user — the invite's own email must match the caller's
-   * account email (case-insensitive), so accepting is only possible after
-   * signing up/logging in with the exact address the invite was sent to.
-   * Never trusted from the client beyond the raw token itself; the token
-   * is looked up by its hash, same as VerificationToken. */
   async acceptInvite(userId: string, rawToken: string): Promise<AcceptOrganizationInviteResult> {
     const tokenHash = hashToken(rawToken);
     const invite = await this.prisma.organizationInvite.findUnique({
@@ -227,10 +199,7 @@ export class OrganizationsService {
 
     await this.prisma.$transaction([
       this.prisma.organizationInvite.update({ where: { id: invite.id }, data: { acceptedAt: new Date() } }),
-      // Idempotent: if the caller somehow already joined this org through
-      // another path before accepting (e.g. an OWNER added them directly
-      // in the meantime), don't fail the accept — just mark the invite
-      // used and leave the existing membership as-is.
+
       ...(existingMembership
         ? []
         : [this.prisma.organizationMember.create({ data: { organizationId: invite.organizationId, userId, role: invite.role } })]),
@@ -256,9 +225,6 @@ export class OrganizationsService {
     });
     if (!target) throw new NotFoundException("Member not found.");
 
-    // dto.role can only ever be ADMIN/MEMBER (UpdateOrganizationMemberRoleSchema
-    // deliberately excludes OWNER — promotion to OWNER isn't exposed via this
-    // endpoint), so any target currently OWNER is necessarily being demoted.
     if (target.role === "OWNER") {
       await this.assertNotLastOwner(organizationId);
     }
@@ -292,18 +258,6 @@ export class OrganizationsService {
     });
   }
 
-  /** Aggregate AI usage across every member, last 30 days — same
-   * underlying AiUsageEvent rows as the personal /ai/usage endpoint
-   * (ai-gateway.service.ts's getUsage), never raw prompt/response content
-   * (CLAUDE.md rule 8). OWNER/ADMIN only.
-   *
-   * Aggregated in the database (`groupBy`), not by pulling every event row
-   * into Node and reducing in memory — the original version did the latter
-   * with no limit on either the member list or the event rows fetched,
-   * flagged as a low-cost DoS lever for a large/active org in this
-   * session's audit-hardening pass (AUDIT_REPORT.md §19). `MAX_MEMBERS_FOR_USAGE`
-   * caps the member list defensively even though real orgs are unlikely to
-   * approach it yet. */
   async getUsage(userId: string, organizationId: string): Promise<OrganizationUsageSummary> {
     await this.requireRole(userId, organizationId, ["OWNER", "ADMIN"]);
 
@@ -346,12 +300,6 @@ export class OrganizationsService {
     };
   }
 
-  /** Creates a new pending invite, or — if one already exists for this
-   * (org, email) pair and hasn't expired/been revoked/accepted — extends
-   * it and issues a fresh token rather than piling up duplicate rows.
-   * Fresh token every time regardless, since the old raw token (if any)
-   * was already handed to the previous email and can't be recovered from
-   * its stored hash. */
   private async createOrRefreshInvite(organizationId: string, email: string, invitedByUserId: string): Promise<OrganizationInviteSummary> {
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: organizationId } });
     const { raw, hash } = generateOpaqueToken();

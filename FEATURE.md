@@ -32,8 +32,8 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | JWT Decoder/Debugger | P0 | ✅ | Header/payload/signature view, expiry check, optional signature verify (client-side, key provided by user) (✅ Shipped Phase 1) |
 | Hex ↔ Text / Hex ↔ Binary | P1 | ✅ | (✅ Shipped Phase 2) |
 | GZip/Deflate Compress-Decompress | P1 | ✅ | Native CompressionStream/DecompressionStream (✅ Shipped Phase 2) |
-| Punycode/IDN Encode-Decode | P2 | ✅ | |
-| Certificate (PEM/CRT) Decoder | P2 | ✅ | Parses X.509 fields client-side |
+| Punycode/IDN Encode-Decode | P2 | ✅ | (✅ Shipped — RFC 3492 bootstring, hand-implemented and verified against known test vectors; this row was previously marked ✅ with no corresponding code) |
+| Certificate (PEM/CRT) Decoder | P2 | ✅ | Parses X.509 fields client-side (✅ Shipped — via `jsrsasign`, a new dependency flagged per CLAUDE.md rule 10; this row was previously marked ✅ with no corresponding code) |
 
 ## Module 3 — Security & Crypto
 
@@ -44,9 +44,9 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | Password Generator | P0 | ✅ | Entropy meter, custom charset rules (✅ Shipped Phase 1) |
 | Password Strength Analyzer | P1 | ✅ | Local zxcvbn-style scoring, never transmitted (✅ Shipped Phase 2) |
 | HMAC Generator | P1 | ✅ | (✅ Shipped Phase 2) |
-| bcrypt/argon2 Hash & Verify | P1 | ✅ | WASM implementation for correctness parity with server libs |
-| RSA/EC Key Pair Generator | P2 | ✅ | Client-side WebCrypto |
-| TOTP/2FA Code Generator (testing) | P2 | ✅ | |
+| bcrypt/argon2 Hash & Verify | P1 | ✅ | WASM implementation for correctness parity with server libs (✅ Shipped — via `hash-wasm`, a new dependency flagged per CLAUDE.md rule 10; this row was previously marked ✅ with no corresponding code) |
+| RSA/EC Key Pair Generator | P2 | ✅ | Client-side WebCrypto (✅ Shipped; this row was previously marked ✅ with no corresponding code) |
+| TOTP/2FA Code Generator (testing) | P2 | ✅ | (✅ Shipped — RFC 6238, verified against the RFC's own SHA-1/SHA-256/SHA-512 test vectors; this row was previously marked ✅ with no corresponding code) |
 
 ## Module 4 — Text & String Tools
 
@@ -71,7 +71,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | CSS Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify + minify) |
 | HTML Beautifier & Minifier | P0 | ✅ | (✅ Shipped Phase 1 — beautify + minify) |
 | Code Diff (syntax-aware) | P1 | ✅ | Extends text diff with language-aware highlighting (✅ Shipped Phase 2) |
-| CSS ↔ Tailwind class helper | P2 | ✅ | Suggests Tailwind utility equivalents |
+| CSS ↔ Tailwind class helper | P2 | ✅ | Suggests Tailwind utility equivalents (✅ Shipped — a deliberately bounded subset of properties/scales, arbitrary-value fallback for the rest, see the tool's content.mdx; this row was previously marked ✅ with no corresponding code) |
 | HTML ↔ JSX Converter | P1 | ✅ | (✅ Shipped Phase 2) |
 | .env / dotenv Formatter & Validator | P1 | ✅ | (✅ Shipped Phase 2) |
 | Cron Expression Builder/Parser | P0 | ✅ | Visual builder + next-run preview (✅ Shipped Phase 1) |
@@ -86,7 +86,7 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | Unit Converter (data size, time, etc.) | P1 | ✅ | (✅ Shipped Phase 2) |
 | Color Converter (HEX/RGB/HSL/CMYK/OKLCH) | P0 | ✅ | Live swatch preview (✅ Shipped Phase 1) |
 | Color Palette Generator | P1 | ✅ | (✅ Shipped Phase 2) |
-| Roman Numeral Converter | P2 | ✅ | |
+| Roman Numeral Converter | P2 | ✅ | (✅ Shipped — bidirectional number ↔ Roman numeral, 1-3999, canonical-form validated; this row was previously marked ✅ with no corresponding code, see AUDIT_REPORT.md addendum) |
 
 ## Module 7 — Image & Graphics Tools
 
@@ -99,10 +99,10 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | QR Code Generator (incl. WiFi/vCard) | P0 | ✅ | (✅ Shipped Phase 1) |
 | QR Code Reader | P1 | ✅ | Camera or upload (✅ Shipped Phase 2 — upload only, no camera capture yet) |
 | Favicon Generator | P1 | ✅ | Multi-size bundle export (✅ Shipped Phase 2 — zip bundle via `jszip`) |
-| Placeholder/SVG Mockup Image Generator | P2 | ✅ | |
-| Color Blindness Simulator | P2 | ✅ | |
+| Placeholder/SVG Mockup Image Generator | P2 | ✅ | (✅ Shipped — pure SVG string templating; this row was previously marked ✅ with no corresponding code) |
+| Color Blindness Simulator | P2 | ✅ | (✅ Shipped — simplified sRGB approximation matrices, a documented v1 simplification per the tool's content.mdx, not a full linear-light simulation; this row was previously marked ✅ with no corresponding code) |
 | CSS Gradient Generator | P1 | ✅ | (✅ Shipped Phase 2 — lives in the `converters` module alongside Color Palette Generator) |
-| Box Shadow / Border Radius Generator | P2 | ✅ | |
+| Box Shadow / Border Radius Generator | P2 | ✅ | Lives in the `converters` module alongside Color Palette Generator and CSS Gradient Generator (✅ Shipped — live preview + copyable CSS; this row was previously marked ✅ with no corresponding code, see AUDIT_REPORT.md addendum) |
 
 ## Module 8 — Network & Web Tools
 
@@ -123,9 +123,9 @@ Every tool below is scoped as a self-contained module per [DEVELOPMENT_GUIDE.md]
 | --- | --- | --- | --- |
 | Fake/Mock Data Generator (names, addresses, JSON records) | P1 | ✅ | Faker-backed, seedable for reproducibility (✅ Shipped Phase 2) |
 | Random Number/String Generator | P0 | ✅ | (✅ Shipped Phase 1) |
-| Placeholder Text (Lorem variants: Hipster/Corporate/Bacon) | P2 | ✅ | |
+| Placeholder Text (Lorem variants: Hipster/Corporate/Bacon) | P2 | ✅ | (✅ Shipped as its own tool, separate from Lorem Ipsum Generator, which only does classic lorem ipsum; this row was previously marked ✅ with no corresponding code) |
 | GUID/UUID Bulk Generator | P0 | ✅ | (shared engine with Module 3) (✅ Shipped Phase 1) |
-| Mock REST API Response Generator | P2 | ✅ | Generates sample JSON from a schema |
+| Mock REST API Response Generator | P2 | ✅ | Generates sample JSON from a schema (✅ Shipped — Faker.js-backed, same dependency `fake-data-generator` uses; this row was previously marked ✅ with no corresponding code) |
 
 ## Module 10 — AI-Powered Tools (differentiator layer)
 

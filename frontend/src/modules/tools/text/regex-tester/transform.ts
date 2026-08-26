@@ -22,11 +22,6 @@ function flagsToString(flags: RegexFlags): string {
   );
 }
 
-/** Tests a regex pattern against input text and returns every match with
- * capture groups. Uses the native JS RegExp engine — no external regex
- * library needed. Guards against catastrophic patterns only via the
- * caller's input size limit (schema); true ReDoS protection would need a
- * timeout-based worker, tracked as a follow-up (AUDIT_REPORT.md). */
 export function testRegex(pattern: string, flags: RegexFlags, input: string): RegexTestResult {
   if (pattern.length === 0) return { matches: [], error: null };
 
@@ -53,7 +48,7 @@ export function testRegex(pattern: string, flags: RegexFlags, input: string): Re
   while ((m = regex.exec(input)) !== null && iterations < maxIterations) {
     iterations++;
     matches.push(toRegexMatch(m));
-    if (m[0].length === 0) regex.lastIndex++; // avoid infinite loop on zero-width matches
+    if (m[0].length === 0) regex.lastIndex++;
   }
 
   return { matches, error: null };
@@ -68,8 +63,6 @@ function toRegexMatch(m: RegExpExecArray): RegexMatch {
   };
 }
 
-/** Applies a replacement pattern (supporting $1, $<name> etc.) — the
- * "replace" half of a regex tester. */
 export function replaceRegex(pattern: string, flags: RegexFlags, input: string, replacement: string): { output: string; error: string | null } {
   if (pattern.length === 0) return { output: input, error: null };
 

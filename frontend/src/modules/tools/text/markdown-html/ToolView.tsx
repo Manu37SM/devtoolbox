@@ -11,8 +11,7 @@ export function MarkdownHtmlToolView() {
   const [showPreview, setShowPreview] = useState(true);
 
   const rawHtml = useMemo(() => markdownToHtml(input), [input]);
-  // Sanitization happens here, in the browser-only ToolView — not in
-  // transform.ts, which must stay DOM-free (see transform.ts's docblock).
+
   const sanitizedHtml = useMemo(
     () => (typeof window !== "undefined" ? DOMPurify.sanitize(rawHtml) : rawHtml),
     [rawHtml],
@@ -41,7 +40,7 @@ export function MarkdownHtmlToolView() {
             <label className="text-sm font-medium text-text-secondary">Preview</label>
             <div
               className="flex-1 overflow-auto rounded-md border border-border-default bg-bg-base p-4 prose-sm"
-              // eslint-disable-next-line react/no-danger
+
               dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
               aria-live="polite"
             />

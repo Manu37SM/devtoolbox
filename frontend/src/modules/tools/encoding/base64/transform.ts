@@ -1,10 +1,6 @@
 import type { Base64Options } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Pure Base64 encode/decode. Uses TextEncoder/atob-btoa equivalents that
- * work in both browser and Node (SSR/tests/Worker), per the "no DOM
- * dependency" rule in DEVELOPMENT_GUIDE.md §5 — we implement byte<->base64
- * manually rather than relying on `window.btoa`. */
 export function transformBase64(input: string, options: Base64Options): TransformResult {
   if (input.length === 0) return { output: "", error: null };
 

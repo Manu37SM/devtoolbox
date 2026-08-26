@@ -30,9 +30,6 @@ const SAMPLES: Record<CodeEditorLanguage, string> = {
   plain: "Plain text, no syntax highlighting.",
 };
 
-// Controlled wrapper so the Storybook control panel can drive `language`
-// while state (`value`) still lives in the story, matching how every
-// ToolView actually uses this component.
 function ControlledCodeEditor({ language }: { language: CodeEditorLanguage }) {
   const [value, setValue] = useState(SAMPLES[language]);
   return (

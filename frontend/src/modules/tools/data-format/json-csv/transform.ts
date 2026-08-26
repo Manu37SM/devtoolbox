@@ -1,10 +1,6 @@
 import type { JsonCsvOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Converts a JSON array of flat/nested objects to CSV and back. Hand-rolled
- * (no external CSV library) — RFC 4180 quoting rules for output, and a
- * small state-machine parser for input that handles quoted fields,
- * embedded delimiters/newlines, and escaped quotes ("" inside a field). */
 export function convertJsonCsv(input: string, options: JsonCsvOptions): TransformResult {
   if (input.trim().length === 0) return { output: "", error: null };
 

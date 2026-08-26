@@ -5,18 +5,11 @@ export interface HashResult {
   error: { message: string } | null;
 }
 
-/** Hashing is inherently async (WebCrypto's SubtleCrypto), so unlike most
- * transforms this one returns a Promise — still a pure function with no
- * other side effects, and it works identically in the browser, Node
- * (Vitest), and a Worker since `crypto.subtle` is available in all three. */
 export async function hashText(input: string, options: HashGeneratorOptions): Promise<HashResult> {
   if (input.length === 0) return { output: "", error: null };
   return hashBytes(new TextEncoder().encode(input), options);
 }
 
-/** Hashes raw bytes directly — the shared core both `hashText` (encodes a
- * string first) and `hashFile` (reads a File's bytes first) funnel through,
- * so the two entry points can't drift on algorithm handling. */
 export async function hashBytes(bytes: Uint8Array, options: HashGeneratorOptions): Promise<HashResult> {
   try {
     const digest = options.algorithm === "MD5" ? md5(bytes) : await webCryptoDigest(bytes, options.algorithm);
@@ -27,10 +20,6 @@ export async function hashBytes(bytes: Uint8Array, options: HashGeneratorOptions
   }
 }
 
-/** File-input variant (FEATURE.md Module 3: "Text + file input"). Reads the
- * whole file into memory via `arrayBuffer()` — fine for the hash sizes this
- * tool is meant for (checksumming a downloaded file, verifying a small
- * artifact), not a streaming/huge-file design. */
 export async function hashFile(file: File, options: HashGeneratorOptions): Promise<HashResult> {
   try {
     const buffer = await file.arrayBuffer();
@@ -51,9 +40,6 @@ function bytesToHex(bytes: Uint8Array): string {
     .join("");
 }
 
-// ── Pure-JS MD5 (WebCrypto doesn't implement it) ──────────────────────────
-// Reference implementation adapted for Uint8Array input/output, no
-// external dependency, DOM-free.
 function md5(bytes: Uint8Array): Uint8Array {
   function rotl(x: number, c: number) {
     return (x << c) | (x >>> (32 - c));

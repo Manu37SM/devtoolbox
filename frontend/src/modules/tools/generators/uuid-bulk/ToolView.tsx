@@ -10,13 +10,10 @@ export function UuidBulkToolView() {
   const [options, setOptions] = useState<UuidBulkOptions>({ version: "v4", count: 100, format: "newline" });
   const [seed, setSeed] = useState(0);
 
-  // Generated only on the client, after mount, to avoid a server/client
-  // hydration mismatch: generateUuidBulk() uses crypto.getRandomValues, which
-  // returns a different value on every call, including the SSR pass.
   const [output, setOutput] = useState("");
   useEffect(() => {
     setOutput(generateUuidBulk(options));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [options, seed]);
 
   function handleDownload() {

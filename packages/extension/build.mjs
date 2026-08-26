@@ -1,8 +1,5 @@
-// Bundles the extension's TypeScript sources into dist/ and copies static
-// assets (manifest.json, popup.html) alongside them. Plain esbuild script
-// rather than a bundler config file — this package has exactly three entry
-// points and no framework, so a config-driven build would be more ceremony
-// than the problem needs.
+
+
 import { build } from "esbuild";
 import { cpSync, mkdirSync } from "node:fs";
 

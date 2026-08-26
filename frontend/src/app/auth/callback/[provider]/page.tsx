@@ -30,9 +30,7 @@ function OAuthCallbackContent({ provider }: { provider: string }) {
   const authStatus = useAuthStore((s) => s.status);
   const [status, setStatus] = useState<"exchanging" | "waiting-for-session" | "error">("exchanging");
   const [error, setError] = useState<string | null>(null);
-  // Set once by the first effect (sign-in vs. link, and the code/redirectUri
-  // it validated) so the second effect — which needs to wait on auth
-  // hydration for "link" — doesn't have to re-parse the URL.
+
   const [pendingLink, setPendingLink] = useState<{ code: string; redirectUri: string } | null>(null);
 
   useEffect(() => {
@@ -61,10 +59,7 @@ function OAuthCallbackContent({ provider }: { provider: string }) {
     const redirectUri = oauthRedirectUri(provider as OAuthProvider);
 
     if (mode === "link") {
-      // The full-page redirect to the provider and back means the in-memory
-      // access token is gone — AuthHydrator hasn't necessarily finished
-      // re-establishing the session from the refresh cookie yet. Defer to
-      // the second effect, which waits for that to settle.
+
       setPendingLink({ code, redirectUri });
       setStatus("waiting-for-session");
       return;
@@ -80,9 +75,7 @@ function OAuthCallbackContent({ provider }: { provider: string }) {
         setStatus("error");
         setError(err instanceof ApiClientError ? err.message : "Sign-in failed. Please try again.");
       });
-    // Intentionally runs once — re-running on searchParams identity churn
-    // would re-consume an already-cleared state value.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   useEffect(() => {

@@ -1,6 +1,4 @@
-// Prisma schema for DevToolbox backend.
-// Full rationale and ERD: see /DATABASE.md at the repo root.
-// This file is the source of truth for migrations (`npm run db:migrate:dev`).
+
 
 generator client {
   provider = "prisma-client-js"
@@ -23,18 +21,11 @@ enum OrgRole {
   MEMBER
 }
 
-// Not in the original DATABASE.md ERD — added to actually implement the
-// email-verify / password-reset flows API.md §2 documents. Single table,
-// discriminated by `type`, rather than two near-identical tables. Deviation
-// noted in DATABASE.md and AUDIT_REPORT.md per CLAUDE.md rule 10.
 enum VerificationTokenType {
   EMAIL_VERIFY
   PASSWORD_RESET
 }
 
-// Org-level SSO (AUDIT_REPORT.md §23) — the last item deferred from the
-// original Phase 4 team workspaces scope. One connection per org (MVP: no
-// multi-IdP-per-org support), discriminated by protocol.
 enum SsoProtocol {
   OIDC
   SAML
@@ -48,25 +39,11 @@ model User {
   avatarUrl        String?
   plan             Plan      @default(FREE)
   emailVerified    Boolean   @default(false)
-  // Migrated off Stripe (which doesn't support Indian export-of-services
-  // billing for this business) to Razorpay — see AUDIT_REPORT.md §20 for
-  // the full rationale and deviation notes (CLAUDE.md rule 10).
+
   razorpayCustomerId String?   @unique
-  // First concrete implementation of the "role: admin" concept API.md §14
-  // (Admin routes) already assumed existed — that module was an empty
-  // stub with no actual gating (AUDIT_REPORT.md). Added here because the
-  // plugin marketplace's human review queue (§18) is the first thing that
-  // actually needs it. Deliberately a single boolean, not a role enum —
-  // there's exactly one privilege tier to gate (review-queue actions), and
-  // introducing a full role system for that would be speculative.
+
   isAdmin          Boolean   @default(false)
-  // Account lockout (checklist item #37 — brute-force/credential-stuffing
-  // defense in depth on top of AUTH_THROTTLE's per-IP rate limit, which is
-  // bypassable via IP rotation). Reset to 0 on any successful login.
-  // `lockedUntil` is null when not locked; checked (and cleared once
-  // expired) in AuthService.login. Deliberately on User rather than a
-  // separate table — this is a single mutable counter per account, not an
-  // audit trail (that's SecurityEventLog, see below).
+
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
   createdAt        DateTime  @default(now())
@@ -98,7 +75,7 @@ model VerificationToken {
   id        String                @id @default(uuid())
   userId    String
   user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String                @unique // hashed, never store the raw token
+  tokenHash String                @unique
   type      VerificationTokenType
   expiresAt DateTime
   usedAt    DateTime?
@@ -119,18 +96,13 @@ model OAuthAccount {
   @@index([userId])
 }
 
-// Links a User to the org SSO connection they last authenticated through —
-// same shape as OAuthAccount (external subject id, uniqued per-connection),
-// deliberately not folded into OAuthAccount since SSO is org-scoped and JIT
-// (just-in-time) provisions membership in that org on first login, which
-// personal OAuth login never does. See AUDIT_REPORT.md §23.
 model SsoIdentity {
   id              String        @id @default(uuid())
   userId          String
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   ssoConnectionId String
   ssoConnection   SsoConnection @relation(fields: [ssoConnectionId], references: [id], onDelete: Cascade)
-  externalId      String        // OIDC 'sub' claim or SAML NameID
+  externalId      String
   createdAt       DateTime      @default(now())
 
   @@unique([ssoConnectionId, externalId])
@@ -178,10 +150,7 @@ model Snippet {
   id             String        @id @default(uuid())
   userId         String
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // Phase 4 team workspaces (API.md §17) — additive to userId ownership,
-  // never a replacement for it. Org members can view/duplicate; only the
-  // creator or an org OWNER/ADMIN can edit/delete (enforced in the service
-  // layer, DATABASE.md Design Principle 2).
+
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   toolSlug  String
@@ -230,12 +199,7 @@ model ShareLink {
   slug             String        @unique
   userId           String?
   user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  // Optional org attribution (Phase 4 follow-up — AUDIT_REPORT.md §22).
-  // Nullable/SET NULL on org deletion, same additive-not-required pattern
-  // as Snippet.organizationId/Pipeline.organizationId — a share link
-  // created without an organizationId behaves exactly as before this
-  // change. Only settable at creation time by a member of that org
-  // (ShareService.create), never changed afterward.
+
   organizationId   String?
   organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   toolSlug         String
@@ -264,24 +228,11 @@ model AiUsageEvent {
   @@index([userId, createdAt])
 }
 
-// Activated Phase 4 (API.md §17) — previously unused planning-phase
-// scaffolding. `plan` is a display label only, not authoritative for any
-// plan check; see resolveEffectivePlan() in
-// backend/src/common/plan/effective-plan.ts and DATABASE.md's Organization
-// note for why (no separate org-level Stripe subscription in this pass).
 model Organization {
   id        String   @id @default(uuid())
   name      String
   plan      Plan     @default(TEAM)
-  // Custom branding for org-shared links (Phase 4 follow-up —
-  // AUDIT_REPORT.md §22; ARCHITECTURE.md §14.2 originally deferred this).
-  // Both nullable/optional — an org with neither set just shows the
-  // default DevToolbox branding on its shared links, same as a personal
-  // (non-org) share. `brandLogoUrl` is validated as a well-formed URL at
-  // the DTO layer (UpdateOrganizationSchema) but not fetched/verified
-  // server-side — it's rendered as a plain `<img src>` client-side, no
-  // different in trust level from any other externally-hosted image URL
-  // already accepted elsewhere in this codebase (e.g. User.avatarUrl).
+
   brandName     String?
   brandLogoUrl  String?
   createdAt DateTime @default(now())
@@ -295,24 +246,6 @@ model Organization {
   ssoConnection SsoConnection?
 }
 
-// Org-level SSO connection (AUDIT_REPORT.md §23) — the last item deferred
-// from the original Phase 4 team workspaces scope. One row per org (MVP: a
-// single IdP per org, no multi-connection support). `domain` is the email
-// domain that routes an unauthenticated visitor to this org's SSO at login
-// (`GET /sso/discover?domain=`) — unique across all orgs so domain lookup is
-// unambiguous. Only one of the OIDC/SAML field groups is populated,
-// discriminated by `protocol`; enforced at the DTO layer
-// (UpsertSsoConnectionSchema), not a DB constraint, since Postgres has no
-// native "exactly one of these column groups is non-null" check without a
-// CHECK constraint Prisma doesn't model well here — same tradeoff already
-// accepted for ShareLink's payload shape varying by toolSlug.
-// `oidcClientSecret` is encrypted at rest (backend/src/common/crypto/
-// secret-encryption.ts, same AES-256-GCM/HKDF pattern as
-// history-encryption.ts, distinct master key `SSO_SECRET_ENCRYPTION_KEY`) —
-// unlike brandLogoUrl this is a genuine credential, not attacker-controlled
-// display data, so it gets the same at-rest protection as History content.
-// `samlCert` (the IdP's public signing certificate) is not a secret and is
-// stored in plaintext.
 model SsoConnection {
   id             String       @id @default(uuid())
   organizationId String       @unique
@@ -323,11 +256,11 @@ model SsoConnection {
 
   oidcIssuer          String?
   oidcClientId        String?
-  oidcClientSecretEnc String? // AES-256-GCM ciphertext, see model doc above
+  oidcClientSecretEnc String?
 
-  samlEntryPoint String? // IdP SSO URL the SP-initiated AuthnRequest redirects to
-  samlIssuer     String? // IdP entity id
-  samlCert       String? // IdP's public signing cert (PEM), not a secret
+  samlEntryPoint String?
+  samlIssuer     String?
+  samlCert       String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -347,16 +280,6 @@ model OrganizationMember {
   @@unique([organizationId, userId])
 }
 
-// Email-token org invites (Phase 4 follow-up — originally deferred in the
-// team workspaces MVP pass, AUDIT_REPORT.md §17.2; shipped in §21). Same
-// hashed-opaque-token pattern as VerificationToken (generateOpaqueToken()/
-// hashToken(), never store the raw token) rather than a new pattern — this
-// is a token-in-an-email-link flow just like email-verify/password-reset,
-// so it reuses that shape instead of inventing a parallel one. A separate
-// table rather than folding into VerificationToken because an invite is
-// scoped to an (organization, email) pair, not a userId — the invited
-// person may not have an account yet, so there's no User row to attach a
-// VerificationToken to until they accept.
 model OrganizationInvite {
   id             String       @id @default(uuid())
   organizationId String
@@ -375,12 +298,6 @@ model OrganizationInvite {
   @@index([email])
 }
 
-// Public API / CLI access (Phase 4 — ARCHITECTURE.md §14.3, §15). Not in the
-// original DATABASE.md ERD, added alongside the Public API surface — same
-// hashed-secret pattern as Session.refreshTokenHash/VerificationToken.tokenHash,
-// never store the raw key. `keyPrefix` is the raw key's first 8 characters,
-// kept in plaintext purely so the UI can show "dtb_live_ab12…" for the user
-// to identify which key is which without ever being able to recover the rest.
 model ApiKey {
   id         String    @id @default(uuid())
   userId     String
@@ -395,14 +312,6 @@ model ApiKey {
   @@index([userId])
 }
 
-// Billing (Phase 4 — ARCHITECTURE.md §14.2; migrated Stripe → Razorpay,
-// AUDIT_REPORT.md §20). Mirrors Razorpay's own subscription status values
-// rather than inventing a coarser enum — same rationale as the original
-// Stripe design: the webhook handler passes Razorpay's `subscription.status`
-// straight through, so there's no lossy translation step that could drift
-// from what Razorpay actually reports. Razorpay's status set is shaped
-// differently from Stripe's (e.g. `AUTHENTICATED`/`HALTED` have no direct
-// Stripe equivalent) — see https://razorpay.com/docs/payments/subscriptions/states/.
 enum SubscriptionStatus {
   CREATED
   AUTHENTICATED
@@ -414,13 +323,6 @@ enum SubscriptionStatus {
   EXPIRED
 }
 
-// One row per user with a Razorpay subscription — NOT the source of truth
-// plan checks read (that's still the denormalized User.plan, unchanged, so
-// PlanThrottleGuard/ApiKeysService/AI Gateway quota checks needed zero
-// changes). This table exists for support/debugging visibility into the
-// underlying Razorpay state and to detect a user with a Razorpay
-// subscription whose User.plan has drifted out of sync (webhook delivery
-// failure, retried job, etc.) — see AUDIT_REPORT.md §15/§20.
 model Subscription {
   id                     String             @id @default(uuid())
   userId                 String             @unique
@@ -437,16 +339,6 @@ model Subscription {
   @@index([userId])
 }
 
-// Plugin marketplace (Phase 4 — ARCHITECTURE.md §16, design-then-build
-// pass; flagged before implementation per CLAUDE.md rule 10 since it's the
-// first untrusted-third-party-code surface in this codebase). v1
-// deviations from the original §16 design sketch, both documented in
-// AUDIT_REPORT.md §18: the WASM binary is stored as base64 text directly
-// on PluginVersion rather than in S3-compatible object storage (that
-// infrastructure doesn't actually exist anywhere in this codebase yet —
-// ShareLink.objectStorageKey is itself unimplemented — and adding an S3
-// SDK would be a new top-level dependency for a feature already gated
-// behind a 2MB size cap, where Postgres storage is genuinely fine).
 enum PluginStatus {
   DRAFT
   IN_REVIEW
@@ -472,13 +364,6 @@ model Plugin {
   @@index([status])
 }
 
-// Security event audit trail (checklist item #38 — previously only 5xx
-// exceptions were captured, via GlobalExceptionFilter -> Sentry; auth-level
-// events like failed logins, lockouts, and password resets were invisible).
-// Append-only, never updated. `userId` nullable because some events (e.g. a
-// failed login with an email that doesn't exist) have no user to attach to.
-// No tool input/output content is ever logged here per CLAUDE.md rule 8 —
-// only the event type, actor identifiers, and non-content metadata.
 enum SecurityEventType {
   LOGIN_FAILED
   LOGIN_SUCCEEDED
@@ -507,11 +392,9 @@ model PluginVersion {
   id             String    @id @default(uuid())
   pluginId       String
   plugin         Plugin    @relation(fields: [pluginId], references: [id], onDelete: Cascade)
-  version        String // semver, e.g. "1.0.0"
+  version        String
   manifestJson   Json
-  // Base64-encoded WASM module — see the model-group comment above for why
-  // this is inline rather than object storage. Capped at ~2MB decoded
-  // (enforced in PluginsService, not the DB layer).
+
   wasmBase64     String    @db.Text
   checksumSha256 String
   reviewedById   String?

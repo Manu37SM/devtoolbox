@@ -12,9 +12,6 @@ const SUBTLE_HASH_NAME: Record<HmacGeneratorOptions["algorithm"], string> = {
   "SHA-512": "SHA-512",
 };
 
-/** HMAC generation via WebCrypto's SubtleCrypto, which is inherently async.
- * Works identically in the browser, Node (Vitest), and a Worker since
- * `crypto.subtle` is available in all three. */
 export async function generateHmac(
   message: string,
   secret: string,

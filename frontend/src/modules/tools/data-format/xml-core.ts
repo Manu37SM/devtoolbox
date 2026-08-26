@@ -1,10 +1,4 @@
-// Hand-rolled XML parser/serializer shared by JSON<->XML and the XML
-// Formatter/Validator tool (CLAUDE.md "extract shared sub-problem" rule).
-// Convention (matches the common fast-xml-parser-style shape so it reads
-// naturally to anyone who's used a JS XML<->JSON library before):
-//   - Attributes become keys prefixed with "@_"
-//   - Text content becomes "#text" when siblings (attributes/children) exist
-//   - Repeated sibling tags become arrays
+
 
 export interface XmlElement {
   tag: string;
@@ -157,8 +151,7 @@ export function jsonValueToXml(tag: string, value: unknown): XmlElement {
   }
 
   if (Array.isArray(value)) {
-    // Arrays at this level shouldn't happen (handled by the caller), but
-    // fall back to joining as repeated text nodes defensively.
+
     return { tag, attributes, children: value.map((v) => ({ text: String(v) })) };
   }
 

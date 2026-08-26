@@ -10,9 +10,6 @@ const WORD_BANK = [
   "mollit", "anim", "id", "est", "laborum",
 ];
 
-/** Deterministic-shape (seedable) Lorem Ipsum generator. Uses a simple
- * mulberry32 PRNG rather than Math.random so output is reproducible given
- * a seed, which matters for tests and for "regenerate with same seed". */
 export function generateLoremIpsum(options: LoremIpsumOptions, seed = Date.now()): string {
   const rng = mulberry32(seed);
   const pickWord = () => WORD_BANK[Math.floor(rng() * WORD_BANK.length)]!;
@@ -64,8 +61,6 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// mulberry32: small, fast, deterministic PRNG — good enough for
-// placeholder-text generation (not cryptographic use).
 function mulberry32(seed: number): () => number {
   let a = seed;
   return function () {

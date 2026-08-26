@@ -8,10 +8,6 @@ import { apiPost, ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { syncFavoritesOnSignIn } from "@/lib/sync";
 
-// OIDC redirect target — see SsoLoginForm.tsx and sso.controller.ts. SAML
-// has no equivalent frontend route: the IdP POSTs the assertion straight to
-// the backend's ACS URL (/sso/saml/callback), which sets the session cookie
-// itself and redirects to /account, never routing through this page.
 export default function SsoOidcCallbackPage() {
   return (
     <Suspense fallback={null}>
@@ -50,8 +46,7 @@ function SsoOidcCallbackContent() {
       .catch((err) => {
         setError(err instanceof ApiClientError ? err.message : "SSO sign-in failed. Please try again.");
       });
-    // Intentionally runs once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   if (!error) {

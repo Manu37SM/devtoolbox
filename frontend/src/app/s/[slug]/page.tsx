@@ -10,14 +10,6 @@ interface SharePageProps {
   params: Promise<{ slug: string }>;
 }
 
-/** Public share-link viewer — API.md §8, first frontend consumer of the
- * Share Links backend module (AUDIT_REPORT.md §22, which also added the
- * `branding` field this page renders). No auth required; `GET /shares/:slug`
- * is a public route. Payload shape varies by `toolSlug` — this renders a
- * couple of known shapes specially (pipelines, snippet-like
- * title/content pairs) and falls back to a generic key/value dump for
- * anything else, since instrumenting all 60+ individual tools to produce
- * a bespoke share view is out of scope for this pass. */
 export default function SharePage({ params }: SharePageProps) {
   const { slug } = use(params);
   const [view, setView] = useState<ShareLinkView | null | undefined>(undefined);
@@ -79,10 +71,7 @@ function BrandingBanner({ branding }: { branding: ShareLinkView["branding"] }) {
   return (
     <div className="flex items-center gap-2 border-b border-border-default pb-3">
       {branding.logoUrl && (
-        // Org-supplied URL, not fetched/verified server-side (schema.prisma's
-        // Organization.brandLogoUrl comment) — same trust tier as
-        // User.avatarUrl elsewhere in this codebase.
-        // eslint-disable-next-line @next/next/no-img-element
+
         <img src={branding.logoUrl} alt="" className="h-6 w-6 rounded-sm object-contain" />
       )}
       <span className="text-sm font-medium text-text-primary">{branding.name}</span>

@@ -2,7 +2,6 @@ import type { AiClientCodeResult } from "@devtoolbox/shared";
 import { apiPost } from "@/lib/api-client";
 import type { ApiResponseToClientCodeOptions } from "./schema";
 
-/** Thin call-forwarding wrapper over POST /ai/client-code — API.md §9. */
 export async function generateClientCode(options: ApiResponseToClientCodeOptions): Promise<AiClientCodeResult> {
   return apiPost<AiClientCodeResult>("/ai/client-code", {
     sampleResponse: options.sampleResponse,

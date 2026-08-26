@@ -4,9 +4,6 @@ import { useFavoriteTools } from "@/hooks/useFavorites";
 import { useRecentTools } from "@/hooks/useLocalHistory";
 import { ToolCard } from "@/components/shared/ToolCard";
 
-/** Client-only "Favorites" + "Recently used" sections, backed by
- * IndexedDB (Dexie) — see lib/db.ts. Kept out of the server-rendered
- * catalog page since this data only exists in the visitor's browser. */
 export function HomeQuickAccess() {
   const favorites = useFavoriteTools();
   const recent = useRecentTools(6);

@@ -11,15 +11,6 @@ interface OAuthProfile {
   avatarUrl: string | null;
 }
 
-/**
- * Manual OAuth authorization-code exchange for GitHub/Google — see API.md
- * §2 `POST /auth/oauth/:provider/callback`. Deliberately not using
- * passport-github2/passport-google-oauth20's redirect-guard flow: those
- * strategies assume the backend owns the redirect round-trip, but the
- * documented contract here is a single JSON POST with a `code` the
- * frontend already obtained — a plain two-fetch token+profile exchange is
- * simpler and easier to test than bending passport's flow to fit.
- */
 @Injectable()
 export class OAuthService {
   constructor(
@@ -41,16 +32,6 @@ export class OAuthService {
     return { tokens: this.authService.buildAuthResponse(user), refreshToken };
   }
 
-  /**
-   * Connects a provider to an *already signed-in* user's account — distinct
-   * from `handleCallback`, which signs in (creating a new account if
-   * needed). Reached from the "Connect GitHub/Google" buttons on /account,
-   * not the login/register OAuth buttons. Idempotent if the account is
-   * already linked to this same user; rejects if that provider identity is
-   * already linked to a *different* DevToolbox account (each provider
-   * identity maps to exactly one account, same invariant `findOrCreateUser`
-   * enforces on sign-in).
-   */
   async linkAccount(userId: string, provider: OAuthProvider, code: string, redirectUri: string): Promise<void> {
     const profile = await this.exchangeProfile(provider, code, redirectUri);
     const existingLink = await this.prisma.oAuthAccount.findUnique({
@@ -58,7 +39,7 @@ export class OAuthService {
     });
 
     if (existingLink) {
-      if (existingLink.userId === userId) return; // already connected — no-op success
+      if (existingLink.userId === userId) return;
       throw new ConflictException(`This ${provider} account is already linked to a different DevToolbox account.`);
     }
 
@@ -73,12 +54,6 @@ export class OAuthService {
     return rows.map((row) => ({ provider: row.provider as OAuthProvider, createdAt: row.createdAt.toISOString() }));
   }
 
-  /**
-   * Removes a linked provider, but never down to zero sign-in methods —
-   * checks the user still has a password or at least one *other* linked
-   * provider before allowing it, so nobody can accidentally lock
-   * themselves out of their own account.
-   */
   async unlinkAccount(userId: string, provider: OAuthProvider): Promise<void> {
     const [user, links] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId } }),
@@ -127,7 +102,7 @@ export class OAuthService {
         email: profile.email ?? `${provider}-${profile.providerUserId}@users.devtoolbox.dev`,
         displayName: profile.displayName,
         avatarUrl: profile.avatarUrl,
-        emailVerified: Boolean(profile.email), // provider already verified it
+        emailVerified: Boolean(profile.email),
         oauthAccounts: { create: { provider, providerUserId: profile.providerUserId } },
       },
     });

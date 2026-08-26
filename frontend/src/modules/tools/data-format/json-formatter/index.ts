@@ -1,7 +1,4 @@
-// Reference implementation of the tool contract described in
-// DEVELOPMENT_GUIDE.md §5. New tools should follow this exact shape:
-// index.ts (registry entry) + transform.ts + transform.test.ts +
-// schema.ts + ToolView.tsx + content.mdx.
+
 
 import type { ToolRegistryEntry } from "@devtoolbox/shared";
 

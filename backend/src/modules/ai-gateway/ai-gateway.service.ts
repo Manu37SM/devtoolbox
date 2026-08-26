@@ -24,32 +24,11 @@ import { validateCronExpression, validateGeneratedJsonSchema, validateGeneratedR
 
 const MAX_OUTPUT_TOKENS = 1_024;
 
-// Per-hour request quotas shown by GET /ai/usage — kept in one place so
-// they can't silently drift from the numbers actually enforced by
-// PlanThrottleGuard on the four action routes (see ai-gateway.controller.ts
-// and API.md §12). TEAM shares PRO's quota, same tier-collapsing
-// PlanThrottleGuard already does elsewhere.
 const AI_HOURLY_QUOTA: Record<"FREE" | "PRO" | "TEAM", number> = { FREE: 60, PRO: 1000, TEAM: 1000 };
 
-/**
- * Thin orchestration layer over the Anthropic API — see ARCHITECTURE.md
- * §8.3's "AI Gateway design": validate request shape (done by the Zod DTOs
- * at the controller boundary), apply rate limits (PlanThrottleGuard on the
- * controller), select a model tier, inject a task-specific system prompt,
- * return the response. No raw request/response content is ever persisted —
- * only anonymized token/cost metrics (AiUsageEvent), per DATABASE.md §4 and
- * CLAUDE.md rule 8.
- *
- * CLAUDE.md rule 7: every system prompt below explicitly frames the user's
- * `input`/`prompt`/`before`/`after` text as DATA to process, not as
- * instructions to follow — this is the load-bearing prompt-injection
- * mitigation for this whole module, since none of these endpoints have any
- * other way to distinguish "the user's regex" from "a regex that happens to
- * contain the text 'ignore previous instructions'".
- */
 @Injectable()
 export class AiGatewayService {
-  private client: Anthropic | null | undefined; // undefined = not yet resolved, null = no key configured
+  private client: Anthropic | null | undefined;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -96,10 +75,7 @@ export class AiGatewayService {
   }
 
   async diffSummary(dto: AiDiffSummaryDto, userId: string | undefined): Promise<AiDiffSummaryResult> {
-    // Larger context, more synthesis than a one-line explain/generate task —
-    // routed to the larger model rather than Haiku (see ARCHITECTURE.md
-    // §8.3: Haiku for lightweight tasks, larger model when the task
-    // actually benefits from it).
+
     const model = this.config.getOrThrow<string>("AI_MODEL_SONNET");
     const dataSentPreview = `[diff:${dto.format}] ${truncate(dto.before, 100)} -> ${truncate(dto.after, 100)}`;
     const system = [
@@ -147,9 +123,7 @@ export class AiGatewayService {
   }
 
   async commitMessage(dto: AiCommitMessageDto, userId: string | undefined): Promise<AiCommitMessageResult> {
-    // Synthesizing a message from a diff is more like diffSummary()
-    // (real synthesis over structured change content) than a mechanical
-    // generate() task, so it gets the larger model too.
+
     const model = this.config.getOrThrow<string>("AI_MODEL_SONNET");
     const dataSentPreview = `[commit-message] ${truncate(dto.diff, 200)}`;
     const system = [
@@ -205,7 +179,7 @@ export class AiGatewayService {
   async getUsage(userId: string): Promise<AiUsageSummary> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const periodStart = new Date();
-    periodStart.setMinutes(0, 0, 0); // matches PlanThrottleGuard's 1-hour fixed window
+    periodStart.setMinutes(0, 0, 0);
 
     const requestCount = await this.prisma.aiUsageEvent.count({
       where: { userId, createdAt: { gte: periodStart } },
@@ -283,18 +257,11 @@ function truncate(s: string, max: number): string {
 }
 
 function stripCodeFence(s: string): string {
-  // Matches ``` with an optional language tag (json, ts, typescript, ...) —
-  // shared by jsonRepair(), codeComment(), and clientCode(), since models
-  // don't reliably respect "no code fences" instructions.
+
   const fenced = /^```[a-zA-Z]*\s*\n([\s\S]*?)\n```$/.exec(s.trim());
   return fenced ? fenced[1]!.trim() : s;
 }
 
-/** Parses the `RESULT: ...\nEXPLANATION: ...` shape the generate() system
- * prompt asks for. Falls back gracefully (whole response as `result`, no
- * explanation) if the model doesn't follow the format exactly — the
- * downstream deterministic validation is what actually matters for
- * correctness, not this parsing step. */
 function parseResultExplanation(text: string): { result: string; explanation: string } {
   const resultMatch = /RESULT:\s*([\s\S]*?)(?:\nEXPLANATION:|$)/i.exec(text);
   const explanationMatch = /EXPLANATION:\s*([\s\S]*)$/i.exec(text);

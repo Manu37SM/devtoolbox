@@ -4,10 +4,6 @@ import { getToolBySlug, toolRegistry } from "@/lib/registry";
 import { toolViewRegistry } from "@/lib/tool-view-registry";
 import { ToolShell } from "@/components/tools/ToolShell";
 
-// Next.js 15 App Router: dynamic route `params` are async (a Promise),
-// not a plain object, in both the page component and
-// generateMetadata/generateStaticParams consumers — a breaking change
-// from Next 14. See AUDIT_REPORT.md §7.10.
 interface ToolPageProps {
   params: Promise<{ slug: string }>;
 }

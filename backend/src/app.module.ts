@@ -21,12 +21,6 @@ import { HealthModule } from "./modules/health/health.module";
 import { ConfigModule } from "./config/config.module";
 import { PrismaModule } from "./database/prisma.module";
 
-/**
- * Root module. Each feature module owns its own controller/service/DTO
- * layer with no cross-module direct DB access — see ARCHITECTURE.md §8.3.
- * Rate limiting (ThrottlerModule) applies globally; per-route overrides
- * live in API.md §12's limits via @Throttle() decorators per module.
- */
 @Module({
   imports: [
     ConfigModule,

@@ -60,9 +60,6 @@ const GENERATORS: Record<FakeDataGeneratorOptions["recordType"], () => Record<st
   "internet-user": makeInternetUser,
 };
 
-/** Generates an array of fake/mock data records using @faker-js/faker,
- * entirely client-side. When `seed` is provided, faker is seeded first so
- * output is reproducible across runs. */
 export function generateFakeData(options: FakeDataGeneratorOptions): FakeDataGeneratorResult {
   if (options.count < 1) {
     return { output: "", error: { message: "Count must be at least 1." } };

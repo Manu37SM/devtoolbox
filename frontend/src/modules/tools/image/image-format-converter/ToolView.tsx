@@ -55,7 +55,7 @@ export function ImageFormatConverterToolView() {
           onClear={() => setFile(null)}
           previewSlot={
             previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
+
               <img src={previewUrl} alt="Original preview" className="max-h-[200px] max-w-full object-contain" />
             ) : null
           }
@@ -71,7 +71,7 @@ export function ImageFormatConverterToolView() {
         {dataUrl && !error && (
           <>
             <div className="flex items-center justify-center rounded-md border border-border-subtle bg-bg-raised p-6">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {}
               <img src={dataUrl} alt="Converted result" className="max-w-full" />
             </div>
             <a href={dataUrl} download={`converted.${mimeToExtension(options.targetFormat)}`}>

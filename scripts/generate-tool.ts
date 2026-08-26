@@ -1,18 +1,4 @@
-/**
- * Scaffolds the five files required by the tool contract
- * (DEVELOPMENT_GUIDE.md §5) for a new tool.
- *
- * Usage:
- *   npm run generate:tool -- --module=data-format --slug=yaml-formatter --name="YAML Formatter"
- *
- * Generates, under frontend/src/modules/tools/<module>/<slug>/:
- *   index.ts | schema.ts | transform.ts | transform.test.ts | ToolView.tsx | content.mdx
- *
- * This is intentionally a thin scaffold, not a code generator with business
- * logic baked in — it exists to remove boilerplate friction, not to guess at
- * a tool's actual transform behavior. Reference implementation to model
- * output on: frontend/src/modules/tools/data-format/json-formatter/.
- */
+
 
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -134,7 +120,6 @@ TODO
 `,
   );
 
-  // eslint-disable-next-line no-console
   console.log(`Scaffolded ${name} at ${dir}. Register it in frontend/src/lib/registry.ts.`);
 }
 

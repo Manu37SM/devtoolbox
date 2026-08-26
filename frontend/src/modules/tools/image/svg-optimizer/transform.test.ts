@@ -56,14 +56,13 @@ describe("optimizeSvg — minimal preset", () => {
     const result = optimizeSvg(SAMPLE_SVG, { ...base, pluginsPreset: "minimal" });
     expect(result.error).toBeNull();
     expect(result.output).not.toContain("<!--");
-    // minimal preset shouldn't shorten fill="#ff0000" to fill="red" or similar,
-    // since convertColors isn't in its plugin list.
+
     expect(result.output).toContain("#ff0000");
   });
 
   it("still removes the <title> element via preset-default equivalents only when selected — minimal keeps it", () => {
     const result = optimizeSvg(SAMPLE_SVG, { ...base, pluginsPreset: "minimal" });
-    // minimal doesn't include removeTitle, so it should be preserved.
+
     expect(result.output).toContain("Sample");
   });
 });

@@ -4,6 +4,38 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Changed (Database provider: Render Postgres → Neon)
+
+- Production Postgres moved from Render to [Neon](https://neon.tech), at the user's explicit direction (AUDIT_REPORT.md §27) — reverses the earlier "stay on Render only" decision (§25.2). Redis and the API stay on Render; only the database provider changed.
+- `render.yaml`, `scripts/create-least-privilege-db-role.sql`, `PROD_READY.md`, `DATABASE.md`, `ARCHITECTURE.md`, and `README.md` updated accordingly. No Prisma schema or application code changes — Neon is standard wire-compatible Postgres, so only connection strings change.
+- Manual, account-level steps (creating the Neon project, migrating any existing production data, updating Render's env vars) are the user's to run — see PROD_READY.md §6 step 3 for the full walkthrough.
+
+### Added (Ten more P1/P2 tools — closing the rest of the docs/code gap)
+
+- A follow-up self-audit (prompted by a user question — "is this project done, any gaps left?") found the same doc/code mismatch pattern extended well beyond the two tools fixed in the previous entry: cross-checking every FEATURE.md row marked ✅ against `frontend/src/modules/tools/**` turned up 10 more rows shipped in the docs with zero corresponding code. All 10 are now genuinely implemented, following the standard five-piece contract and registered in `registry.ts` + `tool-view-registry.ts`:
+- **Punycode/IDN Encode-Decode** (`encoding`) — RFC 3492 bootstring, hand-implemented and verified against known test vectors (bücher.de, 日本語.jp).
+- **Certificate (PEM/CRT) Decoder** (`encoding`) — X.509 field parsing via new dependency `jsrsasign` (flagged per CLAUDE.md rule 10; ASN.1/DER parsing isn't worth hand-rolling for one tool).
+- **RSA/EC Key Pair Generator** (`security`) — WebCrypto-native, no new dependency; exports SPKI/PKCS8 PEM.
+- **TOTP/2FA Code Generator** (`security`) — RFC 6238, verified against the RFC's own SHA-1/SHA-256/SHA-512 test vectors.
+- **bcrypt/argon2 Hash & Verify** (`security`) — via new dependency `hash-wasm` (flagged per CLAUDE.md rule 10; WASM implementations chosen for correctness parity with server-side bcrypt/argon2 libraries, per FEATURE.md's own note for this tool).
+- **CSS ↔ Tailwind class helper** (`code`) — a deliberately bounded subset of properties/scales (spacing, color, typography, layout, border-radius), with Tailwind's arbitrary-value syntax as a fallback so nothing is silently dropped; see the tool's content.mdx for exactly what's covered.
+- **Placeholder/SVG Mockup Image Generator** (`image`) — pure SVG string templating, no canvas dependency.
+- **Color Blindness Simulator** (`image`) — protanopia/deuteranopia/tritanopia/achromatopsia simulation via canvas pixel manipulation; simplified sRGB approximation matrices, a documented v1 simplification (not a full linear-light cone-response model), consistent with this codebase's existing pattern of disclosing simplifications rather than hiding them.
+- **Placeholder Text (Hipster/Corporate/Bacon ipsum)** (`generators`) — a separate tool from the existing Lorem Ipsum Generator, which only ever did classic lorem ipsum.
+- **Mock REST API Response Generator** (`generators`) — user-defined field schema (name + type) → sample JSON array, backed by the same `@faker-js/faker` dependency `fake-data-generator` already uses.
+- Two new dependencies added to `frontend/package.json` (`hash-wasm`, `jsrsasign` + `@types/jsrsasign`), both flagged to and approved by the user before adding, per CLAUDE.md rule 10; documented in ARCHITECTURE.md §8.2.
+- FEATURE.md's 10 rows for these tools corrected to note what's actually shipped (each previously read as a bare ✅ with no shipped-note, the same tell that caught the first two).
+- Mobile app again requires no changes, for the same reason as the previous entry — `mobile/App.tsx`'s WebView shell means every new tool is automatically live there once deployed.
+- **Not done as part of this pass:** the platform/infrastructure gaps AUDIT_REPORT.md §24.3 already discloses (no staging environment, no PR preview environments, no APM/uptime monitoring, no product analytics, no real semantic-release automation, an open SSO domain-verification gap, and an unexecuted first production deploy) remain open — those were flagged to the user as existing, disclosed follow-ups rather than silently reopened or re-fixed in this pass.
+
+### Added (Two P2 converters tools — closing a docs/code gap)
+
+- **Roman Numeral Converter** (`converters` module, `/tools/roman-numeral-converter`) — bidirectional number ↔ Roman numeral conversion for the classic 1-3999 range, with canonical-form validation on the parse direction (rejects non-standard notations like "IIII" or "VX"). Pure client-side, no dependencies.
+- **Box Shadow / Border Radius Generator** (`converters` module, `/tools/box-shadow-border-radius-generator`) — sliders for offset/blur/spread/color/opacity/inset plus a border-radius control, with a live preview swatch and copyable CSS. Lives in `converters` alongside CSS Gradient Generator and Color Palette Generator, matching that existing placement precedent. Pure client-side, no dependencies.
+- Both tools follow the standard five-piece contract (`schema.ts`, `transform.ts` + `transform.test.ts`, `ToolView.tsx`, `index.ts`) and are registered in `frontend/src/lib/registry.ts` + `tool-view-registry.ts`.
+- FEATURE.md's rows for these two tools were previously marked ✅/shipped with no corresponding implementation in the codebase (no `frontend/src/modules/tools/**` directory, no registry entry) — this closes that gap for real. No other rows were audited as part of this pass; treat other ✅ marks with the same skepticism until independently verified.
+- Mobile app requires no changes — `mobile/App.tsx` is a WebView shell around the live web app by design (see its file-level doc comment), so both tools are automatically available there once deployed.
+
 ### Added (Auth hardening sweep — checklist gaps closed post-launch)
 
 - **Account lockout** — `User.failedLoginAttempts`/`lockedUntil` (new migration `20260819104352_add_account_lockout_and_security_log`), enforced in `AuthService.login`: 15-minute lock after 5 consecutive failed attempts, cleared on success or password reset. Layered on top of the existing 10/min/IP throttle, which distributed credential stuffing can route around by rotating IPs.

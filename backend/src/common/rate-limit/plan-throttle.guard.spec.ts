@@ -93,7 +93,7 @@ describe("PlanThrottleGuard", () => {
     await guard.canActivate(context);
 
     expect(redis.incr).toHaveBeenCalledWith(expect.stringContaining("pro:user-2"));
-    // Own plan is already TEAM — no need to spend a query checking org membership.
+
     expect(prisma.organizationMember.findFirst).not.toHaveBeenCalled();
   });
 
@@ -112,7 +112,7 @@ describe("PlanThrottleGuard", () => {
   });
 
   it("throws a 429 once the tier's limit is exceeded, with Retry-After/X-RateLimit-Remaining headers", async () => {
-    // anonymous limit is 2 — pre-seed the counter at 2 so the 3rd request trips it.
+
     const redis = makeRedis({ "ratelimit:test-route:anonymous:203.0.113.1": 2 });
     const prisma = { user: { findUnique: jest.fn() } };
     const guard = new PlanThrottleGuard(makeReflector(CONFIG), prisma as never, redis as never);

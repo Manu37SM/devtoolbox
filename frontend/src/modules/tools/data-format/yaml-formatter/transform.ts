@@ -6,8 +6,6 @@ export interface YamlFormatResult {
   error: { message: string; line?: number; column?: number } | null;
 }
 
-/** Formats/validates YAML by parsing then re-dumping with consistent
- * indentation — also the simplest reliable way to validate YAML syntax. */
 export function formatYaml(input: string, options: YamlFormatterOptions): YamlFormatResult {
   if (input.trim().length === 0) return { output: "", error: null };
 

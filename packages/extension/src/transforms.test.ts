@@ -43,7 +43,7 @@ test("urlDecode reports malformed sequences without throwing", () => {
 });
 
 test("jwtDecode decodes header and payload and labels them unverified", () => {
-  // { "alg": "HS256", "typ": "JWT" } . { "sub": "1234567890", "name": "John Doe" }
+
   const token =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.signature";
   const result = jwtDecode(token);

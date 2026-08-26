@@ -9,7 +9,7 @@ describe("runPipeline", () => {
   });
 
   it("chains base64-decode -> json-formatter (happy path, 2 steps)", async () => {
-    // '{"a":1,"b":"two"}' base64-encoded.
+
     const base64Input = Buffer.from('{"a":1,"b":"two"}', "utf-8").toString("base64");
     const steps: PipelineStepRecord[] = [
       { toolSlug: "base64", optionsJson: { mode: "decode", urlSafe: false } },
@@ -19,8 +19,7 @@ describe("runPipeline", () => {
     const result = await runPipeline(steps, base64Input);
 
     expect(result.steps).toHaveLength(2);
-    // `toHaveLength(2)` above already guarantees these indices exist —
-    // `noUncheckedIndexedAccess` just can't infer that from the assertion.
+
     expect(result.steps[0]!.error).toBeNull();
     expect(result.steps[0]!.output).toBe('{"a":1,"b":"two"}');
     expect(result.steps[1]!.error).toBeNull();
@@ -33,7 +32,6 @@ describe("runPipeline", () => {
       { toolSlug: "json-formatter", optionsJson: {} },
     ];
 
-    // Not valid base64 -> step 1 errors, step 2 (json-formatter) never runs.
     const result = await runPipeline(steps, "not@@valid!!base64");
 
     expect(result.steps).toHaveLength(1);

@@ -1,12 +1,5 @@
 import type { DotenvFormatterOptions } from "./schema";
 
-/** Hand-rolled `.env` parser/formatter. Supports `KEY=value`,
- * `KEY="quoted value"`, `KEY='single quoted'`, `export KEY=value`,
- * `# comments`, and blank lines. Malformed lines (no `=`, or an invalid
- * key name) are dropped from the output — they're surfaced as warnings
- * instead, since they can't be round-tripped safely. Duplicate keys are
- * kept in the output (not deduped) but flagged as a warning. */
-
 export interface DotenvEntryLine {
   type: "entry";
   key: string;
@@ -66,7 +59,7 @@ function parseLine(raw: string, lineNumber: number, warnings: string[]): DotenvL
     quote = rawValue[0] as '"' | "'";
     value = rawValue.slice(1, -1);
   } else {
-    // Strip a trailing unquoted inline comment, e.g. `KEY=value # note`.
+
     const hashIdx = rawValue.indexOf(" #");
     if (hashIdx !== -1) value = rawValue.slice(0, hashIdx).trim();
   }

@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-/** Options schema for the URL Parser tool. Decoding query params/pathname
- * percent-escapes is the only real knob — everything else about a URL's
- * structure is unambiguous once it's parsed. */
 export const urlParserOptionsSchema = z.object({
   decodeComponents: z.boolean().default(true),
 });

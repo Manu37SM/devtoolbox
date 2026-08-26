@@ -45,7 +45,7 @@ describe("GlobalExceptionFilter", () => {
 
     expect(mockCaptureException).toHaveBeenCalledWith(err);
     expect(status).toHaveBeenCalledWith(500);
-    // Client-facing message never leaks the real error.
+
     expect(json).toHaveBeenCalledWith(
       expect.objectContaining({ error: expect.objectContaining({ message: "Something went wrong. Please try again." }) }),
     );

@@ -1,0 +1,13 @@
+## How it works
+
+Enter a base32 TOTP secret (the same format authenticator apps import) and a code is generated and refreshed every second, following RFC 6238 exactly — HMAC of a 30-second time counter, dynamically truncated to 6 or 8 digits. Verified against RFC 6238's own published test vectors for SHA-1, SHA-256, and SHA-512. Everything runs locally in your browser via WebCrypto; the secret never leaves your device.
+
+## Common use cases
+
+- Testing a 2FA/TOTP integration during development without reaching for your phone's authenticator app.
+- Verifying that a backend's TOTP implementation produces the same code as the spec for a known secret.
+- Understanding what an `otpauth://` secret actually produces before scanning it into a real authenticator.
+
+## Related tools
+
+Hash Generator · HMAC Generator · Password Generator

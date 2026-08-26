@@ -1,11 +1,5 @@
 import type { ToolModule } from "@devtoolbox/shared";
 
-// Display metadata for the left nav's module groups (UI_GUIDELINES.md §3).
-// Order here is the nav's display order and matches FEATURE.md's module
-// numbering. Only modules that currently have at least one shipped tool
-// need an icon that resolves — network/ai are included now (Phase 2/3
-// scope) so the nav doesn't need a follow-up edit when their first tool
-// ships.
 export const MODULE_META: Record<ToolModule, { label: string; icon: string }> = {
   "data-format": { label: "Data Format", icon: "Braces" },
   encoding: { label: "Encoding & Decoding", icon: "Binary" },
@@ -19,8 +13,6 @@ export const MODULE_META: Record<ToolModule, { label: string; icon: string }> = 
   ai: { label: "AI-Powered", icon: "Bot" },
 };
 
-// Fixed display order (FEATURE.md module order), independent of object
-// key iteration order.
 export const MODULE_ORDER: ToolModule[] = [
   "data-format",
   "encoding",

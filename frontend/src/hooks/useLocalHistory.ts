@@ -5,9 +5,6 @@ import { db, recordToolVisit } from "@/lib/db";
 import { getToolBySlug } from "@/lib/registry";
 import type { ToolRegistryEntry } from "@devtoolbox/shared";
 
-/** Returns the N most recently visited tools (deduplicated by tool,
- * most-recent-visit-wins), backed by IndexedDB via Dexie
- * (DEVELOPMENT_GUIDE.md §3: "Local history per tool (IndexedDB)", P0). */
 export function useRecentTools(limit = 8): ToolRegistryEntry[] {
   const recent = useLiveQuery(async () => {
     if (!db) return [];

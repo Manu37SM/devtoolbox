@@ -8,22 +8,6 @@ import { PLAN_THROTTLE_KEY, type PlanThrottleConfig } from "./plan-throttle.deco
 import type { AuthenticatedUser } from "../../modules/auth/decorators/current-user.decorator";
 import { resolveEffectivePlan } from "../plan/effective-plan";
 
-/**
- * Fixed-window rate limiter keyed by (route, identity), where identity is
- * the authenticated user's id or, anonymously, their IP — and the limit
- * itself depends on the caller's plan. Implemented directly against Redis
- * (`INCR`+`EXPIRE`) rather than extending `@nestjs/throttler`'s
- * `ThrottlerGuard`: that class's per-tracker/per-throttler internals
- * aren't designed for "the limit itself varies per request," only for a
- * fixed limit per route, and fighting that abstraction seemed more
- * fragile than a small self-contained implementation against
- * infrastructure (Redis) this codebase already depends on for exactly
- * this kind of ephemeral counter (see NetModule's webhook inbox).
- *
- * Routes using this guard should NOT also carry `@Throttle(...)` — this
- * guard is the rate limit for them. The global `ThrottlerGuard` (see
- * AppModule's `APP_GUARD`) still applies everywhere as a coarse baseline.
- */
 @Injectable()
 export class PlanThrottleGuard implements CanActivate {
   constructor(
@@ -34,7 +18,7 @@ export class PlanThrottleGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const config = this.reflector.get<PlanThrottleConfig | undefined>(PLAN_THROTTLE_KEY, context.getHandler());
-    if (!config) return true; // no @PlanThrottle on this route — nothing to enforce here
+    if (!config) return true;
 
     const req = context.switchToHttp().getRequest<Request & { user?: AuthenticatedUser }>();
     const res = context.switchToHttp().getResponse<Response>();
@@ -76,13 +60,8 @@ export class PlanThrottleGuard implements CanActivate {
       return { tier: "anonymous", identity: req.ip ?? req.socket.remoteAddress ?? "unknown" };
     }
 
-    // Plan is looked up fresh rather than trusted from the (up to
-    // 15-minute-old) access token, since an upgrade shouldn't require the
-    // user to log out/in again to see the higher limit take effect.
     const user = await this.prisma.user.findUnique({ where: { id: req.user.userId }, select: { plan: true } });
-    // resolveEffectivePlan() also grants "pro" tier to FREE-plan members of
-    // a TEAM-owner's organization (API.md §17) — a plain `user?.plan` check
-    // would miss that inherited benefit.
+
     const effectivePlan = await resolveEffectivePlan(this.prisma, req.user.userId, user?.plan ?? "FREE");
     const tier = effectivePlan === "PRO" || effectivePlan === "TEAM" ? "pro" : "free";
     return { tier, identity: req.user.userId };

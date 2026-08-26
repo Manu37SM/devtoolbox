@@ -1,9 +1,6 @@
 import type { HexTextOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Bidirectional Text <-> Hex and Text <-> Binary converter. Uses
- * TextEncoder/TextDecoder to work with raw UTF-8 bytes (not `charCodeAt`),
- * so multi-byte Unicode characters round-trip correctly. */
 export function transformHexText(input: string, options: HexTextOptions): TransformResult {
   if (input.length === 0) return { output: "", error: null };
 

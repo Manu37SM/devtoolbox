@@ -8,22 +8,12 @@ import { Button } from "@/components/ui/button";
 
 interface ShareButtonProps {
   toolSlug: string;
-  /** Lazily computed so the caller doesn't have to keep a payload object
-   * up to date on every keystroke — only called when the user actually
-   * clicks "Create link." Return `null` to disable sharing (e.g. nothing
-   * to share yet). */
+
   getPayload: () => Record<string, unknown> | null;
-  /** Shown next to "Create link" while there's nothing shareable yet. */
+
   disabledHint?: string;
 }
 
-/** Reusable "Share" affordance — creates a short link via `POST /shares`
- * (API.md §8) and shows it with a copy button. First real frontend
- * consumer of the Share Links backend module (AUDIT_REPORT.md §22) — it
- * previously had no UI at all. Signed-in users who belong to at least one
- * organization also get the option to attribute the share to that org,
- * which shows the org's custom branding (if set) on the public share page
- * instead of default DevToolbox branding. */
 export function ShareButton({ toolSlug, getPayload, disabledHint }: ShareButtonProps) {
   const isAuthenticated = useAuthStore((s) => s.status === "authenticated");
   const [open, setOpen] = useState(false);

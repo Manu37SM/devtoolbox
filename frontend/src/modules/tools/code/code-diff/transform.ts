@@ -19,9 +19,6 @@ export interface CodeDiffResult {
   error: { message: string } | null;
 }
 
-// An empty string tokenizes to zero lines (not one empty-string line) so
-// that "no before text" diffs as pure additions rather than a spurious
-// "remove one blank line" op.
 function tokenize(text: string): string[] {
   return text.length === 0 ? [] : text.split("\n");
 }
@@ -33,12 +30,6 @@ function normalizeLine(line: string, options: CodeDiffOptions): string {
   return t;
 }
 
-/** Same classic LCS (longest common subsequence) dynamic-programming
- * algorithm used by text-diff/transform.ts's `lcsDiff`, adapted here to
- * operate line-by-line only (source code is naturally line-oriented) and
- * to leave each op as a single line rather than merging consecutive
- * same-type ops, since unified-diff-style output wants one +/-/  marker
- * per line. */
 function lcsDiff(a: string[], b: string[], na: string[], nb: string[]): DiffOp[] {
   const m = a.length;
   const n = b.length;
@@ -92,8 +83,6 @@ export function diffStats(ops: DiffOp[]): DiffStats {
   );
 }
 
-/** Renders line-diff ops as unified-diff-style text: `+ line`, `- line`,
- * and `  line` (two spaces) for unchanged context lines. */
 export function formatUnifiedDiff(ops: DiffOp[]): string {
   return ops
     .map((op) => {

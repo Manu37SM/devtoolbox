@@ -11,8 +11,7 @@ export type CssGradientType = z.infer<typeof cssGradientTypeSchema>;
 
 export const cssGradientGeneratorOptionsSchema = z.object({
   type: cssGradientTypeSchema.default("linear"),
-  /** Linear-only: angle in degrees, CSS `linear-gradient(<angle>deg, ...)`
-   * convention (0deg = bottom-to-top, 90deg = left-to-right). */
+
   angle: z.number().min(0).max(360).default(90),
   stops: z
     .array(gradientStopSchema)

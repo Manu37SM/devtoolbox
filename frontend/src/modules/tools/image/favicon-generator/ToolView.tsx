@@ -89,7 +89,7 @@ export function FaviconGeneratorToolView() {
                   className="flex items-center justify-center rounded-md border border-border-default bg-bg-raised p-2"
                   style={{ width: 72, height: 72 }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {}
                   <img
                     src={img.dataUrl}
                     alt={`${img.size}x${img.size} favicon preview`}

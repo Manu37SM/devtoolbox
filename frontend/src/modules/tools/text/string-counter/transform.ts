@@ -11,8 +11,6 @@ export interface StringStats {
 
 const AVERAGE_WORDS_PER_MINUTE = 200;
 
-/** Pure text analysis — no locale-dependent Intl.Segmenter dependency so
- * results are stable across environments (browser/Node/Worker). */
 export function analyzeText(input: string): StringStats {
   if (input.length === 0) {
     return {

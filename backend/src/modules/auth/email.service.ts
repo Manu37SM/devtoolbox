@@ -2,16 +2,6 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Resend } from "resend";
 
-/**
- * Transactional email sender for the verify-email / password-reset flows.
- * Uses Resend (https://resend.com) when `RESEND_API_KEY` is configured;
- * falls back to logging the link to the server console otherwise, so dev
- * environments and the sandbox test suite keep working with zero setup.
- * This was previously console-only unconditionally — see CHANGELOG.md's
- * Phase 3 production-readiness entry for why Resend specifically (simple
- * REST API, generous free tier, no provider named in ARCHITECTURE.md's
- * stack to defer to instead).
- */
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -38,8 +28,6 @@ export class EmailService {
     await this.send(to, "Reset your DevToolbox password", passwordResetEmailHtml(link), `Reset your DevToolbox password: ${link}`);
   }
 
-  /** Team workspace invites (AUDIT_REPORT.md §21) — same "log to console
-   * without RESEND_API_KEY" degrade path as every other email here. */
   async sendOrgInviteEmail(to: string, organizationName: string, link: string): Promise<void> {
     await this.send(
       to,
@@ -57,11 +45,7 @@ export class EmailService {
 
     const result = await this.resend.emails.send({ from: this.fromAddress, to, subject, html });
     if (result.error) {
-      // Deliberately doesn't throw: a failed email shouldn't fail the
-      // register/reset-request request itself (both already return a
-      // generic success response regardless — see auth.service.ts's
-      // account-enumeration-safety comment on requestPasswordReset).
-      // Logged loudly instead so it's visible in monitoring.
+
       this.logger.error(`Failed to send email to ${to}: ${result.error.message}`);
     }
   }
@@ -75,10 +59,6 @@ function passwordResetEmailHtml(link: string): string {
   return `<p>Someone requested a password reset for your DevToolbox account.</p><p><a href="${link}">${link}</a></p><p>If this wasn't you, you can safely ignore this email — your password won't change unless you click the link above.</p>`;
 }
 
-// Org names are arbitrary user input (CreateOrganizationSchema, up to 80
-// chars) — escaped before interpolating into HTML, unlike `link` above
-// (always a same-origin FRONTEND_URL-prefixed URL this service built
-// itself, never user-supplied).
 function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

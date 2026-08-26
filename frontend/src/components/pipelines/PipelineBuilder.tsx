@@ -17,20 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { ShareButton } from "@/components/share/ShareButton";
 
 interface PipelineBuilderProps {
-  /** Existing pipeline to edit, or undefined when creating a new one. */
+
   pipeline?: PipelineRecord;
 }
 
 const DEFAULT_FIRST_SLUG = pipelineCompatibleSlugs[0] ?? "";
 
-/** Pipeline create/edit + run UI (Phase 2, P1). Shared between
- * /pipelines/new and /pipelines/[id] — see route pages for how each mode
- * is wired up.
- *
- * v1 limitation (documented per this feature's brief): steps always run
- * with their tool's default options — there's no per-step OptionsPanel yet.
- * Future work: let each step override its tool's options, not just chain
- * defaults. */
 export function PipelineBuilder({ pipeline }: PipelineBuilderProps) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.status === "authenticated");
@@ -61,11 +53,7 @@ export function PipelineBuilder({ pipeline }: PipelineBuilderProps) {
       const target = index + direction;
       if (target < 0 || target >= prev.length) return prev;
       const next = [...prev];
-      // `index` and `target` are both validated in-bounds by the guard
-      // above (0 <= target < prev.length, and index is always a valid
-      // existing step's position), so these accesses can't actually be
-      // undefined — `noUncheckedIndexedAccess` can't see that guarantee
-      // through the array-index swap, hence the non-null assertions.
+
       [next[index], next[target]] = [next[target]!, next[index]!];
       return next;
     });
@@ -120,8 +108,7 @@ export function PipelineBuilder({ pipeline }: PipelineBuilderProps) {
       setSyncMessage("Synced to your account.");
     } catch (err) {
       if (err instanceof PipelineConflictError) {
-        // Last-write-wins once confirmed — see pipeline-sync.ts's docblock
-        // and DATABASE.md §7's "user-visible conflict prompt" callout.
+
         const overwrite = confirm(
           "The account version of this pipeline has changed since you last synced (maybe from another device). Overwrite it with this local version?",
         );

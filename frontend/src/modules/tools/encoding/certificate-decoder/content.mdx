@@ -1,0 +1,13 @@
+## How it works
+
+Paste a PEM-encoded X.509 certificate (the `-----BEGIN CERTIFICATE-----` block from a `.crt`/`.pem` file) to see its subject, issuer, validity window, serial number, and signature/public-key algorithm — parsed entirely client-side via a JS X.509/ASN.1 parser. This only decodes the fields present in the certificate itself; it does not validate the certificate chain or check revocation status.
+
+## Common use cases
+
+- Quickly checking a certificate's expiry date and subject/issuer without running `openssl x509 -text`.
+- Confirming whether a certificate is self-signed.
+- Debugging a TLS handshake issue by inspecting the exact certificate a server or client presented.
+
+## Related tools
+
+RSA/EC Key Pair Generator · JWT Decoder/Debugger · Hash Generator

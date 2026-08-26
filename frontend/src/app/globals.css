@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens — UI_GUIDELINES.md §2. Light theme is the default; dark
-   theme overrides via .dark on <html>, toggled by an inline blocking
-   script in layout.tsx to avoid flash-of-unstyled-theme. */
 :root {
   --color-bg-base: #ffffff;
   --color-bg-raised: #f7f7f8;

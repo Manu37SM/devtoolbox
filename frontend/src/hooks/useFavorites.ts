@@ -5,8 +5,6 @@ import { db, toggleFavorite } from "@/lib/db";
 import { getToolBySlug } from "@/lib/registry";
 import type { ToolRegistryEntry } from "@devtoolbox/shared";
 
-/** Favorites/pinning (DEVELOPMENT_GUIDE.md §3, P0 cross-cutting feature),
- * backed by IndexedDB via Dexie so it works with zero backend/accounts. */
 export function useFavoriteSlugs(): Set<string> {
   const favorites = useLiveQuery(async () => {
     if (!db) return [];

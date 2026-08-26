@@ -2,8 +2,6 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-// Button variants per UI_GUIDELINES.md §4. Radius `sm`, min touch target
-// 44x44px enforced via padding on the default size (§6).
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 rounded-sm text-sm font-medium transition-colors duration-fast disabled:pointer-events-none disabled:opacity-50",
   {

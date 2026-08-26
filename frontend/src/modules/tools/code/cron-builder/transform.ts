@@ -13,12 +13,6 @@ const FIELD_RANGES = [
   { name: "day of week", min: 0, max: 6 },
 ] as const;
 
-/** Parses a standard 5-field cron expression (minute hour dom month dow),
- * validates it, produces a human-readable description, and computes the
- * next N run times by brute-force minute-by-minute simulation (bounded to
- * avoid pathological infinite loops on impossible expressions like
- * Feb 30). No external cron library — the grammar is small enough to hand-roll
- * reliably and predictably. */
 export function parseCron(expression: string, nextRunCount: number, from: Date = new Date()): CronParseResult {
   const trimmed = expression.trim();
   if (trimmed.length === 0) {
@@ -105,16 +99,13 @@ interface CronFields {
   daysOfWeek: number[];
 }
 
-// Uses UTC getters/setters throughout so results are deterministic
-// regardless of the host machine's timezone (tests pin exact UTC ISO
-// strings). The tool surfaces this as "computed in UTC" in its UI.
 function computeNextRuns(fields: CronFields, count: number, from: Date): Date[] {
   const results: Date[] = [];
   const candidate = new Date(from);
   candidate.setUTCSeconds(0, 0);
   candidate.setUTCMinutes(candidate.getUTCMinutes() + 1);
 
-  const maxIterations = 60 * 24 * 366 * 4; // up to ~4 years of minutes
+  const maxIterations = 60 * 24 * 366 * 4;
   let iterations = 0;
 
   while (results.length < count && iterations < maxIterations) {

@@ -1,12 +1,6 @@
 import { ConflictException, UnauthorizedException, BadRequestException } from "@nestjs/common";
 import { OAuthService } from "./oauth.service";
 
-// Only the account-linking methods (linkAccount/listLinkedAccounts/unlinkAccount)
-// are covered here — the sign-in path (handleCallback/findOrCreateUser) is
-// exercised indirectly by e2e/manual testing per this backend's existing
-// pattern (no prior oauth.service.spec.ts existed). GitHub's token+profile
-// exchange is stubbed via a mocked global `fetch` rather than hitting the
-// real API, same approach as this file's sibling specs use for external I/O.
 describe("OAuthService — account linking", () => {
   const GITHUB_PROFILE = { id: 42, login: "octocat", email: "octo@example.com", avatar_url: "https://x/a.png", name: "Octo Cat" };
 

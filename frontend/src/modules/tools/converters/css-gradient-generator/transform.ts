@@ -1,9 +1,6 @@
 import type { CssGradientGeneratorOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Hand-rolled CSS gradient string generation — pure string formatting, no
- * library or DOM dependency, so this is fully synchronous and trivially
- * testable. Follows the shared `{ output, error }` transform contract. */
 export function generateGradientCss(options: CssGradientGeneratorOptions): TransformResult {
   if (options.stops.length < 2) {
     return { output: "", error: { message: "A gradient needs at least 2 color stops." } };

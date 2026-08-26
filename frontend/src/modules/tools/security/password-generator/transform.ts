@@ -14,9 +14,6 @@ export interface PasswordResult {
   error: string | null;
 }
 
-/** Generates a password from a uniformly-sampled CSPRNG, avoiding modulo
- * bias via rejection sampling. Accepts an injectable random source for
- * deterministic testing. */
 export function generatePassword(
   options: PasswordGeneratorOptions,
   randomBytes: (length: number) => Uint8Array = (n) => crypto.getRandomValues(new Uint8Array(n)),
@@ -43,7 +40,7 @@ function randomStringFromPool(
   pool: string,
   randomBytes: (length: number) => Uint8Array,
 ): string {
-  // Rejection sampling to avoid modulo bias.
+
   const maxUnbiased = Math.floor(256 / pool.length) * pool.length;
   let result = "";
   while (result.length < length) {

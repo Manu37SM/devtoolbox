@@ -8,27 +8,13 @@ import { CurrentUser, type AuthenticatedUser } from "../auth/decorators/current-
 import { PlanThrottle } from "../../common/rate-limit/plan-throttle.decorator";
 import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 
-/** Plugin marketplace — API.md §18. Listing/running is public; creating and
- * submitting versions requires a signed-in user; review-queue actions
- * additionally require `User.isAdmin` (checked in the service layer, same
- * convention as OrganizationsService's role checks).
- *
- * `@PlanThrottle` must be applied per-method, not per-class: `PlanThrottleGuard`
- * reads its config off `context.getHandler()` only (see plan-throttle.guard.ts),
- * so a class-level `@PlanThrottle` is silently never read — a real bug caught
- * in this session's audit-hardening pass (AUDIT_REPORT.md §19), fixed here by
- * giving each mutating route its own explicit throttle instead of one shared
- * class-level config. `submitVersion` gets a deliberately tighter limit than
- * the others — it's the one route that can move up to `MAX_WASM_BYTES` (2MB)
- * of data per call, so a shared 120/hr limit across all routes would have
- * let a single user push ~240MB/hour of stored WASM blobs. */
 @Controller("plugins")
 export class PluginsController {
   constructor(private readonly pluginsService: PluginsService) {}
 
   @PlanThrottle({
     route: "plugins-create",
-    anonymous: { limit: 1, ttlSeconds: 3_600 }, // unreachable — JwtAuthGuard blocks anonymous callers first
+    anonymous: { limit: 1, ttlSeconds: 3_600 },
     free: { limit: 20, ttlSeconds: 3_600 },
     pro: { limit: 20, ttlSeconds: 3_600 },
   })
@@ -52,7 +38,7 @@ export class PluginsController {
 
   @PlanThrottle({
     route: "plugins-review-queue",
-    anonymous: { limit: 1, ttlSeconds: 3_600 }, // unreachable — JwtAuthGuard blocks anonymous callers first
+    anonymous: { limit: 1, ttlSeconds: 3_600 },
     free: { limit: 120, ttlSeconds: 3_600 },
     pro: { limit: 120, ttlSeconds: 3_600 },
   })
@@ -86,13 +72,9 @@ export class PluginsController {
     return this.pluginsService.getRunPayload(slug, user?.userId);
   }
 
-  // Deliberately tighter than every other route on this controller — see
-  // the class-level doc comment above. 10/hour is generous for legitimate
-  // iterative development (a human publishing new versions by hand) while
-  // bounding the worst case to ~20MB/hour of newly stored WASM per user.
   @PlanThrottle({
     route: "plugins-submit-version",
-    anonymous: { limit: 1, ttlSeconds: 3_600 }, // unreachable — JwtAuthGuard blocks anonymous callers first
+    anonymous: { limit: 1, ttlSeconds: 3_600 },
     free: { limit: 10, ttlSeconds: 3_600 },
     pro: { limit: 10, ttlSeconds: 3_600 },
   })
@@ -112,7 +94,7 @@ export class PluginsController {
 
   @PlanThrottle({
     route: "plugins-review",
-    anonymous: { limit: 1, ttlSeconds: 3_600 }, // unreachable — JwtAuthGuard blocks anonymous callers first
+    anonymous: { limit: 1, ttlSeconds: 3_600 },
     free: { limit: 120, ttlSeconds: 3_600 },
     pro: { limit: 120, ttlSeconds: 3_600 },
   })
@@ -129,7 +111,7 @@ export class PluginsController {
 
   @PlanThrottle({
     route: "plugins-suspend",
-    anonymous: { limit: 1, ttlSeconds: 3_600 }, // unreachable — JwtAuthGuard blocks anonymous callers first
+    anonymous: { limit: 1, ttlSeconds: 3_600 },
     free: { limit: 120, ttlSeconds: 3_600 },
     pro: { limit: 120, ttlSeconds: 3_600 },
   })

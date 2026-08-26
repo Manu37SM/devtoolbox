@@ -1,11 +1,5 @@
-// Unit tests for the pure helpers in image-canvas.ts only. The
-// DOM/Canvas-dependent functions in that file (loadImageSource,
-// loadImageElement, drawAndExport) require a real <canvas> 2D context and
-// image decoder — jsdom (this repo's Vitest environment, see
-// vitest.config.ts which doesn't even set `environment: "jsdom"`) does not
-// implement Canvas 2D or image decoding, so a true encode/decode round
-// trip isn't testable here. Each Module 7 tool's own transform.test.ts
-// documents the same limitation for its transform.ts entry point.
+
+
 import { describe, expect, it } from "vitest";
 import {
   clampQuality,
@@ -97,14 +91,13 @@ describe("mimeToExtension", () => {
 
 describe("dataUrlByteLength", () => {
   it("computes byte length for an unpadded base64 payload", () => {
-    // "hello" -> base64 "aGVsbG8=" (5 bytes, 1 padding char)
+
     const dataUrl = "data:text/plain;base64,aGVsbG8=";
     expect(dataUrlByteLength(dataUrl)).toBe(5);
   });
 
   it("computes byte length for a base64 payload with no padding", () => {
-    // "abcd" (4 bytes) -> base64 "YWJjZA=="... use a 3-byte example instead
-    // "abc" -> "YWJj" (4 chars, 0 padding) = 3 bytes
+
     const dataUrl = "data:text/plain;base64,YWJj";
     expect(dataUrlByteLength(dataUrl)).toBe(3);
   });

@@ -22,8 +22,7 @@ declare global {
 }
 
 export interface TurnstileHandle {
-  /** Call after a failed submit — a Turnstile token is single-use, so the
-   * widget needs a fresh one before the next attempt can succeed. */
+
   reset: () => void;
 }
 
@@ -32,18 +31,6 @@ interface TurnstileWidgetProps {
   onExpire?: () => void;
 }
 
-/**
- * Cloudflare Turnstile widget — frontend half of checklist item #12 (bot
- * protection). Backend verification already shipped in
- * backend/src/common/captcha/captcha.service.ts; this is what actually
- * renders the checkbox for a user to interact with, previously missing
- * (see AUDIT_REPORT.md §26.4's disclosed follow-up).
- *
- * Renders nothing when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` isn't set — mirrors
- * CaptchaService's "skip verification if TURNSTILE_SECRET_KEY isn't
- * configured" default, so this component is safe to drop into a form
- * unconditionally without breaking local dev (which has no Turnstile key).
- */
 export const TurnstileWidget = forwardRef<TurnstileHandle, TurnstileWidgetProps>(function TurnstileWidget(
   { onVerify, onExpire },
   ref,
@@ -74,13 +61,7 @@ export const TurnstileWidget = forwardRef<TurnstileHandle, TurnstileWidgetProps>
       if (window.turnstile) window.turnstile.remove(id);
       widgetIdRef.current = null;
     };
-    // Deliberately excludes onVerify/onExpire — re-running this effect would
-    // tear down and re-render the widget (a visible flicker + a wasted
-    // challenge) every time the parent re-renders with a new inline
-    // callback. Both callers pass a stable setState function (or a thin
-    // wrapper around one), so the closures captured here don't go stale in
-    // a way that matters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [siteKey, scriptReady]);
 
   if (!siteKey) return null;

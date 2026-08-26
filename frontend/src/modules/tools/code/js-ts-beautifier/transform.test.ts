@@ -63,7 +63,7 @@ describe("beautifyJsTs — minify mode", () => {
       mode: "minify",
     });
     expect(result.error).toBeNull();
-    // eslint-disable-next-line no-eval
+
     const globalThisLike: { __r?: number } = {};
     new Function("globalThis", result.output)(globalThisLike);
     expect(globalThisLike.__r).toBe(42);

@@ -23,7 +23,7 @@ describe("generatePalette", () => {
     expect(result.colors).toHaveLength(5);
     expect(result.colors.every((c) => c.h === 0)).toBe(true);
     expect(result.colors.every((c) => c.s === 100)).toBe(true);
-    // Lightness should be strictly increasing across the shades.
+
     const lightnesses = result.colors.map((c) => c.l);
     expect(lightnesses).toEqual([...lightnesses].sort((a, b) => a - b));
     expect(new Set(lightnesses).size).toBe(5);

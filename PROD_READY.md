@@ -21,7 +21,8 @@ If you get stuck on any step, the relevant doc is linked — `AUDIT_REPORT.md` e
 
 | Service | What it's for | Free tier? | Card required? |
 |---|---|---|---|
-| Render | Backend hosting + Postgres + Redis | Yes, permanent | No |
+| Render | Backend hosting + Redis | Yes, permanent | No |
+| Neon | Postgres database | Yes, permanent (with usage limits) | No |
 | Vercel | Frontend hosting | Yes, permanent | No |
 | Sentry | Error tracking | Yes, permanent (Developer plan) | No |
 | Resend | Sending emails (verify/reset) | Yes, 3,000 emails/month | No |
@@ -64,7 +65,7 @@ These live in the Render dashboard once deployed (see §6), and in a local `.env
 
 | Variable | What it is | How to get it |
 |---|---|---|
-| `DATABASE_URL` | Postgres connection string | Paste in yourself — see §6 step 3 for creating the database and getting this string (`render.yaml` doesn't provision Postgres itself, to avoid conflicting with Render's one-free-instance-per-account limit if you already run another app there) |
+| `DATABASE_URL` | Postgres connection string | Paste in yourself — see §6 step 3 for creating a Neon project/database and getting this string (`render.yaml` doesn't provision Postgres at all — it now lives on Neon, a separate provider from Render) |
 | `REDIS_URL` | Redis connection string | **Auto-filled by Render** — see §6 |
 | `JWT_ACCESS_SECRET` | Signs login session tokens | Run the command in §2, paste the output |
 | `JWT_REFRESH_SECRET` | Signs long-lived refresh tokens | Run the command in §2 again — must be a **different** value from `JWT_ACCESS_SECRET` |
@@ -164,7 +165,8 @@ Anything prefixed `NEXT_PUBLIC_` is visible to anyone who views your site's sour
 
 ## 5. Is this actually free? Service-by-service
 
-- **Render (backend + Postgres + Redis)** — genuinely free, no card. Trade-offs worth knowing: the free web service goes to sleep after 15 minutes with no traffic (next request takes ~30-60 seconds to wake it up — fine for a personal project, noticeable for real users); free Postgres is deleted 30 days after creation (with a 14-day grace period), unless you upgrade to a paid instance type before then — put a calendar reminder for day 25 if you're staying on free. Free Redis is in-memory only and clears on restart, which is fine for this app's usage (job queue + rate-limit counters, nothing that needs to survive a restart).
+- **Render (backend + Redis)** — genuinely free, no card. Trade-offs worth knowing: the free web service goes to sleep after 15 minutes with no traffic (next request takes ~30-60 seconds to wake it up — fine for a personal project, noticeable for real users). Free Redis is in-memory only and clears on restart, which is fine for this app's usage (job queue + rate-limit counters, nothing that needs to survive a restart).
+- **Neon (Postgres)** — genuinely free, no card, and not subject to Render's one-free-instance-per-account limit (each Neon project is its own dedicated database). Trade-off worth knowing: Neon's free plan autosuspends the compute after a period of inactivity, so the first query after a quiet spell pays a brief cold-start (typically well under Render's ~30-60s, but check Neon's current docs for the exact number since free-tier limits do change over time) — same category of trade-off as Render's sleep, just shorter. Free-tier storage and compute-hour caps also apply; check Neon's pricing page for current numbers before you rely on this for real production volume.
 - **Vercel (frontend)** — free tier is genuinely usable long-term for a project this size, no card needed.
 - **Sentry** — the free "Developer" plan is permanent, no card, with a monthly event cap generous enough for a small app.
 - **Resend** — 3,000 emails/month free, no card. This app only sends transactional emails (verify, reset, invites), so you'd need real user volume to exceed that.
@@ -178,10 +180,12 @@ Anything prefixed `NEXT_PUBLIC_` is visible to anyone who views your site's sour
 
 1. Push this repo to GitHub (if it isn't already).
 2. Go to [render.com](https://render.com) → **Sign Up** (GitHub sign-in is fastest) — no card required.
-3. **Get a Postgres database ready first, before creating the Blueprint.** `render.yaml` intentionally does *not* declare its own `databases:` entry, because Render's free tier allows only one active free Postgres *instance* per account — if you already run another free Postgres-backed app on this account, a Blueprint-managed `devtoolbox-db` fails to create every time this Blueprint syncs ("cannot have more than one active free tier database"), and takes the web service down with it since it depends on that database. Two cases:
-   - **You have no other free Postgres on this Render account:** go to **New → PostgreSQL**, name it (e.g. `devtoolbox-db`), region **Singapore**, plan **Free**, click **Create Database**.
-   - **You already have one** (backing another app): don't create a second instance — instead add a second, separate database to that *existing* instance, so devtoolbox gets its own isolated tables with no data sharing with the other app. Open that existing Postgres service in the Render dashboard → **Connect** tab → copy the **PSQL Command** shown, run it from a terminal with `psql` installed, then at the `psql` prompt run `CREATE DATABASE devtoolbox;` and `\q`.
-   - Either way, end up with a full **Internal Connection String** for the database devtoolbox should use (existing-instance case: same string as the instance's default database, but with the database name at the end changed to `devtoolbox`) — you'll need it in step 5.
+3. **Get a Neon Postgres database ready first, before creating the Blueprint.** `render.yaml` intentionally has no `databases:` entry — Postgres lives on [Neon](https://neon.tech), not Render.
+   - Go to [neon.tech](https://neon.tech) → **Sign Up** (GitHub sign-in is fastest) — no card required.
+   - Click **Create a project**, name it (e.g. `devtoolbox`), pick a region close to your users, and accept the default Postgres version. Neon creates a default database (usually named `neondb`) inside the project — you can rename it or create a new one named `devtoolbox` from the Neon console's **Databases** tab if you'd rather match the name used elsewhere in this doc.
+   - On the project's **Dashboard**, find the **Connection string** panel. Copy the **direct** (non-pooled) connection string — the one *without* `-pooler` in the hostname. Use the direct string for both `DATABASE_URL` and `MIGRATE_DATABASE_URL` below: this app is a single long-running Render web service (not serverless/edge functions juggling many short-lived connections), Prisma already pools connections internally, and `prisma migrate deploy` needs a direct connection rather than one going through Neon's PgBouncer-based pooler. Neon's connection string already includes `?sslmode=require`, which Prisma needs — don't strip it off.
+   - **Already have data in the old Render Postgres database and moving a live app?** Dump it and restore into Neon before switching `DATABASE_URL` over, so you don't lose anything: `pg_dump "$OLD_RENDER_DATABASE_URL" --no-owner --no-privileges -Fc -f devtoolbox.dump` then `pg_restore --no-owner --no-privileges -d "$NEON_DIRECT_URL" devtoolbox.dump` (both commands need `pg_dump`/`pg_restore` installed locally — they ship with any Postgres client install). Do this during a short maintenance window, since writes to the old database after the dump won't carry over. If this is a fresh deploy with no real user data yet, skip this — `prisma migrate deploy` (below) creates the schema fresh on Neon.
+   - You'll need this connection string in step 5.
 4. Click **New → Blueprint**, then pick this repository. Render reads `render.yaml` at the repo root and shows the two resources it defines: the `devtoolbox-api` web service and the `devtoolbox-redis` cache. Click **Apply** — Render creates both. `REDIS_URL` is wired up automatically; `DATABASE_URL` is not (see step 5).
 5. Once created, go to the `devtoolbox-api` service → **Environment** tab, and fill in every variable marked `sync: false` in `render.yaml` — that's `DATABASE_URL` (the connection string from step 3) plus the full list in §3.1 and §3.2 above (skip any optional one you're not using).
 6. Still on the service page, go to **Settings** and turn **Auto-Deploy** off — this repo's `deploy-backend.yml` GitHub Action triggers deploys instead, only after CI passes (see `DEVELOPMENT_GUIDE.md` §7). If you'd rather use Render's own auto-deploy and skip that extra safety gate, leave it on instead and skip step 8.

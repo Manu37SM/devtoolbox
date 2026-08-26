@@ -8,9 +8,6 @@ export interface PasswordAnalysis {
   crackTimeEstimate: string;
 }
 
-/** Small built-in list of extremely common passwords / dictionary words.
- * Not exhaustive — a lightweight local heuristic, not a real breach-corpus
- * lookup (which would require a network call or huge bundled wordlist). */
 const COMMON_PASSWORDS = [
   "password",
   "123456",
@@ -69,9 +66,6 @@ const UPPER_RE = /[A-Z]/;
 const DIGIT_RE = /[0-9]/;
 const SYMBOL_RE = /[^a-zA-Z0-9]/;
 
-/** Detects runs of ascending/descending/repeated characters, e.g. "abcd",
- * "4321", "aaaa" — a length-4 sliding window is enough to catch common
- * keyboard-walk and repetition patterns without being a full analysis. */
 function hasSequentialOrRepeated(password: string): boolean {
   const lower = password.toLowerCase();
   for (let i = 0; i <= lower.length - 4; i++) {
@@ -146,15 +140,11 @@ export function analyzePassword(password: string): PasswordAnalysis {
   const charsetSize = estimateCharsetSize(password);
   let entropyBits = password.length * Math.log2(charsetSize);
 
-  // Penalize entropy for known-weak patterns since the naive charset-based
-  // estimate overstates real-world guessability of common/sequential strings.
   if (isCommon) entropyBits = Math.min(entropyBits, 12);
   if (isSequentialOrRepeated) entropyBits *= 0.5;
 
   entropyBits = Math.round(entropyBits * 10) / 10;
 
-  // Rough offline crack-time estimate assuming 10 billion guesses/sec
-  // (fast offline attack against a weakly-hashed or unsalted store).
   const guessesPerSecond = 1e10;
   const combinations = Math.pow(2, entropyBits);
   const crackTimeEstimate = formatCrackTime(combinations / 2 / guessesPerSecond);
@@ -183,7 +173,6 @@ export function analyzePassword(password: string): PasswordAnalysis {
     score = 4;
   }
 
-  // Cap score when diversity is very low, regardless of length-driven entropy.
   if (classCount <= 1 && score > 1) score = 1;
 
   const labels: readonly PasswordStrengthLabel[] = ["Very Weak", "Weak", "Fair", "Strong", "Very Strong"];

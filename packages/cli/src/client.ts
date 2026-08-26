@@ -4,12 +4,6 @@ export class CliError extends Error {}
 
 const DEFAULT_BASE_URL = "https://api.devtoolbox.dev/v1";
 
-/** Thin fetch wrapper over the Public API (API.md §12). Reads the API key
- * from `DEVTOOLBOX_API_KEY` (never a CLI flag — flags end up in shell
- * history / process lists) and the base URL from `DEVTOOLBOX_API_URL`
- * (override for local/staging backends), matching how every other server
- * call in this codebase resolves its base URL from an env var
- * (frontend/src/lib/api-client.ts's NEXT_PUBLIC_API_BASE_URL). */
 export class DevToolboxClient {
   private readonly apiKey: string;
   private readonly baseUrl: string;
@@ -47,12 +41,8 @@ export class DevToolboxClient {
 
     if (!response.ok) {
       let message = `Request failed (${response.status})`;
-      try {
-        const data = (await response.json()) as { error?: { message?: string } };
-        if (data?.error?.message) message = data.error.message;
-      } catch {
-        // non-JSON error body — keep the generic message
-      }
+      const data = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+      if (data?.error?.message) message = data.error.message;
       throw new CliError(message);
     }
 

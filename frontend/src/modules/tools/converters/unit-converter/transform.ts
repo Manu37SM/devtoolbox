@@ -1,16 +1,9 @@
 import type { UnitConverterOptions } from "./schema";
 
-/** This tool's natural shape is "compute a value plus a reference table",
- * not a single input→output string, so `convertUnit` returns
- * `{ result, allUnits, error }` — see DEVELOPMENT_GUIDE.md's allowance for
- * a different return shape when the string contract doesn't fit. Pure,
- * hand-rolled unit conversion tables (multiplier to each category's base
- * unit); no external unit-conversion library is used. */
-
 export interface UnitDefinition {
   id: string;
   label: string;
-  /** Multiplier to convert 1 of this unit into the category's base unit. */
+
   toBase: number;
 }
 

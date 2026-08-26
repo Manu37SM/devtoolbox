@@ -6,11 +6,6 @@ import { encryptSecret } from "../../common/crypto/secret-encryption";
 
 const MASTER_KEY = Buffer.alloc(32, 7).toString("base64");
 
-// jose's RS256 verification talks to a live JWKS endpoint by design — mocked
-// entirely here, same rationale billing.service.spec.ts mocks the `razorpay`
-// SDK: this test suite verifies SsoService's own logic (state handling,
-// nonce checks, JIT provisioning, error paths), not jose's or node-saml's
-// correctness, which are out of scope for this codebase to re-test.
 const mockJwtVerify = jest.fn();
 jest.mock("jose", () => ({
   jwtVerify: (...args: unknown[]) => mockJwtVerify(...args),
@@ -121,7 +116,7 @@ describe("SsoService", () => {
         oidcClientId: "client-1",
         oidcClientSecret: "shh",
       });
-      expect(result.domain).toBe("acme.com"); // lowercased
+      expect(result.domain).toBe("acme.com");
       expect(result.oidcHasClientSecret).toBe(true);
       expect((prisma.ssoConnection.create as jest.Mock).mock.calls[0][0].data.oidcClientSecretEnc).not.toBe("shh");
     });
@@ -287,7 +282,7 @@ describe("SsoService", () => {
 
       expect(prisma.user.create).not.toHaveBeenCalled();
       expect(prisma.user.update).toHaveBeenCalled();
-      // Already a member — no duplicate membership created.
+
       expect(prisma.organizationMember.create).not.toHaveBeenCalled();
     });
 
@@ -326,15 +321,9 @@ describe("SsoService", () => {
       );
     });
 
-    // Regression test for the account-takeover finding in AUDIT_REPORT.md
-    // §23.5: an SsoConnection is fully configured by its org's OWNER,
-    // including which IdP it trusts — nothing before this check stopped a
-    // connection at attacker-controlled-idp.example.com from asserting an
-    // email at a domain it has no relationship to, which would otherwise
-    // link the login to an existing victim account at that email.
     it("rejects an asserted email whose domain doesn't match the connection's domain", async () => {
       const prisma = makePrisma({
-        ssoConnection: { findUnique: jest.fn().mockResolvedValue(connection) }, // connection.domain = "acme.com"
+        ssoConnection: { findUnique: jest.fn().mockResolvedValue(connection) },
         ssoIdentity: { findUnique: jest.fn().mockResolvedValue(null) },
       });
       const service = new SsoService(prisma, makeConfig(), makeAuth());
@@ -390,13 +379,9 @@ describe("SsoService", () => {
       await expect(service.handleSamlCallback("resp", "conn-2", "https://x", {})).rejects.toThrow(UnauthorizedException);
     });
 
-    // Same account-takeover regression as the OIDC test above (AUDIT_REPORT.md
-    // §23.5) — a SAML connection's entryPoint/cert are equally attacker-
-    // supplied at connection-creation time, so an assertion's email must be
-    // bound to the connection's own claimed domain too.
     it("rejects an asserted email whose domain doesn't match the connection's domain", async () => {
       const prisma = makePrisma({
-        ssoConnection: { findUnique: jest.fn().mockResolvedValue(connection) }, // connection.domain = "acme.com"
+        ssoConnection: { findUnique: jest.fn().mockResolvedValue(connection) },
         ssoIdentity: { findUnique: jest.fn().mockResolvedValue(null) },
       });
       const service = new SsoService(prisma, makeConfig(), makeAuth());

@@ -4,7 +4,7 @@ import { formatYaml } from "./transform";
 describe("formatYaml", () => {
   it("normalizes indentation", () => {
     const result = formatYaml("a:\n      1\nb: 2\n", { indent: 2 });
-    // loose input is re-dumped consistently regardless of source spacing
+
     expect(result.error).toBeNull();
   });
 

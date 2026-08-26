@@ -43,7 +43,7 @@ export function QrCodeGeneratorToolView() {
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         <div className="flex items-center justify-center rounded-md border border-border-subtle bg-bg-raised p-6">
           {dataUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+
             <img src={dataUrl} alt="Generated QR code" className="max-w-full" />
           ) : (
             <span className="text-sm text-text-muted">Enter text to generate a QR code</span>

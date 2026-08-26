@@ -1,10 +1,4 @@
-// Curated, self-contained transforms for the browser extension's context
-// menu. Deliberately NOT imported from frontend/src/modules/tools/*/transform.ts
-// — those are pure by contract (CLAUDE.md rule 3) but live behind Next.js
-// path aliases/tooling not meant to cross into this package's esbuild
-// pipeline. Same precedent as the Public API's hash/json-validate endpoints
-// (see AUDIT_REPORT.md §14.1 and §16). Zero DOM dependency — pure string in,
-// string out (or throws), same discipline as any transform.ts in the app.
+
 
 export interface TransformResult {
   ok: boolean;
@@ -57,10 +51,6 @@ export function urlDecode(input: string): TransformResult {
   }
 }
 
-// Decodes only — never verifies signatures (no key material available
-// client-side, and verification isn't the point of a clipboard utility).
-// Output is clearly labeled as unverified so it can't be mistaken for a
-// trust decision.
 export function jwtDecode(input: string): TransformResult {
   const parts = input.trim().split(".");
   const [headerPart, payloadPart] = parts;

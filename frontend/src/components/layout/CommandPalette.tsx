@@ -10,9 +10,6 @@ import { searchTools } from "@/lib/fuzzy-search";
 import { detectToolForContent } from "@/lib/smart-detect";
 import { getToolBySlug } from "@/lib/registry";
 
-/** Global ⌘K / Ctrl+K launcher (UI_GUIDELINES.md §5, FEATURE.md P0
- * cross-cutting feature): fuzzy search by name/alias/description, plus
- * smart-paste detection ("This looks like a JWT — open JWT Decoder?"). */
 export function CommandPalette() {
   const { isOpen, open, close, toggle } = useCommandPaletteStore();
   const [query, setQuery] = useState("");

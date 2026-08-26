@@ -13,9 +13,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Representative of the actual input/output shape every dual-pane tool
-// (JSON Formatter, XML Formatter, etc.) renders — see
-// modules/tools/data-format/json-formatter/ToolView.tsx for the real usage.
 export const Default: Story = {
   render: () => (
     <div className="h-[400px] p-4">

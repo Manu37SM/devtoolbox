@@ -30,9 +30,7 @@ export function SvgExporterToolView() {
   }
 
   function handleTextChange(value: string) {
-    // Pasting/typing directly is the "most recently used" input source now
-    // — clear the file name so the dropzone's clear button / filename
-    // label doesn't imply the text still comes from that file.
+
     setFileName(null);
     setSvgMarkup(value);
   }
@@ -91,7 +89,7 @@ export function SvgExporterToolView() {
         {dataUrl && !error && (
           <>
             <div className="flex items-center justify-center rounded-md border border-border-subtle bg-bg-raised p-6">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {}
               <img src={dataUrl} alt="Rasterized result" className="max-w-full" />
             </div>
             <a href={dataUrl} download={`exported.${mimeToExtension(options.outputFormat)}`}>

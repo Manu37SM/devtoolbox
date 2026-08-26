@@ -27,8 +27,7 @@ function sortLines(lines: string[], sort: LineSortDedupeOptions["sort"]): string
     case "length":
       return [...lines].sort((a, b) => a.length - b.length);
     case "shuffle": {
-      // Fisher-Yates shuffle using Math.random() — not deterministic, and
-      // not intended to be; tests only assert the result is a permutation.
+
       const result = [...lines];
       for (let i = result.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));

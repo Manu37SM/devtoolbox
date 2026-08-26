@@ -37,9 +37,6 @@ export const Disabled: Story = {
   args: { variant: "primary", children: "Beautify", disabled: true },
 };
 
-// Every interactive variant on one canvas — a quick visual diff surface
-// and the input `@storybook/addon-a11y` scans for contrast/focus issues
-// across all variants in a single story.
 export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap gap-2">

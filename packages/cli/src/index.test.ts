@@ -2,11 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { main } from "./index";
 
-// Only the argument-validation paths that return before ever constructing a
-// DevToolboxClient (and therefore never touch the network or require
-// DEVTOOLBOX_API_KEY) are covered here — the network paths are exercised by
-// client.test.ts instead.
-
 test("no command prints help and exits 1", async () => {
   assert.equal(await main([]), 1);
 });

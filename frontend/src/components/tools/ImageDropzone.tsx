@@ -4,31 +4,18 @@ import { useCallback, useId, useRef, useState } from "react";
 import { UploadCloud, X } from "lucide-react";
 
 interface ImageDropzoneProps {
-  /** Called with the selected/dropped file. Callers are responsible for
-   * validating it's actually an image if `accept` alone isn't a strong
-   * enough guarantee (drag-and-drop can bypass `accept`'s filtering). */
+
   onFileSelect: (file: File) => void;
-  /** MIME/extension filter passed to the underlying `<input type="file">` —
-   * doesn't restrict drag-and-drop, only the native file picker. */
+
   accept?: string;
   label?: string;
-  /** Optional preview shown once a file's been picked (e.g. an `<img>` or
-   * `<canvas>` the caller renders) — the dropzone itself stays stateless
-   * about the file's contents, it just hands back the raw `File`. */
+
   previewSlot?: React.ReactNode;
-  /** Shown next to the label when a file is currently loaded, with a
-   * clear (×) button — callers pass `null` to hide this row entirely. */
+
   currentFileName?: string | null;
   onClear?: () => void;
 }
 
-/** Shared drag-and-drop / click-to-browse image input used across Module 7
- * (image/graphics) tools — extracted here instead of duplicated per tool
- * since every image tool needs the same upload UX (DEVELOPMENT_GUIDE.md
- * §"Compose, don't rebuild" / CLAUDE.md rule 4). Purely a file-picker: it
- * doesn't read, decode, or preview the file itself — that's each tool's
- * `transform.ts`/ToolView concern, since what counts as "valid" and how to
- * preview it differs per tool (raster image vs. SVG markup vs. QR code). */
 export function ImageDropzone({
   onFileSelect,
   accept = "image/*",

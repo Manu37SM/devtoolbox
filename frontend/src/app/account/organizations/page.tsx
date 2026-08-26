@@ -10,11 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
-// Team workspaces — API.md §17. MVP scope: org CRUD, member roles, shared
-// snippets/pipelines, an org AI-usage dashboard. No SSO, no custom
-// branding, no email-token invite flow in this pass (ARCHITECTURE.md
-// §14.2, AUDIT_REPORT.md §17.2) — members are added directly by email if
-// they already have a DevToolbox account.
 export default function OrganizationsPage() {
   const router = useRouter();
   const { status } = useAuthStore();

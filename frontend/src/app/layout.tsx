@@ -19,22 +19,12 @@ export const metadata: Metadata = {
   },
   description:
     "60+ free, AI-augmented developer tools: JSON/YAML/XML converters, encoders, hashers, formatters, and more. Client-side, private, no signup required.",
-  // PWA/offline support (FEATURE.md's Cross-Cutting Platform Features, P1).
-  // `manifest` is a first-class field on Next 15's `Metadata` type, so we
-  // use that instead of a hand-written `<link rel="manifest">` — see
-  // frontend/public/manifest.json for the actual manifest, and
-  // frontend/public/sw.js for the service worker it pairs with.
+
   manifest: "/manifest.json",
 };
 
-// Matches manifest.json's theme_color, which in turn matches the light-mode
-// --color-accent design token in globals.css.
 const themeColor = "#4f46e5";
 
-// Blocking inline script reads the persisted theme preference before first
-// paint so there's no flash-of-unstyled-theme (UI_GUIDELINES.md §3).
-// Reads the same localStorage key + JSON envelope shape that
-// `store/theme-store.ts`'s zustand-persist writes — keep these in sync.
 const themeInitScript = `
 (function () {
   try {

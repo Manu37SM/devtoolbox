@@ -6,13 +6,6 @@ export interface DiffOp {
   value: string;
 }
 
-// Line tokens are plain line content with no embedded newline — this
-// means a line's identity for diffing purposes doesn't depend on whether
-// it happens to be the last line in the document (avoids the classic bug
-// where appending a line makes the *previous* last line look "changed"
-// just because it gained a trailing newline). The newline is reintroduced
-// by `mergeConsecutive`'s joiner when adjacent same-type lines are
-// combined into one display chunk (standard unified-diff style output).
 function tokenize(text: string, mode: TextDiffOptions["mode"]): string[] {
   switch (mode) {
     case "line":
@@ -36,10 +29,6 @@ function normalizeToken(token: string, options: TextDiffOptions): string {
   return t;
 }
 
-/** Line/word/char diff via the classic LCS (longest common subsequence)
- * dynamic-programming algorithm over tokens. O(n*m) — fine for the
- * typical "paste two versions of a file" use case; very large inputs
- * (>~2000 tokens per side) should move to a Worker (isWorkerEligible). */
 export function diffText(before: string, after: string, options: TextDiffOptions): DiffOp[] {
   const a = tokenize(before, options.mode);
   const b = tokenize(after, options.mode);
@@ -50,8 +39,6 @@ export function diffText(before: string, after: string, options: TextDiffOptions
   return mergeConsecutive(ops, joinerFor(options.mode));
 }
 
-/** Token-level (unmerged) diff stats — one count per token (line/word/char
- * depending on mode), not per merged display chunk. */
 export function diffTokenStats(before: string, after: string, options: TextDiffOptions): DiffStats {
   const a = tokenize(before, options.mode);
   const b = tokenize(after, options.mode);

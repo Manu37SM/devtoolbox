@@ -23,23 +23,18 @@ function slugifyLine(line: string, options: SlugifyOptions): string {
   const sep = options.separator;
   const escapedSep = escapeRegExp(sep);
 
-  // Replace anything that isn't a letter, digit, or the chosen separator
-  // with the separator itself.
   const nonAllowedRe = new RegExp(`[^a-zA-Z0-9${escapedSep}]+`, "g");
   value = value.replace(nonAllowedRe, sep);
 
-  // Collapse consecutive separators.
   const collapseRe = new RegExp(`${escapedSep}{2,}`, "g");
   value = value.replace(collapseRe, sep);
 
-  // Trim leading/trailing separators.
   const trimRe = new RegExp(`^${escapedSep}+|${escapedSep}+$`, "g");
   value = value.replace(trimRe, "");
 
   if (options.maxLength !== undefined && value.length > options.maxLength) {
     value = value.slice(0, options.maxLength);
-    // Avoid cutting mid-separator-run: trim any trailing separator left
-    // over from truncation.
+
     value = value.replace(trimRe, "");
   }
 

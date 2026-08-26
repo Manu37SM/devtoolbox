@@ -1,15 +1,5 @@
 import type { HtmlJsxOptions } from "./schema";
 
-/** Pure, DOM-free HTML → JSX converter. Implemented as regex-based tag and
- * attribute rewriting rather than via `DOMParser` — this repo's transform.ts
- * files must have zero DOM dependency so they stay safe to run in
- * Workers/SSR/Vitest (this project has no jsdom/happy-dom test environment
- * configured — see frontend/vitest.config.ts — and no "DOM" lib in
- * tsconfig.base.json, so `DOMParser` isn't available at type-check or test
- * time). This mirrors the established pattern in
- * text/markdown-html/transform.ts, which hand-rolls its Markdown↔HTML
- * conversion instead of touching the DOM. */
-
 export interface HtmlJsxResult {
   output: string;
   error: { message: string } | null;
@@ -94,8 +84,6 @@ function styleAttrToJsx(styleValue: string): string {
   return `{{ ${props.join(", ")} }}`;
 }
 
-// Matches one HTML attribute token: `name`, `name="value"`, `name='value'`,
-// or `name=unquoted`.
 const ATTR_TOKEN_RE = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
 
 function convertAttributes(raw: string): string {
@@ -114,8 +102,7 @@ function convertAttributes(raw: string): string {
     const lowerName = rawName.toLowerCase();
 
     if (!hasValue) {
-      // Boolean/valueless attribute (e.g. `disabled`, `checked`) — kept
-      // bare, which JSX treats as `attr={true}`.
+
       parts.push(mapAttrName(rawName));
       continue;
     }
@@ -158,8 +145,7 @@ export function htmlToJsx(html: string, options: HtmlJsxOptions): HtmlJsxResult 
       const isVoid = VOID_ELEMENTS.has(tagName.toLowerCase());
 
       if (isClosing) {
-        // A stray closing tag for a void element is invalid HTML — drop it
-        // rather than emitting an unmatched `</img>` etc.
+
         if (isVoid && options.selfClosingVoidElements) return "";
         return `</${tagName}>`;
       }

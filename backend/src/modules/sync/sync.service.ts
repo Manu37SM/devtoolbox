@@ -7,10 +7,6 @@ import { decryptPreview, encryptPreview } from "../../common/crypto/history-encr
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
-/** Favorites + History sync — API.md §4-5. Every method takes `userId`
- * from the JWT (never trusts a client-supplied ID) and every query/mutate
- * is scoped `where: { userId }`, per CLAUDE.md rule 6 / DATABASE.md §1's
- * ownership-check principle. */
 @Injectable()
 export class SyncService {
   constructor(
@@ -18,7 +14,6 @@ export class SyncService {
     private readonly config: ConfigService,
   ) {}
 
-  // ── Favorites ───────────────────────────────────────────────────────
   async listFavorites(userId: string) {
     return this.prisma.favorite.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
   }
@@ -35,7 +30,6 @@ export class SyncService {
     await this.prisma.favorite.deleteMany({ where: { userId, toolSlug } });
   }
 
-  // ── History ─────────────────────────────────────────────────────────
   async listHistory(userId: string, opts: { toolSlug?: string; cursor?: string; limit?: number }) {
     const limit = Math.min(opts.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
     const entries = await this.prisma.historyEntry.findMany({

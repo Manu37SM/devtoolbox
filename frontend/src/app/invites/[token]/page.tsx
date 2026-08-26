@@ -12,13 +12,6 @@ interface InviteAcceptPageProps {
   params: Promise<{ token: string }>;
 }
 
-// Accept an org invite (AUDIT_REPORT.md §21). Not signed in? Send them to
-// /login or /register with `?next=` pointing back here, so they land right
-// back on this page (and this effect fires again) once they've
-// authenticated — see login/register pages' `next` handling. The backend,
-// not this page, is what actually verifies the invite's email matches the
-// signed-in account; a mismatch shows as a clear error here rather than
-// silently failing.
 export default function InviteAcceptPage({ params }: InviteAcceptPageProps) {
   const { token } = use(params);
   const router = useRouter();

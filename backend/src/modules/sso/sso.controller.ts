@@ -19,28 +19,14 @@ const SSO_ADMIN_THROTTLE = {
   pro: { limit: 60, ttlSeconds: 3_600 },
 } as const;
 
-// 10/min/IP, same budget as the existing OAuth/auth login endpoints
-// (API.md §12) — this is an unauthenticated, IdP-facing surface.
 const SSO_LOGIN_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 
-/**
- * Org-level SSO (API.md §17.5, AUDIT_REPORT.md §23) — the last item deferred
- * from the original team workspaces MVP pass. Split across two route
- * groups: OWNER/ADMIN configuration nested under `/organizations/:id/sso`
- * (reuses org membership as the authorization boundary, same as every other
- * org-scoped route), and public IdP-facing login endpoints under `/sso/*`
- * (discovery, OIDC authorize+callback, SAML authorize+callback) which by
- * definition can't require a DevToolbox session — that's the thing being
- * established.
- */
 @Controller()
 export class SsoController {
   constructor(
     private readonly ssoService: SsoService,
     private readonly config: ConfigService,
   ) {}
-
-  // ── Admin configuration ────────────────────────────────────────────────
 
   @PlanThrottle(SSO_ADMIN_THROTTLE)
   @UseGuards(JwtAuthGuard, PlanThrottleGuard)
@@ -80,15 +66,11 @@ export class SsoController {
     await this.ssoService.deleteConnection(user.userId, id);
   }
 
-  // ── Public discovery ───────────────────────────────────────────────────
-
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Get("sso/discover")
   async discover(@Query("domain") domain: string) {
     return this.ssoService.discover(domain ?? "");
   }
-
-  // ── OIDC login flow ────────────────────────────────────────────────────
 
   @Throttle(SSO_LOGIN_THROTTLE)
   @Get("sso/oidc/authorize")
@@ -112,17 +94,6 @@ export class SsoController {
     this.setRefreshCookie(res, refreshToken);
     return tokens;
   }
-
-  // ── SAML login flow ────────────────────────────────────────────────────
-  // SP-initiated: /sso/saml/authorize returns the IdP redirect URL for the
-  // frontend to navigate to. The IdP then POSTs the assertion directly back
-  // to /sso/saml/callback (the ACS URL) as a browser form submission, not a
-  // frontend fetch — SAML doesn't support OIDC/OAuth's "frontend obtains a
-  // code and POSTs JSON" shape, since the assertion is only ever delivered
-  // via that form POST. The callback therefore sets the session cookie
-  // itself and redirects to the frontend, which picks up the session via
-  // its existing silent-refresh-on-load flow rather than receiving tokens
-  // directly in this response.
 
   @Throttle(SSO_LOGIN_THROTTLE)
   @Get("sso/saml/authorize")
@@ -162,10 +133,7 @@ export class SsoController {
   }
 
   private setRefreshCookie(res: Response, token: IssuedRefreshToken): void {
-    // sameSite: "none" in production — see auth.controller.ts's
-    // setRefreshCookie for why (frontend/backend are different registrable
-    // domains, so this cookie is cross-site and "strict"/"lax" silently
-    // drop it).
+
     const isProduction = this.config.get<string>("NODE_ENV") === "production";
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, token.raw, {
       httpOnly: true,

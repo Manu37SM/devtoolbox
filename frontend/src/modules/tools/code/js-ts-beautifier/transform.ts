@@ -6,17 +6,6 @@ import { minify } from "terser";
 import type { JsTsBeautifierOptions } from "./schema";
 import type { TransformResult } from "@/lib/tool-transform";
 
-/** Formats/minifies JS/TS. Beautify uses Prettier's standalone build;
- * minify uses Terser (both approved per ARCHITECTURE.md §8.2). Async
- * because both libraries' APIs are promise-based; still a pure function
- * otherwise.
- *
- * Terser only understands plain JavaScript — it doesn't strip TypeScript
- * type syntax. Minifying TypeScript would need a transpile-to-JS step
- * first (esbuild/swc/babel-typescript), which isn't part of the approved
- * dependency set for this pass, so TS+minify returns a clear error
- * instead of silently producing wrong output or crashing on `: string`
- * type annotations. */
 export async function beautifyJsTs(input: string, options: JsTsBeautifierOptions): Promise<TransformResult> {
   if (input.trim().length === 0) return { output: "", error: null };
 

@@ -6,12 +6,6 @@ interface ToolShellProps {
   children: React.ReactNode;
 }
 
-/** Page-level layout wrapper every tool page uses: title, description,
- * then the tool's own input/output/options content. Per UI_GUIDELINES.md
- * §4, no tool builds a bespoke top-level layout — this is the only place
- * that owns title/description chrome. Stays a server component itself;
- * the history-recording + favorite-toggle behavior lives in the
- * client-only <ToolPageEffects> child. */
 export function ToolShell({ tool, children }: ToolShellProps) {
   return (
     <div className="mx-auto flex h-[calc(100vh-56px)] max-w-7xl flex-col px-6 py-6">

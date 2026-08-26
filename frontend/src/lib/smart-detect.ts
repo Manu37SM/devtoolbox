@@ -1,15 +1,5 @@
-// Smart-paste detection for the command palette (FEATURE.md cross-cutting
-// feature: "Detects clipboard/paste content shape... and suggests the
-// matching tool"). Pure string heuristics, no dependencies — order matters
-// (more specific patterns checked first) since e.g. a JWT is technically
-// also base64-ish, and a hash's hex digits are also technically base64-ish.
-//
-// Phase 2 note: expanded from the original 6 detectors (JWT, hex color,
-// UUID, timestamp, JSON, Base64) to cover more of the shipped tools — see
-// FEATURE.md's Phase 2 roadmap item "Smart-paste detection completed for
-// the command palette". A `url-parser` detector was added once that P0
-// tool's long-standing gap (marked P0 in FEATURE.md but never actually
-// built) was fixed.
+
+
 export interface SmartDetection {
   toolSlug: string;
   reason: string;
@@ -50,9 +40,7 @@ const DETECTORS: Array<{ test: (s: string) => boolean; toolSlug: string; reason:
     reason: "This looks like CIDR notation",
   },
   {
-    // http(s) URL, single line, no embedded whitespace — checked before
-    // the generic hex/base64 catch-alls but after CIDR (a bare IP/prefix
-    // isn't a URL) since `url-parser` now exists (Phase 2 gap-fix).
+
     test: (s) => !s.includes("\n") && !/\s/.test(s.trim()) && /^https?:\/\/[^\s]+\.[^\s]+/.test(s.trim()),
     toolSlug: "url-parser",
     reason: "This looks like a URL",

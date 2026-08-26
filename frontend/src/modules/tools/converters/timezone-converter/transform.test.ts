@@ -9,7 +9,7 @@ describe("parseAsZonedTime", () => {
 
   it("interprets a wall-clock time in a fixed +5:30 zone (Asia/Kolkata, no DST)", () => {
     const date = parseAsZonedTime("2026-01-01T00:00", "Asia/Kolkata");
-    // 00:00 IST (UTC+5:30) is 18:30 UTC on the previous day.
+
     expect(date?.toISOString()).toBe("2025-12-31T18:30:00.000Z");
   });
 

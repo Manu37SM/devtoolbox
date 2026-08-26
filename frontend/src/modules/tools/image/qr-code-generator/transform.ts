@@ -6,11 +6,6 @@ export interface QrCodeResult {
   error: string | null;
 }
 
-/** Generates a QR code as a PNG data URL using the `qrcode` library
- * (approved per ARCHITECTURE.md §8.2 — hand-rolling Reed-Solomon error
- * correction and the QR matrix layout algorithm is not a reasonable
- * from-scratch implementation). Async since `qrcode`'s toDataURL is
- * promise-based; still side-effect-free otherwise. */
 export async function generateQrCode(text: string, options: QrCodeGeneratorOptions): Promise<QrCodeResult> {
   if (text.length === 0) return { dataUrl: "", error: null };
 
@@ -27,8 +22,6 @@ export async function generateQrCode(text: string, options: QrCodeGeneratorOptio
   }
 }
 
-/** Builds a `WIFI:` payload string for the WiFi QR code variant
- * (FEATURE.md: "incl. WiFi/vCard"). Pure string formatting, no I/O. */
 export function buildWifiPayload(options: {
   ssid: string;
   password: string;
@@ -39,8 +32,6 @@ export function buildWifiPayload(options: {
   return `WIFI:T:${options.encryption};S:${escape(options.ssid)};P:${escape(options.password)};H:${options.hidden ? "true" : "false"};;`;
 }
 
-/** Builds a minimal vCard 3.0 payload string for the vCard QR code
- * variant. */
 export function buildVCardPayload(options: { name: string; phone: string; email: string; org: string }): string {
   const lines = [
     "BEGIN:VCARD",

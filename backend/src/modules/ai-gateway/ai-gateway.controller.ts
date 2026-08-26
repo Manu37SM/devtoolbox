@@ -16,21 +16,12 @@ import { CurrentUser, type AuthenticatedUser } from "../auth/decorators/current-
 import { PlanThrottle } from "../../common/rate-limit/plan-throttle.decorator";
 import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 
-// Per API.md §12: 5/hour anonymous, 60/hour Free, 1000/hour Pro/Team,
-// shared across all four action routes below (a single `/ai/*` budget, not
-// one per endpoint — matches the API.md table's single `/ai/*` row).
 const AI_THROTTLE = {
   anonymous: { limit: 5, ttlSeconds: 3_600 },
   free: { limit: 60, ttlSeconds: 3_600 },
   pro: { limit: 1_000, ttlSeconds: 3_600 },
 } as const;
 
-/**
- * Task-specific AI endpoints — see API.md §9. Every route uses
- * OptionalJwtAuthGuard (anonymous use allowed at a lower quota, same
- * pattern as /net/* and /shares) except GET /ai/usage, which is
- * meaningless without an account.
- */
 @Controller("ai")
 export class AiGatewayController {
   constructor(private readonly aiGatewayService: AiGatewayService) {}

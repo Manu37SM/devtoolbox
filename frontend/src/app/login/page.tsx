@@ -13,11 +13,6 @@ import { TurnstileWidget, type TurnstileHandle } from "@/components/auth/Turnsti
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// Whether the backend will actually enforce a captcha token — mirrors
-// CaptchaService's own "configured?" check (same env var, just the
-// NEXT_PUBLIC_ twin). Used to require a solved widget before submit only
-// when Turnstile is actually turned on; local dev (no site key) is
-// unaffected.
 const TURNSTILE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export default function LoginPage() {
@@ -31,11 +26,7 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // `next` lets a page like /invites/[token] send the user here and get
-  // them back afterward — only ever a same-app relative path (never an
-  // absolute/external URL) since it's only ever set by this codebase's own
-  // links, never echoed from a query param an attacker fully controls
-  // without this check.
+
   const next = searchParams.get("next");
   const redirectTo = next && next.startsWith("/") && !next.startsWith("//") ? next : "/account";
   const setSession = useAuthStore((s) => s.setSession);
@@ -61,8 +52,7 @@ function LoginForm() {
       router.push(redirectTo);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong. Please try again.");
-      // Turnstile tokens are single-use — clear the stale one and make the
-      // user solve it again before the next attempt.
+
       setCaptchaToken(null);
       turnstileRef.current?.reset();
     } finally {

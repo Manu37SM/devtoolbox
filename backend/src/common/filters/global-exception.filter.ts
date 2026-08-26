@@ -4,21 +4,6 @@ import { randomUUID } from "node:crypto";
 import * as Sentry from "@sentry/node";
 import type { ApiErrorBody } from "@devtoolbox/shared";
 
-/**
- * Translates any thrown error into the standard error envelope documented
- * in API.md §1. Never leaks internal error details to the client for
- * unhandled (500) errors.
- *
- * Also the single place unhandled (5xx) errors get reported to Sentry
- * (AUDIT_REPORT.md §24) — 4xx `HttpException`s (validation errors, 403s,
- * 404s, rate limits) are expected control flow, not bugs, and are never
- * sent; sending them would both be noise and risk `exception.message`
- * echoing back user-supplied input (e.g. a Zod validation message quoting
- * part of an invalid payload) into an error-tracking tool, which CLAUDE.md
- * rule 8 explicitly rules out. Only the exception's name/message/stack plus
- * route method+path+status+requestId are attached — never `req.body`,
- * `req.query`, or headers/cookies, exactly the CLAUDE.md rule 8 boundary.
- */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {

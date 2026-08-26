@@ -1,9 +1,6 @@
 import { ConflictException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { PluginsService } from "./plugins.service";
 
-// Minimal valid WASM module: magic number ("\0asm") + version 1. Enough to
-// pass this service's size + magic-number checks without needing a real
-// compiled plugin.
 const MINIMAL_WASM_BASE64 = Buffer.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]).toString("base64");
 
 function makePrisma(
@@ -167,7 +164,7 @@ describe("PluginsService", () => {
       const prisma = makePrisma({
         plugin: { findUnique: jest.fn().mockResolvedValue({ id: "plugin-1", authorUserId: "user-1", status: "PUBLISHED" }) },
       });
-      // $transaction callback needs pluginVersion.create/plugin.update mocked on the tx object it receives.
+
       prisma.$transaction = jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
         fn({
           pluginVersion: { create: jest.fn().mockResolvedValue(createdVersion) },

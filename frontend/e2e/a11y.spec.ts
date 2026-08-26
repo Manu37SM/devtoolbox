@@ -1,13 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-// Fixed set of pages per DEVELOPMENT_GUIDE.md §6 ("component library +
-// fixed set of tool pages, run in CI") — not all 29 tools, since that
-// would be redundant given every tool composes the same audited shared
-// components (ToolShell, DualPane, OutputPane, CodeEditor/Textarea,
-// Button). One page per distinct UI shape this catalog actually has:
-// dual-pane code tool, single-pane form tool, bulk-generator tool, plus
-// the home/catalog page and the command palette overlay.
 const PAGES_UNDER_TEST = [
   { name: "home / catalog", path: "/" },
   { name: "JSON Formatter (dual-pane code tool)", path: "/tools/json-formatter" },
@@ -20,7 +13,7 @@ for (const { name, path } of PAGES_UNDER_TEST) {
   test(`${name} has no detectable axe violations`, async ({ page }) => {
     await page.goto(path);
     const results = await new AxeBuilder({ page })
-      // WCAG 2.1 A/AA per UI_GUIDELINES.md §6's accessibility standard.
+
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
       .analyze();
 

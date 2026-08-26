@@ -27,21 +27,6 @@ export class UsersService {
     return this.toProfile(user);
   }
 
-  /** Soft-delete per DATABASE.md §1 (30-day grace period) — the account
-   * row stays but is excluded from lookups everywhere else via the
-   * `deletedAt` check; hard-purge is a scheduled job, out of scope here.
-   * All sessions are revoked immediately so existing tokens stop working
-   * right away even though the row survives.
-   *
-   * Cancels the user's underlying Razorpay subscription first (closes
-   * AUDIT_REPORT.md §15.2's disclosed gap — soft-delete used to revoke app
-   * access but leave billing running indefinitely). Cancellation happens
-   * *before* the soft-delete transaction, not after: if it fails partway,
-   * we want the account to still show as active/billed rather than
-   * silently deleted-but-still-being-charged. A user with no subscription,
-   * or a server with billing not configured at all, is not an error here —
-   * both are the common case (most users are on the free plan) and must
-   * not block account deletion. */
   async softDelete(userId: string): Promise<void> {
     await this.findActiveUser(userId);
 
@@ -62,9 +47,6 @@ export class UsersService {
     ]);
   }
 
-  /** GDPR-style data export — every table with a `userId` FK, minus
-   * anything secret (password hash, session/verification token hashes).
-   * See API.md §3 `GET /users/me/export`. */
   async exportData(userId: string) {
     await this.findActiveUser(userId);
 

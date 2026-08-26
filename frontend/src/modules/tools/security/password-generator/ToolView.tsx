@@ -24,13 +24,10 @@ export function PasswordGeneratorToolView() {
   });
   const [seed, setSeed] = useState(0);
 
-  // Generated only on the client, after mount, to avoid a server/client
-  // hydration mismatch: generatePassword() uses crypto.getRandomValues, which
-  // returns a different value on every call, including the SSR pass.
   const [result, setResult] = useState<PasswordResult>({ password: "", entropyBits: 0, error: null });
   useEffect(() => {
     setResult(generatePassword(options));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [options, seed]);
   const strength = strengthLabel(result.entropyBits);
 

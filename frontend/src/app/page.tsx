@@ -16,9 +16,6 @@ const MODULE_LABELS: Record<ToolModule, string> = {
   ai: "AI-Powered",
 };
 
-// /tools index — catalog/landing page. Per DEVELOPMENT_GUIDE.md §3 this
-// route also serves as the marketing home for now; a dedicated
-// (marketing) route group can split off once there's copy to justify it.
 export default function HomePage() {
   const byModule = new Map<ToolModule, typeof toolRegistry>();
   for (const tool of toolRegistry) {

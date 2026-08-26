@@ -6,10 +6,6 @@ import { Plus, Trash2, Workflow } from "lucide-react";
 import { db, deletePipeline, type PipelineRecord } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 
-// Pipelines (Phase 2, P1) list view — see FEATURE.md's Cross-Cutting
-// Platform Features table. Follows the /tools catalog page's spacing/
-// typography conventions (frontend/src/app/page.tsx) since there's no
-// dedicated catalog-page primitive to compose yet.
 export default function PipelinesPage() {
   const pipelines = useLiveQuery(async () => {
     if (!db) return [];

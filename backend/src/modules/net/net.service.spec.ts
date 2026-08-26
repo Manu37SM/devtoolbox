@@ -1,9 +1,5 @@
 import { NetService } from "./net.service";
 
-// In-memory fake standing in for the ioredis client — the webhook-inbox
-// methods only use a handful of commands (set/del/exists/rpush/ltrim/
-// expire/lrange), so a minimal fake covering just those is more direct
-// than mocking the real ioredis client's full surface.
 function createFakeRedis() {
   const store = new Map<string, string>();
   const lists = new Map<string, string[]>();
@@ -36,7 +32,7 @@ describe("NetService", () => {
 
   beforeEach(() => {
     redis = createFakeRedis();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     service = new NetService(redis as any);
   });
 

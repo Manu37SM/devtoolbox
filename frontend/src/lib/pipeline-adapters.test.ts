@@ -18,9 +18,7 @@ describe("pipelineCompatibleSlugs", () => {
 
 describe("PIPELINE_COMPATIBLE_TOOLS adapters", () => {
   it("json-formatter beautifies minified JSON", async () => {
-    // `noUncheckedIndexedAccess` makes a `Record<string, X>` lookup return
-    // `X | undefined` — these keys are known-present literal keys of
-    // `PIPELINE_COMPATIBLE_TOOLS` (asserted below), so `!` is safe here.
+
     const adapter = PIPELINE_COMPATIBLE_TOOLS["json-formatter"]!;
     const result = await adapter.run('{"a":1}', adapter.getDefaultOptions());
     expect(result.error).toBeNull();

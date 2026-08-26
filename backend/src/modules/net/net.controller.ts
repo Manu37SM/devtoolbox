@@ -28,24 +28,10 @@ import { OptionalJwtAuthGuard } from "../auth/guards/optional-jwt-auth.guard";
 import { PlanThrottle } from "../../common/rate-limit/plan-throttle.decorator";
 import { PlanThrottleGuard } from "../../common/rate-limit/plan-throttle.guard";
 
-/**
- * Module 8 server-proxied network tools — see API.md §10 and
- * ARCHITECTURE.md §8.4 (tier 2: "server-assisted, ephemeral"). Every route
- * here exists ONLY because the underlying operation can't run client-side
- * (CORS for HTTP Request Tester/URL Previewer, DNS resolution, IP
- * disclosure, or receiving genuinely inbound webhook traffic) — this is
- * the documented, deliberate exception to CLAUDE.md rule 1's "client-side
- * by default," not a rule violation.
- */
 @Controller("net")
 export class NetController {
   constructor(private readonly netService: NetService) {}
 
-  // Per API.md §12: 10/hour anonymous, 60/hour Free, 500/hour Pro/Team.
-  // This tool doesn't require an account to use — OptionalJwtAuthGuard
-  // just identifies the caller *if* they happen to send a valid token, so
-  // signed-in users get their plan's higher limit without auth being
-  // required to reach the route at all.
   @PlanThrottle({
     route: "net-http-request",
     anonymous: { limit: 10, ttlSeconds: 3_600 },
@@ -90,13 +76,6 @@ export class NetController {
     return { events };
   }
 
-  // The actual public inbox URL a user pastes into a third-party
-  // webhook-sender config — must accept every HTTP method and any
-  // content-type, so this is deliberately NOT behind Zod body validation
-  // (the whole point is capturing whatever an external service sends).
-  // No @Throttle override: inbound webhook traffic volume is the point of
-  // the tool, capped instead by WEBHOOK_MAX_EVENTS in the service and the
-  // inbox's own 30-minute TTL.
   @All("webhook-inbox/:id/capture")
   async captureWebhookEvent(@Param("id") id: string, @Req() req: Request) {
     const headers: Record<string, string> = {};

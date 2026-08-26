@@ -29,8 +29,6 @@ export class SnippetsController {
     return this.snippetsService.create(user.userId, dto as Parameters<SnippetsService["create"]>[1]);
   }
 
-  // Two path segments ("organization/:organizationId"), so it never
-  // collides with the single-segment ":id" route below.
   @UseGuards(JwtAuthGuard)
   @Get("organization/:organizationId")
   async listForOrganization(
@@ -45,7 +43,6 @@ export class SnippetsController {
     );
   }
 
-  // Owner or, if isPublic, anyone — hence the optional (not required) guard.
   @UseGuards(OptionalJwtAuthGuard)
   @Get(":id")
   async getOne(@CurrentUser() user: AuthenticatedUser | undefined, @Param("id") id: string) {

@@ -1,8 +1,6 @@
 import { generateUuids } from "../../security/uuid-generator/transform";
 import type { UuidBulkOptions } from "./schema";
 
-/** Thin wrapper around the Module 3 UUID engine (CLAUDE.md "reuse existing
- * shared code" rule) that adds bulk export formatting. */
 export function generateUuidBulk(options: UuidBulkOptions): string {
   const uuids = generateUuids({
     version: options.version,

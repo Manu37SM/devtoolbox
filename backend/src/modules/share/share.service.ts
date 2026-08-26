@@ -9,13 +9,6 @@ const SLUG_LENGTH = 12;
 const DEFAULT_EXPIRY_DAYS = 30;
 const MAX_PAYLOAD_BYTES = 200_000;
 
-/** Short share links — API.md §8. Anonymous creation is allowed
- * (`userId` nullable on ShareLink per DATABASE.md), so ownership for
- * delete only applies when the link *was* created by a signed-in user;
- * anonymous-created links simply can't be deleted early (they still
- * expire on schedule). Optional org attribution + branding on the public
- * view (AUDIT_REPORT.md §22) — a link created without an `organizationId`
- * behaves exactly as before that feature. */
 @Injectable()
 export class ShareService {
   constructor(
@@ -29,11 +22,6 @@ export class ShareService {
       throw new BadRequestException(`Payload too large (${size} bytes, max ${MAX_PAYLOAD_BYTES}).`);
     }
 
-    // Attaching org attribution requires being signed in *and* a member of
-    // that org — an anonymous caller (userId undefined) can never set this,
-    // since there's no caller identity to check membership against, and a
-    // Zod-valid organizationId from a signed-in non-member is rejected
-    // rather than silently dropped (fail loud, not fail open).
     if (dto.organizationId) {
       if (!userId) {
         throw new ForbiddenException("Sign in to share as an organization.");
@@ -54,11 +42,7 @@ export class ShareService {
         userId: userId ?? null,
         organizationId: dto.organizationId ?? null,
         toolSlug: dto.toolSlug,
-        // dto.payload is Zod-validated as Record<string, unknown> (already
-        // JSON-serializable, it came from a parsed request body) but
-        // Prisma's generated Json input type is the stricter
-        // Prisma.InputJsonValue — see pipelines.service.ts's toInputJson
-        // for the same cast, done inline here since it's used once.
+
         payload: dto.payload as Prisma.InputJsonValue,
         expiresAt,
       },
@@ -82,9 +66,6 @@ export class ShareService {
 
     await this.prisma.shareLink.update({ where: { id: link.id }, data: { viewCount: { increment: 1 } } });
 
-    // Branding only shown if the org actually set a name — a share
-    // attributed to a branding-less org still falls back to default
-    // DevToolbox branding, same as a non-org share.
     const branding = link.organization?.brandName
       ? { name: link.organization.brandName, logoUrl: link.organization.brandLogoUrl }
       : null;

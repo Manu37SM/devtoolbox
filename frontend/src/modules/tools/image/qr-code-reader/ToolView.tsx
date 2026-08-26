@@ -59,7 +59,7 @@ export function QrCodeReaderToolView() {
         onClear={handleClear}
         previewSlot={
           previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+
             <img src={previewUrl} alt="Uploaded image to scan for a QR code" className="max-h-[220px] max-w-full object-contain" />
           ) : undefined
         }

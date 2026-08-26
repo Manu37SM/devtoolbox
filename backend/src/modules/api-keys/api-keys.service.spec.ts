@@ -36,7 +36,7 @@ describe("ApiKeysService", () => {
         keyHash: hashToken(result.key),
       }),
     });
-    // The raw key itself is never passed to Prisma.
+
     const createCall = prisma.apiKey.create.mock.calls[0][0];
     expect(createCall.data).not.toHaveProperty("key");
   });

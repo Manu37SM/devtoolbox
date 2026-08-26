@@ -1,13 +1,7 @@
-// Shared types & schemas between frontend and backend.
-// Single source of truth for anything crossing the API boundary — see
-// DEVELOPMENT_GUIDE.md §3 and CLAUDE.md rule 6.
-//
-// Keep this package framework-agnostic (no React, no Nest decorators):
-// pure TypeScript types + Zod schemas only.
+
 
 import { z } from "zod";
 
-// ── Tool module taxonomy (mirrors FEATURE.md) ─────────────────────────────
 export const TOOL_MODULES = [
   "data-format",
   "encoding",
@@ -23,7 +17,6 @@ export const TOOL_MODULES = [
 
 export type ToolModule = (typeof TOOL_MODULES)[number];
 
-// ── Tool registry entry (frontend registry.ts implements arrays of this) ──
 export interface ToolRegistryEntry {
   slug: string;
   name: string;
@@ -38,12 +31,6 @@ export interface ToolRegistryEntry {
   };
 }
 
-// ── Auth / Users DTOs (see API.md §2-3, ARCHITECTURE.md §9) ────────────────
-// `captchaToken` (checklist item #12, bot protection) is optional at the
-// schema layer because CaptchaService.verify() itself no-ops when
-// TURNSTILE_SECRET_KEY isn't configured (e.g. local dev) — see that class's
-// doc comment. In any environment where the secret *is* configured, a
-// missing token is rejected there, not here.
 export const RegisterSchema = z.object({
   email: z.string().email().max(255),
   password: z.string().min(10).max(200),
@@ -62,20 +49,12 @@ export type LoginDto = z.infer<typeof LoginSchema>;
 export const OAuthProviders = ["github", "google"] as const;
 export type OAuthProvider = (typeof OAuthProviders)[number];
 
-// The frontend completes the OAuth authorize redirect itself (constructs
-// the provider's authorize URL, receives the `code` back at a callback
-// route it owns) and POSTs the code here for server-side exchange — the
-// backend never issues a redirect itself, keeping this a plain JSON API
-// like every other route (see API.md §2's single POST callback endpoint).
 export const OAuthCallbackSchema = z.object({
   code: z.string().min(1),
   redirectUri: z.string().url(),
 });
 export type OAuthCallbackDto = z.infer<typeof OAuthCallbackSchema>;
 
-// Response shape for GET /auth/oauth/linked — which providers the signed-in
-// user has connected, for account-settings UI (not a request DTO, so no
-// Zod schema needed; the backend is the only producer).
 export interface LinkedOAuthAccount {
   provider: OAuthProvider;
   createdAt: string;
@@ -120,7 +99,6 @@ export interface AuthTokenResponse {
   user: UserProfile;
 }
 
-// ── Sync DTOs — Favorites / History (see API.md §4-5) ───────────────────────
 export const AddFavoriteSchema = z.object({
   toolSlug: z.string().min(1).max(120),
 });
@@ -146,13 +124,12 @@ export const CursorQuerySchema = z.object({
 });
 export type CursorQueryDto = z.infer<typeof CursorQuerySchema>;
 
-// ── Snippets DTOs (see API.md §6) ───────────────────────────────────────────
 export const CreateSnippetSchema = z.object({
   toolSlug: z.string().min(1).max(120),
   title: z.string().min(1).max(200),
   content: z.string().max(200_000),
   isPublic: z.boolean().optional().default(false),
-  // Phase 4 team workspaces (API.md §17) — caller must be a member of this org.
+
   organizationId: z.string().uuid().optional(),
 });
 export type CreateSnippetDto = z.infer<typeof CreateSnippetSchema>;
@@ -164,9 +141,6 @@ export const UpdateSnippetSchema = z.object({
 });
 export type UpdateSnippetDto = z.infer<typeof UpdateSnippetSchema>;
 
-// ── Server-synced Pipelines DTOs (see API.md §7) — distinct from the
-// client-only pipeline builder's CreatePipelineSchema below, which has no
-// userId/persistence concept. ──────────────────────────────────────────────
 export const CreateSyncedPipelineSchema = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(500).optional(),
@@ -179,7 +153,7 @@ export const CreateSyncedPipelineSchema = z.object({
     )
     .min(1)
     .max(20),
-  // Phase 4 team workspaces (API.md §17) — caller must be a member of this org.
+
   organizationId: z.string().uuid().optional(),
 });
 export type CreateSyncedPipelineDto = z.infer<typeof CreateSyncedPipelineSchema>;
@@ -200,14 +174,10 @@ export const UpdateSyncedPipelineSchema = z.object({
 });
 export type UpdateSyncedPipelineDto = z.infer<typeof UpdateSyncedPipelineSchema>;
 
-// ── Share Links DTOs (see API.md §8) ────────────────────────────────────────
 export const CreateShareLinkSchema = z.object({
   toolSlug: z.string().min(1).max(120),
   payload: z.record(z.unknown()),
-  // Optional org attribution (API.md §8.1, AUDIT_REPORT.md §22) — the
-  // creator must be a member of this org (checked server-side); anonymous
-  // (no access token) callers can never set this, since there's no caller
-  // identity to check membership against.
+
   organizationId: z.string().uuid().optional(),
 });
 export type CreateShareLinkDto = z.infer<typeof CreateShareLinkSchema>;
@@ -218,10 +188,6 @@ export interface ShareLinkResult {
   expiresAt: string | null;
 }
 
-// Org branding shown on a share link's public page when the link was
-// created with an `organizationId` and that org has branding set — `null`
-// means "no org attribution or the org hasn't set branding," in which case
-// the frontend falls back to default DevToolbox branding.
 export interface ShareLinkBranding {
   name: string;
   logoUrl: string | null;
@@ -234,7 +200,6 @@ export interface ShareLinkView {
   branding: ShareLinkBranding | null;
 }
 
-// ── AI Gateway DTOs (see API.md §9) ────────────────────────────────────────
 export const AiExplainRequestSchema = z.object({
   toolSlug: z.string(),
   subject: z.enum(["regex", "cron", "json-schema", "sql"]),
@@ -256,7 +221,6 @@ export const AiDiffSummaryRequestSchema = z.object({
 });
 export type AiDiffSummaryRequest = z.infer<typeof AiDiffSummaryRequestSchema>;
 
-// ── Pipeline DTOs (see API.md §7, DATABASE.md) ─────────────────────────────
 export const PipelineStepSchema = z.object({
   toolSlug: z.string(),
   optionsJson: z.record(z.unknown()),
@@ -270,8 +234,6 @@ export const CreatePipelineSchema = z.object({
 });
 export type CreatePipelineDto = z.infer<typeof CreatePipelineSchema>;
 
-// ── Network Tool Proxy DTOs (see API.md §10 — Module 8 server-proxied
-// tools; server-assisted, non-persistent per ARCHITECTURE.md §8.4 tier 2) ──
 export const HttpRequestProxySchema = z.object({
   method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]),
   url: z.string().url().max(4_000),
@@ -306,7 +268,7 @@ export interface DnsLookupResult {
 }
 
 export const IpLookupSchema = z.object({
-  ip: z.string().max(45).optional(), // omitted -> looks up the caller's own IP
+  ip: z.string().max(45).optional(),
 });
 export type IpLookupDto = z.infer<typeof IpLookupSchema>;
 
@@ -322,13 +284,13 @@ export interface IpLookupResult {
 export const WebhookInboxCreateResult = z.object({
   id: z.string(),
   inboxUrl: z.string(),
-  expiresAt: z.number(), // epoch ms
+  expiresAt: z.number(),
 });
 export type WebhookInboxCreateResultDto = z.infer<typeof WebhookInboxCreateResult>;
 
 export interface WebhookInboxEvent {
   id: string;
-  receivedAt: number; // epoch ms
+  receivedAt: number;
   method: string;
   headers: Record<string, string>;
   body: string;
@@ -349,12 +311,6 @@ export interface UrlPreviewResult {
   favicon?: string;
 }
 
-// ── AI Gateway DTOs (see API.md §9, ARCHITECTURE.md §8.3, CLAUDE.md rule 7) ─
-// Every one of these schemas bounds input length — the AI gateway is the
-// one surface in this app where user text reaches a model, so keeping
-// payloads small is both a cost control and part of the prompt-injection
-// mitigation (less room for an attacker to bury instructions in a huge blob
-// the system prompt has to visually compete with).
 export const AiExplainSubjects = ["regex", "cron", "json-schema", "sql"] as const;
 export type AiExplainSubject = (typeof AiExplainSubjects)[number];
 
@@ -376,9 +332,7 @@ export type AiGenerateTarget = (typeof AiGenerateTargets)[number];
 
 export const AiGenerateSchema = z.object({
   target: z.enum(AiGenerateTargets),
-  // 4_000 (not 1_000) so the "Generate From Example" tool can pass a raw
-  // JSON sample as `prompt` for the json-schema target — matches
-  // AiExplainSchema's input ceiling rather than inventing a new one.
+
   prompt: z.string().min(1).max(4_000),
   examples: z.array(z.string().max(500)).max(10).optional(),
 });
@@ -414,7 +368,7 @@ export type AiJsonRepairDto = z.infer<typeof AiJsonRepairSchema>;
 export interface AiJsonRepairResult {
   repaired: string;
   repairedBy: "deterministic" | "ai";
-  model?: string; // present only when repairedBy === "ai"
+  model?: string;
   dataSentPreview?: string;
 }
 
@@ -465,14 +419,11 @@ export interface AiUsageSummary {
   quota: number;
 }
 
-// ── Public API / CLI (Phase 4 — API.md §11/§12) ────────────────────────────
 export const CreateApiKeySchema = z.object({
   name: z.string().min(1).max(60),
 });
 export type CreateApiKeyDto = z.infer<typeof CreateApiKeySchema>;
 
-/** Returned only once, at creation — `key` (the raw secret) is never
- * retrievable again afterward. Every later listing uses ApiKeySummary. */
 export interface ApiKeyCreatedResult {
   id: string;
   name: string;
@@ -513,9 +464,6 @@ export interface PublicJsonValidateResult {
   error?: string;
 }
 
-// ── Billing (Phase 4 — API.md §9; migrated Stripe → Razorpay, see
-// AUDIT_REPORT.md §20 for rationale — Stripe billing isn't available for
-// this business's country of operation) ────────────────────────────────────
 export const BillablePlans = ["PRO", "TEAM"] as const;
 export type BillablePlan = (typeof BillablePlans)[number];
 
@@ -524,18 +472,12 @@ export const CreateSubscriptionSchema = z.object({
 });
 export type CreateSubscriptionDto = z.infer<typeof CreateSubscriptionSchema>;
 
-// Razorpay has no hosted Checkout page like Stripe's — the frontend opens
-// Razorpay's Checkout.js modal client-side using these fields (API.md §9).
 export interface CreateSubscriptionResult {
   razorpaySubscriptionId: string;
   razorpayKeyId: string;
   plan: BillablePlan;
 }
 
-// Razorpay Checkout.js's success handler returns these three fields to the
-// frontend; they're POSTed here so the backend can verify the HMAC
-// signature before trusting the payment (never trust a client-reported
-// "it worked" without verifying it server-side).
 export const VerifyPaymentSchema = z.object({
   razorpay_payment_id: z.string().min(1),
   razorpay_subscription_id: z.string().min(1),
@@ -543,9 +485,6 @@ export const VerifyPaymentSchema = z.object({
 });
 export type VerifyPaymentDto = z.infer<typeof VerifyPaymentSchema>;
 
-// Razorpay has no self-serve billing portal equivalent to Stripe's Customer
-// Portal (AUDIT_REPORT.md §20 deviation note) — cancellation is a direct
-// API call the account page triggers instead of a redirect.
 export interface CancelSubscriptionResult {
   cancelled: boolean;
 }
@@ -569,7 +508,6 @@ export interface SubscriptionSummary {
   cancelAtPeriodEnd: boolean;
 }
 
-// ── Team workspaces (Phase 4 — API.md §17) ─────────────────────────────────
 export const OrgRoles = ["OWNER", "ADMIN", "MEMBER"] as const;
 export type OrgRole = (typeof OrgRoles)[number];
 
@@ -593,13 +531,6 @@ export const UpdateOrganizationMemberRoleSchema = z.object({
 });
 export type UpdateOrganizationMemberRoleDto = z.infer<typeof UpdateOrganizationMemberRoleSchema>;
 
-// Custom branding for org-shared links (API.md §8.1/§17, AUDIT_REPORT.md
-// §22) — a separate schema/route from rename (`UpdateOrganizationSchema`)
-// rather than folding in, since these are optional/clearable fields with
-// different validation (`brandLogoUrl` is a URL) and a different mental
-// model ("how this org's shares look to visitors" vs. "the org's own
-// name"). Both fields nullable so either can be explicitly cleared by
-// sending `null`, not just omitted.
 export const UpdateOrganizationBrandingSchema = z.object({
   brandName: z.string().max(80).nullable().optional(),
   brandLogoUrl: z.string().url().max(2048).nullable().optional(),
@@ -642,15 +573,6 @@ export interface OrganizationUsageSummary {
   byMember: { userId: string; email: string; requests: number; inputTokens: number; outputTokens: number }[];
 }
 
-// ── Team workspace invites (email-token flow — API.md §17.4;
-// AUDIT_REPORT.md §17.2 originally deferred this, shipped here) ────────────
-// `POST /organizations/:id/invites` reuses AddOrganizationMemberSchema's
-// `{ email }` shape — if an account already exists for that email it's
-// added immediately (unchanged behavior), otherwise a pending invite is
-// created and emailed instead of the old 404 "they'll need to sign up
-// first." Same MEMBER-only scope as the existing immediate-add path — no
-// role is exposed to invite as ADMIN/OWNER directly, matching
-// `updateMemberRole`'s existing promote-after-joining pattern.
 export interface OrganizationInviteSummary {
   id: string;
   email: string;
@@ -670,25 +592,13 @@ export interface AcceptOrganizationInviteResult {
   role: OrgRole;
 }
 
-// ── Org SSO (AUDIT_REPORT.md §23) — the last item deferred from the
-// original team workspaces MVP pass. One connection per org, discriminated
-// by protocol. `UpsertSsoConnectionSchema` uses a Zod discriminated union so
-// the OIDC-only/SAML-only fields are mutually validated at the boundary
-// (CLAUDE.md rule 5) rather than a loose object where the "wrong" protocol's
-// fields could be silently accepted. The client secret is write-only —
-// never returned by any read endpoint, hence no `oidcClientSecret` field on
-// `SsoConnectionSummary`.
 export const UpsertSsoConnectionSchema = z.discriminatedUnion("protocol", [
   z.object({
     protocol: z.literal("OIDC"),
     domain: z.string().min(1).max(255),
     oidcIssuer: z.string().url().max(2048),
     oidcClientId: z.string().min(1).max(255),
-    // Optional on update — omit to leave an already-configured secret
-    // unchanged, matching UpdateOrganizationBrandingSchema's omit-vs-null
-    // convention (though here there's no "clear" case; a connection without
-    // a secret can't authenticate, so it's simply required on first create,
-    // enforced in the service layer since Zod alone can't see prior state).
+
     oidcClientSecret: z.string().min(1).optional(),
   }),
   z.object({
@@ -715,9 +625,7 @@ export interface SsoConnectionSummary {
   protocol: "OIDC" | "SAML";
   domain: string;
   enabled: boolean;
-  // Present only for the matching protocol; the other group is always
-  // undefined rather than a mix of nulls, mirroring the discriminated
-  // request shape above.
+
   oidcIssuer: string | null;
   oidcClientId: string | null;
   oidcHasClientSecret: boolean;
@@ -728,24 +636,15 @@ export interface SsoConnectionSummary {
   updatedAt: string;
 }
 
-// GET /sso/discover?domain= — public, unauthenticated: tells the login page
-// whether this email domain has an SSO connection to route to, without
-// exposing which org owns it (avoids leaking org existence/membership from
-// an arbitrary domain guess beyond "yes/no, SSO is configured").
 export interface SsoDiscoveryResult {
   available: boolean;
   protocol: "OIDC" | "SAML" | null;
   organizationId: string | null;
 }
 
-// ── Plugin marketplace (Phase 4, v1 — API.md §18, ARCHITECTURE.md §16) ────
 export const PluginStatuses = ["DRAFT", "IN_REVIEW", "PUBLISHED", "REJECTED", "SUSPENDED"] as const;
 export type PluginStatus = (typeof PluginStatuses)[number];
 
-// Deliberately narrow — v1 has no `permissions` grant beyond "none" (§16.5's
-// open question, left unresolved). Every plugin gets identical, minimal
-// capability: read one input string, one flat options bag, return one
-// output string.
 export const PluginManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/, "lowercase letters, numbers, hyphens only"),
   name: z.string().min(1).max(80),
@@ -768,7 +667,7 @@ export const CreatePluginSchema = z.object({
 });
 export type CreatePluginDto = z.infer<typeof CreatePluginSchema>;
 
-const MAX_WASM_BASE64_LENGTH = Math.ceil((2 * 1024 * 1024 * 4) / 3); // ~2MB decoded
+const MAX_WASM_BASE64_LENGTH = Math.ceil((2 * 1024 * 1024 * 4) / 3);
 
 export const SubmitPluginVersionSchema = z.object({
   manifest: PluginManifestSchema,
@@ -805,18 +704,12 @@ export interface PluginDetail extends PluginSummary {
   versions: PluginVersionSummary[];
 }
 
-// Fetched by the frontend PluginRunner to actually execute a plugin.
-// Publicly readable for PUBLISHED versions (anyone can run a published
-// plugin); DRAFT/IN_REVIEW versions are only returned to the plugin's own
-// author or an admin (so an author can preview before it's public, and a
-// reviewer can test it, without exposing unreviewed code to the world).
 export interface PluginRunPayload {
   version: string;
   wasmBase64: string;
   checksumSha256: string;
 }
 
-// ── Standard API error shape (see API.md §1) ───────────────────────────────
 export interface ApiErrorBody {
   error: {
     code:

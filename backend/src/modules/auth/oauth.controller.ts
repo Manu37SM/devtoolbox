@@ -42,9 +42,6 @@ export class OAuthController {
     return tokens;
   }
 
-  // ── Account-linking (signed-in user connecting/disconnecting a provider,
-  // distinct from the sign-in/signup flow above) — reached from /account,
-  // not /login or /register. ────────────────────────────────────────────
   @UseGuards(JwtAuthGuard)
   @Get("linked")
   async listLinked(@CurrentUser() user: AuthenticatedUser) {
@@ -79,10 +76,7 @@ export class OAuthController {
   }
 
   private setRefreshCookie(res: Response, token: IssuedRefreshToken): void {
-    // sameSite: "none" in production — see auth.controller.ts's
-    // setRefreshCookie for why (frontend/backend are different registrable
-    // domains, so this cookie is cross-site and "strict"/"lax" silently
-    // drop it).
+
     const isProduction = this.config.get<string>("NODE_ENV") === "production";
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, token.raw, {
       httpOnly: true,

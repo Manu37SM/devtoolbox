@@ -1,7 +1,5 @@
 import type { CaseConverterOptions } from "./schema";
 
-/** Splits arbitrary input (camelCase, snake_case, kebab-case, spaced,
- * mixed) into normalized lowercase words, then re-joins per target case. */
 export function convertCase(input: string, options: CaseConverterOptions): string {
   if (input.trim().length === 0) return "";
 
