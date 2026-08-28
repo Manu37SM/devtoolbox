@@ -38,3 +38,10 @@ npm-debug.log*
 
 # Mobile app lives in its own separate git repository
 mobile/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Database dumps
+*.dump
+*.sql.gz

@@ -96,27 +96,11 @@ describe("${lowerFirst(pascalSlug)}", () => {
 
   writeFileSync(
     join(dir, "ToolView.tsx"),
-    `// Compose ToolShell + OptionsPanel + OutputPane (see UI_GUIDELINES.md §4).
+    `// Compose ToolShell + OptionsPanel + OutputPane.
 // Do not build a bespoke layout without design review sign-off.
 export function ${pascalSlug}ToolView() {
   return null; // TODO
 }
-`,
-  );
-
-  writeFileSync(
-    join(dir, "content.mdx"),
-    `## How it works
-
-TODO
-
-## Common use cases
-
-- TODO
-
-## Related tools
-
-TODO
 `,
   );
 

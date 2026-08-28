@@ -10,10 +10,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:migrate": "dotenv -e ../.env -- prisma migrate deploy",
     "db:migrate:dev": "dotenv -e ../.env -- prisma migrate dev",
-    "db:seed": "dotenv -e ../.env -- tsx src/database/seeds/index.ts",
     "db:studio": "dotenv -e ../.env -- prisma studio"
   },
   "jest": {
