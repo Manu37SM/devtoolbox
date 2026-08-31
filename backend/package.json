@@ -31,15 +31,15 @@
     "testEnvironment": "node"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.117.1",
+    "@anthropic-ai/sdk": "^0.120.0",
     "@devtoolbox/shared": "*",
     "@nestjs/bullmq": "^11.0.4",
-    "@nestjs/common": "^11.2.1",
+    "@nestjs/common": "^11.2.2",
     "@nestjs/config": "^4.0.0",
-    "@nestjs/core": "^11.2.1",
+    "@nestjs/core": "^11.2.2",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.0",
-    "@nestjs/platform-express": "^11.2.1",
+    "@nestjs/platform-express": "^11.2.2",
     "@nestjs/throttler": "^6.2.0",
     "@node-saml/node-saml": "^5.0.1",
     "@prisma/client": "^5.20.0",
@@ -55,13 +55,13 @@
     "nanoid": "^3.3.7",
     "passport-jwt": "^4.0.0",
     "razorpay": "^2.9.4",
-    "resend": "^6.20.0",
+    "resend": "^6.22.1",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.0",
     "@nestjs/cli": "^11.0.24",
-    "@nestjs/testing": "^11.2.1",
+    "@nestjs/testing": "^11.2.2",
     "@types/cookie-parser": "^1.4.7",
     "@types/express": "^5.0.6",
     "@types/jest": "^29.5.14",
@@ -77,6 +77,6 @@
     "ts-jest": "^29.4.12",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
-    "typescript-eslint": "^8.8.0"
+    "typescript-eslint": "^8.68.0"
   }
 }
