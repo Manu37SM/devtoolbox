@@ -67,7 +67,7 @@
     "@eslint/js": "^9.11.0",
     "@playwright/test": "^1.48.0",
     "@storybook/addon-a11y": "^9.1.20",
-    "@storybook/addon-docs": "^9.1.20",
+    "@storybook/addon-docs": "^10.5.10",
     "@storybook/nextjs": "^9.1.20",
     "@storybook/react": "^10.5.10",
     "@testing-library/react": "^16.0.0",
