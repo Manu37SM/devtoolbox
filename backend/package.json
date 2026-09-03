@@ -31,7 +31,7 @@
     "testEnvironment": "node"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.120.0",
+    "@anthropic-ai/sdk": "^0.122.0",
     "@devtoolbox/shared": "*",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.2.2",
@@ -55,7 +55,7 @@
     "nanoid": "^3.3.7",
     "passport-jwt": "^4.0.0",
     "razorpay": "^2.9.4",
-    "resend": "^6.22.1",
+    "resend": "^6.25.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
@@ -75,7 +75,7 @@
     "prisma": "^5.20.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.4.12",
-    "tsx": "^4.19.0",
+    "tsx": "^4.23.13",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.68.0"
   }
