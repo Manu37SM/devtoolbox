@@ -51,7 +51,7 @@
     "csrf-csrf": "^4.0.3",
     "helmet": "^8.0.0",
     "ioredis": "^5.4.0",
-    "jose": "^5.9.6",
+    "jose": "^6.2.10",
     "nanoid": "^3.3.7",
     "passport-jwt": "^4.0.0",
     "razorpay": "^2.9.4",
