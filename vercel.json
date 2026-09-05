@@ -3,5 +3,6 @@
   "buildCommand": "npx turbo run build --filter=@devtoolbox/frontend",
   "installCommand": "npm ci",
   "outputDirectory": "frontend/.next",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "ignoreCommand": "exit 0"
 }

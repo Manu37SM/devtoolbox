@@ -17,6 +17,8 @@ updates:
         update-types:
           - "minor"
           - "patch"
+      nestjs:
+        patterns: ["@nestjs/*"]
 
   - package-ecosystem: github-actions
     directory: "/"
