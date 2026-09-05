@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { jwtVerify, createRemoteJWKSet } from "jose";
 import { SAML } from "@node-saml/node-saml";
 import type { SsoConnectionSummary, SsoDiscoveryResult, UpsertSsoConnectionDto } from "@devtoolbox/shared";
 import { PrismaService } from "../../database/prisma.service";
@@ -149,6 +148,7 @@ export class SsoService {
       throw new BadRequestException(`SSO sign-in failed: ${tokenData.error ?? "no id_token returned"}.`);
     }
 
+    const { jwtVerify, createRemoteJWKSet } = await import("jose");
     const jwks = createRemoteJWKSet(new URL(discovery.jwks_uri));
     const { payload } = await jwtVerify(tokenData.id_token, jwks, {
       issuer: conn.oidcIssuer!,
