@@ -45,7 +45,7 @@
     "@prisma/client": "^7.10.0",
     "@sentry/node": "^10.70.0",
     "argon2": "^0.45.1",
-    "bullmq": "^5.15.0",
+    "bullmq": "^6.3.4",
     "cheerio": "^1.2.0",
     "cookie-parser": "^1.4.7",
     "csrf-csrf": "^4.0.3",
