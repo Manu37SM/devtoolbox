@@ -48,7 +48,6 @@ services:
     dockerContext: .
     plan: free
     region: oregon
-    autoDeploy: false
     healthCheckPath: /v1/health
     # No `preDeployCommand` here: that field only works on paid Render web
     # service plans — the free plan this deploys on rejects the Blueprint

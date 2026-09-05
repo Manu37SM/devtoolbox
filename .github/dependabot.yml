@@ -14,9 +14,8 @@ updates:
       # one PR per package — keeps the PR queue reviewable. Majors still get
       # their own PR since those need a human to actually read the changelog.
       npm-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
+        update-types: ["minor", "patch"]
+        exclude-patterns: ["@nestjs/*"]
       nestjs:
         patterns: ["@nestjs/*"]
 
