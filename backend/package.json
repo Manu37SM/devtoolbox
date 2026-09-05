@@ -31,7 +31,7 @@
     "testEnvironment": "node"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.122.0",
+    "@anthropic-ai/sdk": "^0.123.0",
     "@devtoolbox/shared": "*",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.2.2",
