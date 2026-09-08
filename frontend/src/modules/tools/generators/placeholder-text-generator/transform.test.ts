@@ -3,7 +3,7 @@ import { generatePlaceholderText } from "./transform";
 
 function fakeRng(sequence: number[]): () => number {
   let i = 0;
-  return () => sequence[i++ % sequence.length];
+  return () => sequence[i++ % sequence.length]!;
 }
 
 describe("generatePlaceholderText", () => {

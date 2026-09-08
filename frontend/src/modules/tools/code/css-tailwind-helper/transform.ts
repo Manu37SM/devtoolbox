@@ -138,7 +138,7 @@ const WIDTH_HEIGHT_KEYWORDS: Record<string, string> = {
 };
 
 function parseUnitValue(v: string, suffix: string, multiplier: number): number | null {
-  const match = v.match(new RegExp(`^(-?[\d.]+)${suffix}$`));
+  const match = v.match(new RegExp(`^(-?[\\d.]+)${suffix}$`));
   const group = match?.[1];
   return group !== undefined ? parseFloat(group) * multiplier : null;
 }

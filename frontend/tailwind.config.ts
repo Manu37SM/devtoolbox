@@ -4,7 +4,7 @@ import type { Config } from "tailwindcss";
 // semantic names, never raw hex values, so themes/white-label can swap
 // the CSS variables without touching component code.
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: "class",
   content: ["./src/**/*.{ts,tsx,mdx}"],
   theme: {
     extend: {

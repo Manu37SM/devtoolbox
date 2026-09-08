@@ -65,8 +65,11 @@ export function generatePlaceholderText(
   const bank = WORD_BANKS[options.variant];
 
   if (options.unit === "words") {
-    const words = Array.from({ length: options.count }, () => pick(bank, rng));
-    return { output: words.join(" "), error: null };
+   const words: string[] = [];
+   while (words.length < options.count) {
+     words.push(...pick(bank, rng).split(" "));
+   }
+   return { output: words.slice(0, options.count).join(" "), error: null };
   }
 
   if (options.unit === "sentences") {
