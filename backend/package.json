@@ -23,7 +23,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "<rootDir>/../tsconfig.jest.json" }]
     },
     "moduleNameMapper": {
       "^@devtoolbox/shared$": "<rootDir>/../../packages/shared/src/index.ts"
@@ -38,7 +38,7 @@
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.2.2",
     "@nestjs/jwt": "^11.0.0",
-    "@nestjs/passport": "^12.0.0",
+    "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.2.2",
     "@nestjs/throttler": "^6.2.0",
     "@node-saml/node-saml": "^5.0.1",
@@ -56,7 +56,8 @@
     "passport-jwt": "^4.0.0",
     "razorpay": "^2.9.4",
     "resend": "^6.22.1",
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "reflect-metadata": "^0.2.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.0",
@@ -69,7 +70,7 @@
     "@types/react": "^19.0.0",
     "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0",
-    "eslint": "^10.9.1",
+    "eslint": "^9.36.0",
     "globals": "^17.11.0",
     "jest": "^30.5.1",
     "prisma": "^5.20.0",
