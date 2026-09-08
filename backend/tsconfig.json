@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"],
+    "types": ["node", "jest"],
     "module": "Node16",
     "moduleResolution": "Node16",
     "experimentalDecorators": true,
