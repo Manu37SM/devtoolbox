@@ -75,6 +75,13 @@ const nextConfig = {
   // Next.js fix: mark them as unavailable in client bundles rather than
   // erroring — safe here because the code paths that would actually call
   // them are never reached in our usage.
+   turbopack: {
+     resolveAlias: {
+       fs: { browser: "./src/lib/empty.ts" },
+       path: { browser: "./src/lib/empty.ts" },
+       os: { browser: "./src/lib/empty.ts" },
+     },
+   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
