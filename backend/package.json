@@ -31,7 +31,7 @@
     "testEnvironment": "node"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.125.0",
+    "@anthropic-ai/sdk": "^0.127.0",
     "@devtoolbox/shared": "*",
     "@nestjs/bullmq": "^12.0.0",
     "@nestjs/common": "^12.0.1",
@@ -45,7 +45,7 @@
     "@prisma/client": "^7.10.0",
     "@sentry/node": "^10.70.0",
     "argon2": "^0.45.1",
-    "bullmq": "^6.3.4",
+    "bullmq": "^6.3.8",
     "cheerio": "^1.2.0",
     "cookie-parser": "^1.4.7",
     "csrf-csrf": "^4.0.3",
@@ -55,7 +55,7 @@
     "nanoid": "^3.3.7",
     "passport-jwt": "^4.0.0",
     "razorpay": "^2.9.4",
-    "resend": "^6.28.0",
+    "resend": "^6.28.1",
     "zod": "^4.6.5",
     "reflect-metadata": "^0.2.2"
   },
@@ -70,13 +70,13 @@
     "@types/react": "^19.3.0",
     "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0",
-    "eslint": "^10.10.0",
+    "eslint": "^10.11.0",
     "globals": "^17.11.0",
-    "jest": "^30.5.1",
+    "jest": "^30.5.2",
     "prisma": "^5.20.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.4.12",
-    "tsx": "^4.19.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.68.0"
   }
