@@ -31,7 +31,7 @@
     "@faker-js/faker": "^10.6.0",
     "@jridgewell/source-map": "^0.3.11",
     "@radix-ui/react-dialog": "^1.1.0",
-    "@sentry/nextjs": "^10.75.0",
+    "@sentry/nextjs": "^11.0.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "codemirror": "^6.0.0",
