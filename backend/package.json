@@ -43,7 +43,7 @@
     "@nestjs/throttler": "^6.7.0",
     "@node-saml/node-saml": "^5.0.1",
     "@prisma/client": "^7.10.0",
-    "@sentry/node": "^10.70.0",
+    "@sentry/node": "^11.0.0",
     "argon2": "^0.45.1",
     "bullmq": "^6.3.8",
     "cheerio": "^1.2.0",
