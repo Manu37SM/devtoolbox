@@ -52,7 +52,7 @@
     "helmet": "^8.0.0",
     "ioredis": "^6.0.0",
     "jose": "^6.2.10",
-    "nanoid": "^3.3.7",
+    "nanoid": "^6.0.2",
     "passport-jwt": "^4.0.0",
     "razorpay": "^2.9.4",
     "resend": "^6.28.1",
