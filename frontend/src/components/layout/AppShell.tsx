@@ -48,7 +48,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           onClick={openPalette}
           className="ml-4 flex flex-1 max-w-sm items-center gap-2 rounded-sm border border-border-default bg-bg-raised px-3 py-1.5 text-sm text-text-muted hover:border-accent"
-          aria-label="Open command palette"
+          aria-haspopup="dialog"
+          aria-keyshortcuts="Control+K Meta+K"
         >
           <Search className="h-4 w-4" />
           Search tools…
