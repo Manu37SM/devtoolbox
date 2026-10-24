@@ -1,25 +1,55 @@
 version: 2
 
-# Checklist item #20 — dependency scanning. Weekly PRs for outdated/vulnerable
-# dependencies across every workspace with its own lockfile-relevant manifest,
-# plus the GitHub Actions versions pinned in .github/workflows/*.yml.
+# Policy: Dependabot may only propose SAFE updates.
+#   * Minor/patch bumps arrive as ONE grouped PR per month (not weekly, not one
+#     PR per package), so the lockfile changes at most once a month.
+#   * Major versions are NEVER proposed automatically. A major bump (Prisma 7,
+#     Nest 13, TypeScript 7, ...) is a planned migration done by hand on a
+#     branch, with the migration guide open. Security advisories still produce
+#     PRs: `ignore` only affects routine version updates.
+#   * Brand-new releases wait 7 days (cooldown) so a bad release can be pulled
+#     upstream before it reaches us.
+#   * Framework families that must move together are grouped so they can never
+#     be split across PRs (this is what broke the old per-package Nest PRs).
+#
+# PR habit: never merge a Dependabot PR unless the CI check is green.
 updates:
   - package-ecosystem: npm
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 10
+      interval: monthly
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
-      # Batch non-major bumps into one PR per ecosystem per week instead of
-      # one PR per package — keeps the PR queue reviewable. Majors still get
-      # their own PR since those need a human to actually read the changelog.
-      npm-minor-patch:
-        update-types: ["minor", "patch"]
-        exclude-patterns: ["@nestjs/*"]
       nestjs:
         patterns: ["@nestjs/*"]
+        update-types: ["minor", "patch"]
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+        update-types: ["minor", "patch"]
+      sentry:
+        patterns: ["@sentry/*"]
+        update-types: ["minor", "patch"]
+      storybook:
+        patterns: ["storybook", "@storybook/*"]
+        update-types: ["minor", "patch"]
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 2
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      actions:
+        patterns: ["*"]
