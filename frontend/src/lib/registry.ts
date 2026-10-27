@@ -93,6 +93,123 @@ import { aiCommitMessageTool } from "@/modules/tools/ai/ai-commit-message";
 import { codeCommenterTool } from "@/modules/tools/ai/code-commenter";
 import { apiResponseToClientCodeTool } from "@/modules/tools/ai/api-response-to-client-code";
 
+import { morseCodeConverterTool } from "@/modules/tools/converters/morse-code-converter";
+import { base32ConverterTool } from "@/modules/tools/encoding/base32-converter";
+import { unicodeEscapeConverterTool } from "@/modules/tools/encoding/unicode-escape-converter";
+import { numberToWordsConverterTool } from "@/modules/tools/converters/number-to-words-converter";
+import { iso8601DurationConverterTool } from "@/modules/tools/converters/iso-8601-duration-converter";
+import { pxRemConverterTool } from "@/modules/tools/converters/px-rem-converter";
+import { queryStringJsonTool } from "@/modules/tools/data-format/query-string-json";
+import { curlToCodeTool } from "@/modules/tools/code/curl-to-code";
+
+import { natoAlphabetConverterTool } from "@/modules/tools/converters/nato-alphabet-converter";
+
+import { classicalCiphersTool } from "@/modules/tools/text/classical-ciphers";
+
+import { listConverterTool } from "@/modules/tools/text/list-converter";
+
+import { stringEscapeTool } from "@/modules/tools/text/string-escape";
+
+import { findReplaceTextTool } from "@/modules/tools/text/find-replace-text";
+
+import { wordFrequencyTool } from "@/modules/tools/text/word-frequency";
+
+import { textCleanerTool } from "@/modules/tools/text/text-cleaner";
+
+import { emailNormalizerTool } from "@/modules/tools/text/email-normalizer";
+
+import { propertiesYamlTool } from "@/modules/tools/data-format/properties-yaml";
+
+import { yamlTomlTool } from "@/modules/tools/data-format/yaml-toml";
+
+import { jsonToJavaTool } from "@/modules/tools/data-format/json-to-java";
+
+import { jsonToSqlTool } from "@/modules/tools/data-format/json-to-sql";
+
+import { ndjsonJsonTool } from "@/modules/tools/data-format/ndjson-json";
+
+import { dockerRunToComposeTool } from "@/modules/tools/code/docker-run-to-compose";
+
+import { chmodCalculatorTool } from "@/modules/tools/code/chmod-calculator";
+
+import { gitignoreGeneratorTool } from "@/modules/tools/code/gitignore-generator";
+
+import { semverToolTool } from "@/modules/tools/code/semver-tool";
+
+import { keycodeInfoTool } from "@/modules/tools/code/keycode-info";
+
+import { httpStatusCodesTool } from "@/modules/tools/network/http-status-codes";
+
+import { mimeTypesTool } from "@/modules/tools/network/mime-types";
+
+import { basicAuthGeneratorTool } from "@/modules/tools/network/basic-auth-generator";
+
+import { ipv4AddressConverterTool } from "@/modules/tools/network/ipv4-address-converter";
+
+import { ipv4RangeExpanderTool } from "@/modules/tools/network/ipv4-range-expander";
+
+import { macAddressToolTool } from "@/modules/tools/network/mac-address-tool";
+
+import { ipv6UlaGeneratorTool } from "@/modules/tools/network/ipv6-ula-generator";
+
+import { ibanValidatorTool } from "@/modules/tools/converters/iban-validator";
+
+import { jwtEncoderTool } from "@/modules/tools/security/jwt-encoder";
+
+import { aesEncryptDecryptTool } from "@/modules/tools/security/aes-encrypt-decrypt";
+
+import { ulidNanoidGeneratorTool } from "@/modules/tools/generators/ulid-nanoid-generator";
+
+import { randomPortGeneratorTool } from "@/modules/tools/generators/random-port-generator";
+
+import { luhnValidatorTool } from "@/modules/tools/security/luhn-validator";
+
+import { colorContrastCheckerTool } from "@/modules/tools/converters/color-contrast-checker";
+
+import { cssClampGeneratorTool } from "@/modules/tools/code/css-clamp-generator";
+
+import { aspectRatioCalculatorTool } from "@/modules/tools/converters/aspect-ratio-calculator";
+
+import { percentageCalculatorTool } from "@/modules/tools/converters/percentage-calculator";
+
+import { dateCalculatorTool } from "@/modules/tools/converters/date-calculator";
+
+import { mathEvaluatorTool } from "@/modules/tools/converters/math-evaluator";
+
+import { downloadTimeCalculatorTool } from "@/modules/tools/converters/download-time-calculator";
+
+import { ieee754InspectorTool } from "@/modules/tools/converters/ieee754-inspector";
+
+import { indianNumberSystemConverterTool } from "@/modules/tools/converters/indian-number-system-converter";
+
+import { binaryTextConverterTool } from "@/modules/tools/encoding/binary-text-converter";
+
+import { dataStorageConverterTool } from "@/modules/tools/converters/data-storage-converter";
+
+import { bitwiseCalculatorTool } from "@/modules/tools/converters/bitwise-calculator";
+
+import { emiLoanCalculatorTool } from "@/modules/tools/converters/emi-loan-calculator";
+
+import { compoundInterestCalculatorTool } from "@/modules/tools/converters/compound-interest-calculator";
+
+import { gstCalculatorTool } from "@/modules/tools/converters/gst-calculator";
+
+import { indianIdValidatorTool } from "@/modules/tools/converters/indian-id-validator";
+
+import { pkceGeneratorTool } from "@/modules/tools/security/pkce-generator";
+
+import { checksumCalculatorTool } from "@/modules/tools/encoding/checksum-calculator";
+
+import { httpHeaderAnalyzerTool } from "@/modules/tools/network/http-header-analyzer";
+
+import { cookieParserTool } from "@/modules/tools/network/cookie-parser";
+
+import { portReferenceTool } from "@/modules/tools/network/port-reference";
+
+import { javaStacktraceAnalyzerTool } from "@/modules/tools/text/java-stacktrace-analyzer";
+
+import { readingTimeEstimatorTool } from "@/modules/tools/text/reading-time-estimator";
+
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
   jsonYamlTool,
@@ -182,6 +299,68 @@ export const toolRegistry: ToolRegistryEntry[] = [
   aiCommitMessageTool,
   codeCommenterTool,
   apiResponseToClientCodeTool,
+  morseCodeConverterTool,
+  base32ConverterTool,
+  unicodeEscapeConverterTool,
+  numberToWordsConverterTool,
+  iso8601DurationConverterTool,
+  pxRemConverterTool,
+  queryStringJsonTool,
+  curlToCodeTool,
+  natoAlphabetConverterTool,
+  classicalCiphersTool,
+  listConverterTool,
+  stringEscapeTool,
+  findReplaceTextTool,
+  wordFrequencyTool,
+  textCleanerTool,
+  emailNormalizerTool,
+  propertiesYamlTool,
+  yamlTomlTool,
+  jsonToJavaTool,
+  jsonToSqlTool,
+  ndjsonJsonTool,
+  dockerRunToComposeTool,
+  chmodCalculatorTool,
+  gitignoreGeneratorTool,
+  semverToolTool,
+  keycodeInfoTool,
+  httpStatusCodesTool,
+  mimeTypesTool,
+  basicAuthGeneratorTool,
+  ipv4AddressConverterTool,
+  ipv4RangeExpanderTool,
+  macAddressToolTool,
+  ipv6UlaGeneratorTool,
+  ibanValidatorTool,
+  jwtEncoderTool,
+  aesEncryptDecryptTool,
+  ulidNanoidGeneratorTool,
+  randomPortGeneratorTool,
+  luhnValidatorTool,
+  colorContrastCheckerTool,
+  cssClampGeneratorTool,
+  aspectRatioCalculatorTool,
+  percentageCalculatorTool,
+  dateCalculatorTool,
+  mathEvaluatorTool,
+  downloadTimeCalculatorTool,
+  ieee754InspectorTool,
+  indianNumberSystemConverterTool,
+  binaryTextConverterTool,
+  dataStorageConverterTool,
+  bitwiseCalculatorTool,
+  emiLoanCalculatorTool,
+  compoundInterestCalculatorTool,
+  gstCalculatorTool,
+  indianIdValidatorTool,
+  pkceGeneratorTool,
+  checksumCalculatorTool,
+  httpHeaderAnalyzerTool,
+  cookieParserTool,
+  portReferenceTool,
+  javaStacktraceAnalyzerTool,
+  readingTimeEstimatorTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

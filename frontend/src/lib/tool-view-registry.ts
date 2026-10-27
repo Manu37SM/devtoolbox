@@ -89,6 +89,122 @@ import { GenerateFromExampleToolView } from "@/modules/tools/ai/generate-from-ex
 import { AiCommitMessageToolView } from "@/modules/tools/ai/ai-commit-message/ToolView";
 import { CodeCommenterToolView } from "@/modules/tools/ai/code-commenter/ToolView";
 import { ApiResponseToClientCodeToolView } from "@/modules/tools/ai/api-response-to-client-code/ToolView";
+import { MorseCodeConverterToolView } from "@/modules/tools/converters/morse-code-converter/ToolView";
+import { Base32ConverterToolView } from "@/modules/tools/encoding/base32-converter/ToolView";
+import { UnicodeEscapeConverterToolView } from "@/modules/tools/encoding/unicode-escape-converter/ToolView";
+import { NumberToWordsConverterToolView } from "@/modules/tools/converters/number-to-words-converter/ToolView";
+import { Iso8601DurationConverterToolView } from "@/modules/tools/converters/iso-8601-duration-converter/ToolView";
+import { PxRemConverterToolView } from "@/modules/tools/converters/px-rem-converter/ToolView";
+import { QueryStringJsonToolView } from "@/modules/tools/data-format/query-string-json/ToolView";
+import { CurlToCodeToolView } from "@/modules/tools/code/curl-to-code/ToolView";
+
+import { NatoAlphabetConverterToolView } from "@/modules/tools/converters/nato-alphabet-converter/ToolView";
+
+import { ClassicalCiphersToolView } from "@/modules/tools/text/classical-ciphers/ToolView";
+
+import { ListConverterToolView } from "@/modules/tools/text/list-converter/ToolView";
+
+import { StringEscapeToolView } from "@/modules/tools/text/string-escape/ToolView";
+
+import { FindReplaceTextToolView } from "@/modules/tools/text/find-replace-text/ToolView";
+
+import { WordFrequencyToolView } from "@/modules/tools/text/word-frequency/ToolView";
+
+import { TextCleanerToolView } from "@/modules/tools/text/text-cleaner/ToolView";
+
+import { EmailNormalizerToolView } from "@/modules/tools/text/email-normalizer/ToolView";
+
+import { PropertiesYamlToolView } from "@/modules/tools/data-format/properties-yaml/ToolView";
+
+import { YamlTomlToolView } from "@/modules/tools/data-format/yaml-toml/ToolView";
+
+import { JsonToJavaToolView } from "@/modules/tools/data-format/json-to-java/ToolView";
+
+import { JsonToSqlToolView } from "@/modules/tools/data-format/json-to-sql/ToolView";
+
+import { NdjsonJsonToolView } from "@/modules/tools/data-format/ndjson-json/ToolView";
+
+import { DockerRunToComposeToolView } from "@/modules/tools/code/docker-run-to-compose/ToolView";
+
+import { ChmodCalculatorToolView } from "@/modules/tools/code/chmod-calculator/ToolView";
+
+import { GitignoreGeneratorToolView } from "@/modules/tools/code/gitignore-generator/ToolView";
+
+import { SemverToolToolView } from "@/modules/tools/code/semver-tool/ToolView";
+
+import { KeycodeInfoToolView } from "@/modules/tools/code/keycode-info/ToolView";
+
+import { HttpStatusCodesToolView } from "@/modules/tools/network/http-status-codes/ToolView";
+
+import { MimeTypesToolView } from "@/modules/tools/network/mime-types/ToolView";
+
+import { BasicAuthGeneratorToolView } from "@/modules/tools/network/basic-auth-generator/ToolView";
+
+import { Ipv4AddressConverterToolView } from "@/modules/tools/network/ipv4-address-converter/ToolView";
+
+import { Ipv4RangeExpanderToolView } from "@/modules/tools/network/ipv4-range-expander/ToolView";
+
+import { MacAddressToolToolView } from "@/modules/tools/network/mac-address-tool/ToolView";
+
+import { Ipv6UlaGeneratorToolView } from "@/modules/tools/network/ipv6-ula-generator/ToolView";
+
+import { IbanValidatorToolView } from "@/modules/tools/converters/iban-validator/ToolView";
+
+import { JwtEncoderToolView } from "@/modules/tools/security/jwt-encoder/ToolView";
+
+import { AesEncryptDecryptToolView } from "@/modules/tools/security/aes-encrypt-decrypt/ToolView";
+
+import { UlidNanoidGeneratorToolView } from "@/modules/tools/generators/ulid-nanoid-generator/ToolView";
+
+import { RandomPortGeneratorToolView } from "@/modules/tools/generators/random-port-generator/ToolView";
+
+import { LuhnValidatorToolView } from "@/modules/tools/security/luhn-validator/ToolView";
+
+import { ColorContrastCheckerToolView } from "@/modules/tools/converters/color-contrast-checker/ToolView";
+
+import { CssClampGeneratorToolView } from "@/modules/tools/code/css-clamp-generator/ToolView";
+
+import { AspectRatioCalculatorToolView } from "@/modules/tools/converters/aspect-ratio-calculator/ToolView";
+
+import { PercentageCalculatorToolView } from "@/modules/tools/converters/percentage-calculator/ToolView";
+
+import { DateCalculatorToolView } from "@/modules/tools/converters/date-calculator/ToolView";
+
+import { MathEvaluatorToolView } from "@/modules/tools/converters/math-evaluator/ToolView";
+
+import { DownloadTimeCalculatorToolView } from "@/modules/tools/converters/download-time-calculator/ToolView";
+
+import { Ieee754InspectorToolView } from "@/modules/tools/converters/ieee754-inspector/ToolView";
+
+import { IndianNumberSystemConverterToolView } from "@/modules/tools/converters/indian-number-system-converter/ToolView";
+
+import { BinaryTextConverterToolView } from "@/modules/tools/encoding/binary-text-converter/ToolView";
+
+import { DataStorageConverterToolView } from "@/modules/tools/converters/data-storage-converter/ToolView";
+
+import { BitwiseCalculatorToolView } from "@/modules/tools/converters/bitwise-calculator/ToolView";
+
+import { EmiLoanCalculatorToolView } from "@/modules/tools/converters/emi-loan-calculator/ToolView";
+
+import { CompoundInterestCalculatorToolView } from "@/modules/tools/converters/compound-interest-calculator/ToolView";
+
+import { GstCalculatorToolView } from "@/modules/tools/converters/gst-calculator/ToolView";
+
+import { IndianIdValidatorToolView } from "@/modules/tools/converters/indian-id-validator/ToolView";
+
+import { PkceGeneratorToolView } from "@/modules/tools/security/pkce-generator/ToolView";
+
+import { ChecksumCalculatorToolView } from "@/modules/tools/encoding/checksum-calculator/ToolView";
+
+import { HttpHeaderAnalyzerToolView } from "@/modules/tools/network/http-header-analyzer/ToolView";
+
+import { CookieParserToolView } from "@/modules/tools/network/cookie-parser/ToolView";
+
+import { PortReferenceToolView } from "@/modules/tools/network/port-reference/ToolView";
+
+import { JavaStacktraceAnalyzerToolView } from "@/modules/tools/text/java-stacktrace-analyzer/ToolView";
+
+import { ReadingTimeEstimatorToolView } from "@/modules/tools/text/reading-time-estimator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -179,4 +295,66 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "ai-commit-message": AiCommitMessageToolView,
   "code-commenter": CodeCommenterToolView,
   "api-response-to-client-code": ApiResponseToClientCodeToolView,
+  "morse-code-converter": MorseCodeConverterToolView,
+  "base32-converter": Base32ConverterToolView,
+  "unicode-escape-converter": UnicodeEscapeConverterToolView,
+  "number-to-words-converter": NumberToWordsConverterToolView,
+  "iso-8601-duration-converter": Iso8601DurationConverterToolView,
+  "px-rem-converter": PxRemConverterToolView,
+  "query-string-json": QueryStringJsonToolView,
+  "curl-to-code": CurlToCodeToolView,
+  "nato-alphabet-converter": NatoAlphabetConverterToolView,
+  "classical-ciphers": ClassicalCiphersToolView,
+  "list-converter": ListConverterToolView,
+  "string-escape": StringEscapeToolView,
+  "find-replace-text": FindReplaceTextToolView,
+  "word-frequency": WordFrequencyToolView,
+  "text-cleaner": TextCleanerToolView,
+  "email-normalizer": EmailNormalizerToolView,
+  "properties-yaml": PropertiesYamlToolView,
+  "yaml-toml": YamlTomlToolView,
+  "json-to-java": JsonToJavaToolView,
+  "json-to-sql": JsonToSqlToolView,
+  "ndjson-json": NdjsonJsonToolView,
+  "docker-run-to-compose": DockerRunToComposeToolView,
+  "chmod-calculator": ChmodCalculatorToolView,
+  "gitignore-generator": GitignoreGeneratorToolView,
+  "semver-tool": SemverToolToolView,
+  "keycode-info": KeycodeInfoToolView,
+  "http-status-codes": HttpStatusCodesToolView,
+  "mime-types": MimeTypesToolView,
+  "basic-auth-generator": BasicAuthGeneratorToolView,
+  "ipv4-address-converter": Ipv4AddressConverterToolView,
+  "ipv4-range-expander": Ipv4RangeExpanderToolView,
+  "mac-address-tool": MacAddressToolToolView,
+  "ipv6-ula-generator": Ipv6UlaGeneratorToolView,
+  "iban-validator": IbanValidatorToolView,
+  "jwt-encoder": JwtEncoderToolView,
+  "aes-encrypt-decrypt": AesEncryptDecryptToolView,
+  "ulid-nanoid-generator": UlidNanoidGeneratorToolView,
+  "random-port-generator": RandomPortGeneratorToolView,
+  "luhn-validator": LuhnValidatorToolView,
+  "color-contrast-checker": ColorContrastCheckerToolView,
+  "css-clamp-generator": CssClampGeneratorToolView,
+  "aspect-ratio-calculator": AspectRatioCalculatorToolView,
+  "percentage-calculator": PercentageCalculatorToolView,
+  "date-calculator": DateCalculatorToolView,
+  "math-evaluator": MathEvaluatorToolView,
+  "download-time-calculator": DownloadTimeCalculatorToolView,
+  "ieee754-inspector": Ieee754InspectorToolView,
+  "indian-number-system-converter": IndianNumberSystemConverterToolView,
+  "binary-text-converter": BinaryTextConverterToolView,
+  "data-storage-converter": DataStorageConverterToolView,
+  "bitwise-calculator": BitwiseCalculatorToolView,
+  "emi-loan-calculator": EmiLoanCalculatorToolView,
+  "compound-interest-calculator": CompoundInterestCalculatorToolView,
+  "gst-calculator": GstCalculatorToolView,
+  "indian-id-validator": IndianIdValidatorToolView,
+  "pkce-generator": PkceGeneratorToolView,
+  "checksum-calculator": ChecksumCalculatorToolView,
+  "http-header-analyzer": HttpHeaderAnalyzerToolView,
+  "cookie-parser": CookieParserToolView,
+  "port-reference": PortReferenceToolView,
+  "java-stacktrace-analyzer": JavaStacktraceAnalyzerToolView,
+  "reading-time-estimator": ReadingTimeEstimatorToolView,
 };
