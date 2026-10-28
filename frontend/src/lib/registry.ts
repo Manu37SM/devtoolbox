@@ -212,6 +212,45 @@ import { readingTimeEstimatorTool } from "@/modules/tools/text/reading-time-esti
 import { passphraseGeneratorTool } from "@/modules/tools/generators/passphrase-generator";
 import { javaDateFormatConverterTool } from "@/modules/tools/code/java-date-format-converter";
 import { openapiViewerTool } from "@/modules/tools/data-format/openapi-viewer";
+import { idDecoderTool } from "@/modules/tools/encoding/id-decoder";
+import { base58Base62ConverterTool } from "@/modules/tools/encoding/base58-base62-converter";
+import { hashIdentifierTool } from "@/modules/tools/security/hash-identifier";
+import { json5JsoncConverterTool } from "@/modules/tools/data-format/json5-jsonc-converter";
+import { kubernetesSecretEncoderTool } from "@/modules/tools/data-format/kubernetes-secret-encoder";
+import { kubernetesResourceConverterTool } from "@/modules/tools/converters/kubernetes-resource-converter";
+import { numberTheoryCalculatorTool } from "@/modules/tools/converters/number-theory-calculator";
+import { statisticsCalculatorTool } from "@/modules/tools/converters/statistics-calculator";
+import { durationConverterTool } from "@/modules/tools/converters/duration-converter";
+import { hexDumpViewerTool } from "@/modules/tools/encoding/hex-dump-viewer";
+import { unicodeInspectorTool } from "@/modules/tools/text/unicode-inspector";
+import { markdownTocGeneratorTool } from "@/modules/tools/text/markdown-toc-generator";
+import { globPatternTesterTool } from "@/modules/tools/code/glob-pattern-tester";
+import { conventionalCommitLinterTool } from "@/modules/tools/code/conventional-commit-linter";
+import { utmLinkBuilderTool } from "@/modules/tools/network/utm-link-builder";
+import { cacheControlBuilderTool } from "@/modules/tools/network/cache-control-builder";
+import { cspBuilderTool } from "@/modules/tools/security/csp-builder";
+import { icsEventGeneratorTool } from "@/modules/tools/generators/ics-event-generator";
+import { licenseGeneratorTool } from "@/modules/tools/generators/license-generator";
+import { robotsTxtGeneratorTool } from "@/modules/tools/network/robots-txt-generator";
+import { readabilityAnalyzerTool } from "@/modules/tools/text/readability-analyzer";
+import { stringSimilarityTool } from "@/modules/tools/text/string-similarity";
+import { fancyTextGeneratorTool } from "@/modules/tools/text/fancy-text-generator";
+import { accessLogAnalyzerTool } from "@/modules/tools/text/access-log-analyzer";
+import { envFileCompareTool } from "@/modules/tools/code/env-file-compare";
+import { dockerfileLinterTool } from "@/modules/tools/code/dockerfile-linter";
+import { graphqlFormatterTool } from "@/modules/tools/code/graphql-formatter";
+import { sshKeyFingerprintTool } from "@/modules/tools/security/ssh-key-fingerprint";
+import { cvssCalculatorTool } from "@/modules/tools/security/cvss-calculator";
+import { ipCidrMatcherTool } from "@/modules/tools/network/ip-cidr-matcher";
+import { ipv6AddressToolTool } from "@/modules/tools/network/ipv6-address-tool";
+import { spfDmarcBuilderTool } from "@/modules/tools/network/spf-dmarc-builder";
+import { sitemapXmlGeneratorTool } from "@/modules/tools/network/sitemap-xml-generator";
+import { redirectRuleGeneratorTool } from "@/modules/tools/network/redirect-rule-generator";
+import { coordinateConverterTool } from "@/modules/tools/converters/coordinate-converter";
+import { isbnGtinValidatorTool } from "@/modules/tools/converters/isbn-gtin-validator";
+import { jsonFlattenTool } from "@/modules/tools/data-format/json-flatten";
+import { iniJsonConverterTool } from "@/modules/tools/data-format/ini-json-converter";
+import { harViewerTool } from "@/modules/tools/data-format/har-viewer";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -367,6 +406,45 @@ export const toolRegistry: ToolRegistryEntry[] = [
   passphraseGeneratorTool,
   javaDateFormatConverterTool,
   openapiViewerTool,
+  idDecoderTool,
+  base58Base62ConverterTool,
+  hashIdentifierTool,
+  json5JsoncConverterTool,
+  kubernetesSecretEncoderTool,
+  kubernetesResourceConverterTool,
+  numberTheoryCalculatorTool,
+  statisticsCalculatorTool,
+  durationConverterTool,
+  hexDumpViewerTool,
+  unicodeInspectorTool,
+  markdownTocGeneratorTool,
+  globPatternTesterTool,
+  conventionalCommitLinterTool,
+  utmLinkBuilderTool,
+  cacheControlBuilderTool,
+  cspBuilderTool,
+  icsEventGeneratorTool,
+  licenseGeneratorTool,
+  robotsTxtGeneratorTool,
+  readabilityAnalyzerTool,
+  stringSimilarityTool,
+  fancyTextGeneratorTool,
+  accessLogAnalyzerTool,
+  envFileCompareTool,
+  dockerfileLinterTool,
+  graphqlFormatterTool,
+  sshKeyFingerprintTool,
+  cvssCalculatorTool,
+  ipCidrMatcherTool,
+  ipv6AddressToolTool,
+  spfDmarcBuilderTool,
+  sitemapXmlGeneratorTool,
+  redirectRuleGeneratorTool,
+  coordinateConverterTool,
+  isbnGtinValidatorTool,
+  jsonFlattenTool,
+  iniJsonConverterTool,
+  harViewerTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

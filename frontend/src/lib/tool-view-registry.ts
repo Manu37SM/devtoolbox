@@ -208,6 +208,45 @@ import { ReadingTimeEstimatorToolView } from "@/modules/tools/text/reading-time-
 import { PassphraseGeneratorToolView } from "@/modules/tools/generators/passphrase-generator/ToolView";
 import { JavaDateFormatConverterToolView } from "@/modules/tools/code/java-date-format-converter/ToolView";
 import { OpenapiViewerToolView } from "@/modules/tools/data-format/openapi-viewer/ToolView";
+import { IdDecoderToolView } from "@/modules/tools/encoding/id-decoder/ToolView";
+import { Base58Base62ConverterToolView } from "@/modules/tools/encoding/base58-base62-converter/ToolView";
+import { HashIdentifierToolView } from "@/modules/tools/security/hash-identifier/ToolView";
+import { Json5JsoncConverterToolView } from "@/modules/tools/data-format/json5-jsonc-converter/ToolView";
+import { KubernetesSecretEncoderToolView } from "@/modules/tools/data-format/kubernetes-secret-encoder/ToolView";
+import { KubernetesResourceConverterToolView } from "@/modules/tools/converters/kubernetes-resource-converter/ToolView";
+import { NumberTheoryCalculatorToolView } from "@/modules/tools/converters/number-theory-calculator/ToolView";
+import { StatisticsCalculatorToolView } from "@/modules/tools/converters/statistics-calculator/ToolView";
+import { DurationConverterToolView } from "@/modules/tools/converters/duration-converter/ToolView";
+import { HexDumpViewerToolView } from "@/modules/tools/encoding/hex-dump-viewer/ToolView";
+import { UnicodeInspectorToolView } from "@/modules/tools/text/unicode-inspector/ToolView";
+import { MarkdownTocGeneratorToolView } from "@/modules/tools/text/markdown-toc-generator/ToolView";
+import { GlobPatternTesterToolView } from "@/modules/tools/code/glob-pattern-tester/ToolView";
+import { ConventionalCommitLinterToolView } from "@/modules/tools/code/conventional-commit-linter/ToolView";
+import { UtmLinkBuilderToolView } from "@/modules/tools/network/utm-link-builder/ToolView";
+import { CacheControlBuilderToolView } from "@/modules/tools/network/cache-control-builder/ToolView";
+import { CspBuilderToolView } from "@/modules/tools/security/csp-builder/ToolView";
+import { IcsEventGeneratorToolView } from "@/modules/tools/generators/ics-event-generator/ToolView";
+import { LicenseGeneratorToolView } from "@/modules/tools/generators/license-generator/ToolView";
+import { RobotsTxtGeneratorToolView } from "@/modules/tools/network/robots-txt-generator/ToolView";
+import { ReadabilityAnalyzerToolView } from "@/modules/tools/text/readability-analyzer/ToolView";
+import { StringSimilarityToolView } from "@/modules/tools/text/string-similarity/ToolView";
+import { FancyTextGeneratorToolView } from "@/modules/tools/text/fancy-text-generator/ToolView";
+import { AccessLogAnalyzerToolView } from "@/modules/tools/text/access-log-analyzer/ToolView";
+import { EnvFileCompareToolView } from "@/modules/tools/code/env-file-compare/ToolView";
+import { DockerfileLinterToolView } from "@/modules/tools/code/dockerfile-linter/ToolView";
+import { GraphqlFormatterToolView } from "@/modules/tools/code/graphql-formatter/ToolView";
+import { SshKeyFingerprintToolView } from "@/modules/tools/security/ssh-key-fingerprint/ToolView";
+import { CvssCalculatorToolView } from "@/modules/tools/security/cvss-calculator/ToolView";
+import { IpCidrMatcherToolView } from "@/modules/tools/network/ip-cidr-matcher/ToolView";
+import { Ipv6AddressToolToolView } from "@/modules/tools/network/ipv6-address-tool/ToolView";
+import { SpfDmarcBuilderToolView } from "@/modules/tools/network/spf-dmarc-builder/ToolView";
+import { SitemapXmlGeneratorToolView } from "@/modules/tools/network/sitemap-xml-generator/ToolView";
+import { RedirectRuleGeneratorToolView } from "@/modules/tools/network/redirect-rule-generator/ToolView";
+import { CoordinateConverterToolView } from "@/modules/tools/converters/coordinate-converter/ToolView";
+import { IsbnGtinValidatorToolView } from "@/modules/tools/converters/isbn-gtin-validator/ToolView";
+import { JsonFlattenToolView } from "@/modules/tools/data-format/json-flatten/ToolView";
+import { IniJsonConverterToolView } from "@/modules/tools/data-format/ini-json-converter/ToolView";
+import { HarViewerToolView } from "@/modules/tools/data-format/har-viewer/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -363,4 +402,43 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "passphrase-generator": PassphraseGeneratorToolView,
   "java-date-format-converter": JavaDateFormatConverterToolView,
   "openapi-viewer": OpenapiViewerToolView,
+  "id-decoder": IdDecoderToolView,
+  "base58-base62-converter": Base58Base62ConverterToolView,
+  "hash-identifier": HashIdentifierToolView,
+  "json5-jsonc-converter": Json5JsoncConverterToolView,
+  "kubernetes-secret-encoder": KubernetesSecretEncoderToolView,
+  "kubernetes-resource-converter": KubernetesResourceConverterToolView,
+  "number-theory-calculator": NumberTheoryCalculatorToolView,
+  "statistics-calculator": StatisticsCalculatorToolView,
+  "duration-converter": DurationConverterToolView,
+  "hex-dump-viewer": HexDumpViewerToolView,
+  "unicode-inspector": UnicodeInspectorToolView,
+  "markdown-toc-generator": MarkdownTocGeneratorToolView,
+  "glob-pattern-tester": GlobPatternTesterToolView,
+  "conventional-commit-linter": ConventionalCommitLinterToolView,
+  "utm-link-builder": UtmLinkBuilderToolView,
+  "cache-control-builder": CacheControlBuilderToolView,
+  "csp-builder": CspBuilderToolView,
+  "ics-event-generator": IcsEventGeneratorToolView,
+  "license-generator": LicenseGeneratorToolView,
+  "robots-txt-generator": RobotsTxtGeneratorToolView,
+  "readability-analyzer": ReadabilityAnalyzerToolView,
+  "string-similarity": StringSimilarityToolView,
+  "fancy-text-generator": FancyTextGeneratorToolView,
+  "access-log-analyzer": AccessLogAnalyzerToolView,
+  "env-file-compare": EnvFileCompareToolView,
+  "dockerfile-linter": DockerfileLinterToolView,
+  "graphql-formatter": GraphqlFormatterToolView,
+  "ssh-key-fingerprint": SshKeyFingerprintToolView,
+  "cvss-calculator": CvssCalculatorToolView,
+  "ip-cidr-matcher": IpCidrMatcherToolView,
+  "ipv6-address-tool": Ipv6AddressToolToolView,
+  "spf-dmarc-builder": SpfDmarcBuilderToolView,
+  "sitemap-xml-generator": SitemapXmlGeneratorToolView,
+  "redirect-rule-generator": RedirectRuleGeneratorToolView,
+  "coordinate-converter": CoordinateConverterToolView,
+  "isbn-gtin-validator": IsbnGtinValidatorToolView,
+  "json-flatten": JsonFlattenToolView,
+  "ini-json-converter": IniJsonConverterToolView,
+  "har-viewer": HarViewerToolView,
 };
