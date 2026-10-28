@@ -59,13 +59,15 @@ describe("entropy", () => {
 
 describe("generatePassphrases", () => {
   it("returns the requested number of passphrases plus the entropy note", () => {
-    const out = generatePassphrases("", base).output.split("\n");
-    expect(out.slice(0, 3).every((l) => l.split("-").length === 6)).toBe(true);
+    // use a space separator: the EFF list contains hyphenated words such as "t-shirt"
+    const out = generatePassphrases("", { ...base, separator: "space" }).output.split("\n");
+    expect(out.slice(0, 3).every((l) => l.split(" ").length === 6)).toBe(true);
     expect(out.join("\n")).toContain("77.5 bits");
   });
   it("clamps words and count, and warns about short passphrases", () => {
-    const out = generatePassphrases("", { ...base, words: 1, count: 99 }).output;
-    expect(out.split("\n").filter((l) => l.split("-").length === 3)).toHaveLength(20);
+    const out = generatePassphrases("", { ...base, words: 1, count: 99, separator: "space" }).output;
+    expect(out.split("\n").slice(0, 20).every((l) => l.split(" ").length === 3)).toBe(true);
+    expect(out.split("\n")[20]!.split(" ")).not.toHaveLength(3);
     expect(out).toContain("at least 5 words");
   });
 });
