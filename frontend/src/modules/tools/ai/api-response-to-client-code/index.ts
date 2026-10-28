@@ -6,7 +6,7 @@ export const apiResponseToClientCodeTool: ToolRegistryEntry = {
   module: "ai",
   description: "Paste a sample JSON API response and get a typed fetch or axios client function plus its response type.",
   aliases: ["json to typescript client", "generate api client", "fetch client generator", "axios client generator"],
-  icon: "FileCode2",
+  icon: "FileCodeCorner",
   isClientOnly: false,
   isWorkerEligible: false,
   seo: {

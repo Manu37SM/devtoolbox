@@ -6,7 +6,7 @@ export const loremIpsumTool: ToolRegistryEntry = {
   module: "text",
   description: "Generate placeholder Lorem Ipsum text by words, sentences, paragraphs, or list items.",
   aliases: ["lorem ipsum", "placeholder text generator", "dummy text generator"],
-  icon: "AlignLeft",
+  icon: "TextAlignStart",
   isClientOnly: true,
   isWorkerEligible: false,
   seo: { keywords: ["lorem ipsum generator", "placeholder text generator"] },

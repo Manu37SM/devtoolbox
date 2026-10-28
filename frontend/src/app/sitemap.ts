@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
-import { toolRegistry } from "@/lib/registry";
+import { toolRegistry, getToolsByModule } from "@/lib/registry";
+import { MODULE_ORDER } from "@/lib/module-meta";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://devtoolbox.dev";
 
@@ -8,6 +9,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${siteUrl}/tools/${tool.slug}`,
     changeFrequency: "monthly",
     priority: 0.8,
+  }));
+
+  const categoryPages: MetadataRoute.Sitemap = MODULE_ORDER.filter((m) => getToolsByModule(m).length > 0).map((m) => ({
+    url: `${siteUrl}/category/${m}`,
+    changeFrequency: "weekly",
+    priority: 0.7,
   }));
 
   return [
@@ -21,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.5,
     },
+    ...categoryPages,
     ...toolPages,
   ];
 }
