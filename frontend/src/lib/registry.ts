@@ -251,6 +251,20 @@ import { isbnGtinValidatorTool } from "@/modules/tools/converters/isbn-gtin-vali
 import { jsonFlattenTool } from "@/modules/tools/data-format/json-flatten";
 import { iniJsonConverterTool } from "@/modules/tools/data-format/ini-json-converter";
 import { harViewerTool } from "@/modules/tools/data-format/har-viewer";
+import { securityTxtGeneratorTool } from "@/modules/tools/generators/security-txt-generator";
+import { editorconfigGeneratorTool } from "@/modules/tools/generators/editorconfig-generator";
+import { systemdUnitGeneratorTool } from "@/modules/tools/generators/systemd-unit-generator";
+import { githubActionsGeneratorTool } from "@/modules/tools/generators/github-actions-generator";
+import { dnsZoneRecordBuilderTool } from "@/modules/tools/network/dns-zone-record-builder";
+import { linkHeaderParserTool } from "@/modules/tools/network/link-header-parser";
+import { secretScannerTool } from "@/modules/tools/security/secret-scanner";
+import { ansiEscapeStripperTool } from "@/modules/tools/text/ansi-escape-stripper";
+import { markdownTableFormatterTool } from "@/modules/tools/text/markdown-table-formatter";
+import { csvToSqlInsertTool } from "@/modules/tools/data-format/csv-to-sql-insert";
+import { jsonSortKeysTool } from "@/modules/tools/data-format/json-sort-keys";
+import { jsonToGoPythonTool } from "@/modules/tools/code/json-to-go-python";
+import { musicNoteFrequencyTool } from "@/modules/tools/converters/music-note-frequency";
+import { fractionDecimalConverterTool } from "@/modules/tools/converters/fraction-decimal-converter";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -445,6 +459,20 @@ export const toolRegistry: ToolRegistryEntry[] = [
   jsonFlattenTool,
   iniJsonConverterTool,
   harViewerTool,
+  securityTxtGeneratorTool,
+  editorconfigGeneratorTool,
+  systemdUnitGeneratorTool,
+  githubActionsGeneratorTool,
+  dnsZoneRecordBuilderTool,
+  linkHeaderParserTool,
+  secretScannerTool,
+  ansiEscapeStripperTool,
+  markdownTableFormatterTool,
+  csvToSqlInsertTool,
+  jsonSortKeysTool,
+  jsonToGoPythonTool,
+  musicNoteFrequencyTool,
+  fractionDecimalConverterTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

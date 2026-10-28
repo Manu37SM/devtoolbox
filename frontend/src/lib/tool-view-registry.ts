@@ -247,6 +247,20 @@ import { IsbnGtinValidatorToolView } from "@/modules/tools/converters/isbn-gtin-
 import { JsonFlattenToolView } from "@/modules/tools/data-format/json-flatten/ToolView";
 import { IniJsonConverterToolView } from "@/modules/tools/data-format/ini-json-converter/ToolView";
 import { HarViewerToolView } from "@/modules/tools/data-format/har-viewer/ToolView";
+import { SecurityTxtGeneratorToolView } from "@/modules/tools/generators/security-txt-generator/ToolView";
+import { EditorconfigGeneratorToolView } from "@/modules/tools/generators/editorconfig-generator/ToolView";
+import { SystemdUnitGeneratorToolView } from "@/modules/tools/generators/systemd-unit-generator/ToolView";
+import { GithubActionsGeneratorToolView } from "@/modules/tools/generators/github-actions-generator/ToolView";
+import { DnsZoneRecordBuilderToolView } from "@/modules/tools/network/dns-zone-record-builder/ToolView";
+import { LinkHeaderParserToolView } from "@/modules/tools/network/link-header-parser/ToolView";
+import { SecretScannerToolView } from "@/modules/tools/security/secret-scanner/ToolView";
+import { AnsiEscapeStripperToolView } from "@/modules/tools/text/ansi-escape-stripper/ToolView";
+import { MarkdownTableFormatterToolView } from "@/modules/tools/text/markdown-table-formatter/ToolView";
+import { CsvToSqlInsertToolView } from "@/modules/tools/data-format/csv-to-sql-insert/ToolView";
+import { JsonSortKeysToolView } from "@/modules/tools/data-format/json-sort-keys/ToolView";
+import { JsonToGoPythonToolView } from "@/modules/tools/code/json-to-go-python/ToolView";
+import { MusicNoteFrequencyToolView } from "@/modules/tools/converters/music-note-frequency/ToolView";
+import { FractionDecimalConverterToolView } from "@/modules/tools/converters/fraction-decimal-converter/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -441,4 +455,18 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "json-flatten": JsonFlattenToolView,
   "ini-json-converter": IniJsonConverterToolView,
   "har-viewer": HarViewerToolView,
+  "security-txt-generator": SecurityTxtGeneratorToolView,
+  "editorconfig-generator": EditorconfigGeneratorToolView,
+  "systemd-unit-generator": SystemdUnitGeneratorToolView,
+  "github-actions-generator": GithubActionsGeneratorToolView,
+  "dns-zone-record-builder": DnsZoneRecordBuilderToolView,
+  "link-header-parser": LinkHeaderParserToolView,
+  "secret-scanner": SecretScannerToolView,
+  "ansi-escape-stripper": AnsiEscapeStripperToolView,
+  "markdown-table-formatter": MarkdownTableFormatterToolView,
+  "csv-to-sql-insert": CsvToSqlInsertToolView,
+  "json-sort-keys": JsonSortKeysToolView,
+  "json-to-go-python": JsonToGoPythonToolView,
+  "music-note-frequency": MusicNoteFrequencyToolView,
+  "fraction-decimal-converter": FractionDecimalConverterToolView,
 };
