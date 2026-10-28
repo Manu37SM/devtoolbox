@@ -232,6 +232,25 @@ import { cspBuilderTool } from "@/modules/tools/security/csp-builder";
 import { icsEventGeneratorTool } from "@/modules/tools/generators/ics-event-generator";
 import { licenseGeneratorTool } from "@/modules/tools/generators/license-generator";
 import { robotsTxtGeneratorTool } from "@/modules/tools/network/robots-txt-generator";
+import { readabilityAnalyzerTool } from "@/modules/tools/text/readability-analyzer";
+import { stringSimilarityTool } from "@/modules/tools/text/string-similarity";
+import { fancyTextGeneratorTool } from "@/modules/tools/text/fancy-text-generator";
+import { accessLogAnalyzerTool } from "@/modules/tools/text/access-log-analyzer";
+import { envFileCompareTool } from "@/modules/tools/code/env-file-compare";
+import { dockerfileLinterTool } from "@/modules/tools/code/dockerfile-linter";
+import { graphqlFormatterTool } from "@/modules/tools/code/graphql-formatter";
+import { sshKeyFingerprintTool } from "@/modules/tools/security/ssh-key-fingerprint";
+import { cvssCalculatorTool } from "@/modules/tools/security/cvss-calculator";
+import { ipCidrMatcherTool } from "@/modules/tools/network/ip-cidr-matcher";
+import { ipv6AddressToolTool } from "@/modules/tools/network/ipv6-address-tool";
+import { spfDmarcBuilderTool } from "@/modules/tools/network/spf-dmarc-builder";
+import { sitemapXmlGeneratorTool } from "@/modules/tools/network/sitemap-xml-generator";
+import { redirectRuleGeneratorTool } from "@/modules/tools/network/redirect-rule-generator";
+import { coordinateConverterTool } from "@/modules/tools/converters/coordinate-converter";
+import { isbnGtinValidatorTool } from "@/modules/tools/converters/isbn-gtin-validator";
+import { jsonFlattenTool } from "@/modules/tools/data-format/json-flatten";
+import { iniJsonConverterTool } from "@/modules/tools/data-format/ini-json-converter";
+import { harViewerTool } from "@/modules/tools/data-format/har-viewer";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -407,6 +426,25 @@ export const toolRegistry: ToolRegistryEntry[] = [
   icsEventGeneratorTool,
   licenseGeneratorTool,
   robotsTxtGeneratorTool,
+  readabilityAnalyzerTool,
+  stringSimilarityTool,
+  fancyTextGeneratorTool,
+  accessLogAnalyzerTool,
+  envFileCompareTool,
+  dockerfileLinterTool,
+  graphqlFormatterTool,
+  sshKeyFingerprintTool,
+  cvssCalculatorTool,
+  ipCidrMatcherTool,
+  ipv6AddressToolTool,
+  spfDmarcBuilderTool,
+  sitemapXmlGeneratorTool,
+  redirectRuleGeneratorTool,
+  coordinateConverterTool,
+  isbnGtinValidatorTool,
+  jsonFlattenTool,
+  iniJsonConverterTool,
+  harViewerTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {
