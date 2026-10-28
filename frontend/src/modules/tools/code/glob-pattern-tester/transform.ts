@@ -17,7 +17,7 @@ export function expandBraces(pattern: string, limit = 500): string[] {
   const [a, b] = start;
   const pre = pattern.slice(0, a), body = pattern.slice(a + 1, b), post = pattern.slice(b + 1);
   const range = /^(-?\d+)\.\.(-?\d+)$/.exec(body);
-  let alts: string[] = [];
+  const alts: string[] = [];
   if (range) {
     const lo = Number(range[1]), hi = Number(range[2]);
     const step = lo <= hi ? 1 : -1;

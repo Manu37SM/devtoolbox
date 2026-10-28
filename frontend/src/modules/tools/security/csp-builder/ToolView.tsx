@@ -50,15 +50,15 @@ export function CspBuilderToolView() {
         </label>
         <label className="flex items-center gap-1.5 text-sm text-text-secondary">
           <input type="checkbox" checked={options.blockObjects} onChange={(e) => setOptions((o) => ({ ...o, blockObjects: e.target.checked }))} />
-          object-src 'none'
+          object-src &apos;none&apos;
         </label>
         <label className="flex items-center gap-1.5 text-sm text-text-secondary">
           <input type="checkbox" checked={options.baseUri} onChange={(e) => setOptions((o) => ({ ...o, baseUri: e.target.checked }))} />
-          base-uri 'self'
+          base-uri &apos;self&apos;
         </label>
         <label className="flex items-center gap-1.5 text-sm text-text-secondary">
           <input type="checkbox" checked={options.formAction} onChange={(e) => setOptions((o) => ({ ...o, formAction: e.target.checked }))} />
-          form-action 'self'
+          form-action &apos;self&apos;
         </label>
         <label className="flex items-center gap-1.5 text-sm text-text-secondary">
           frame-ancestors
