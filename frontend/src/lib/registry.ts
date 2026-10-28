@@ -265,6 +265,35 @@ import { jsonSortKeysTool } from "@/modules/tools/data-format/json-sort-keys";
 import { jsonToGoPythonTool } from "@/modules/tools/code/json-to-go-python";
 import { musicNoteFrequencyTool } from "@/modules/tools/converters/music-note-frequency";
 import { fractionDecimalConverterTool } from "@/modules/tools/converters/fraction-decimal-converter";
+import { mavenGradleDependencyConverterTool } from "@/modules/tools/code/maven-gradle-dependency-converter";
+import { springPropertyEnvConverterTool } from "@/modules/tools/code/spring-property-env-converter";
+import { jdbcUrlBuilderTool } from "@/modules/tools/code/jdbc-url-builder";
+import { jsonToZodTool } from "@/modules/tools/code/json-to-zod";
+import { jsonToKotlinSwiftTool } from "@/modules/tools/code/json-to-kotlin-swift";
+import { packageJsonValidatorTool } from "@/modules/tools/code/package-json-validator";
+import { kubernetesManifestLinterTool } from "@/modules/tools/code/kubernetes-manifest-linter";
+import { htpasswdGeneratorTool } from "@/modules/tools/security/htpasswd-generator";
+import { opensslCommandBuilderTool } from "@/modules/tools/security/openssl-command-builder";
+import { piiMaskerTool } from "@/modules/tools/security/pii-masker";
+import { cidrAggregatorTool } from "@/modules/tools/network/cidr-aggregator";
+import { corsConfigGeneratorTool } from "@/modules/tools/network/cors-config-generator";
+import { kongConfigGeneratorTool } from "@/modules/tools/network/kong-config-generator";
+import { nginxConfigGeneratorTool } from "@/modules/tools/network/nginx-config-generator";
+import { lineToolsTool } from "@/modules/tools/text/line-tools";
+import { unicodeNormalizerTool } from "@/modules/tools/text/unicode-normalizer";
+import { subtitleConverterTool } from "@/modules/tools/text/subtitle-converter";
+import { epochFormatConverterTool } from "@/modules/tools/converters/epoch-format-converter";
+import { numberFormatterTool } from "@/modules/tools/converters/number-formatter";
+import { electronicsCalculatorTool } from "@/modules/tools/converters/electronics-calculator";
+import { sipCalculatorTool } from "@/modules/tools/converters/sip-calculator";
+import { jsonPatchToolTool } from "@/modules/tools/data-format/json-patch-tool";
+import { yamlAnchorExpanderTool } from "@/modules/tools/data-format/yaml-anchor-expander";
+import { csvProfilerTool } from "@/modules/tools/data-format/csv-profiler";
+import { asciiTableParserTool } from "@/modules/tools/data-format/ascii-table-parser";
+import { badgeGeneratorTool } from "@/modules/tools/generators/badge-generator";
+import { mavenPomGeneratorTool } from "@/modules/tools/generators/maven-pom-generator";
+import { springConfigGeneratorTool } from "@/modules/tools/generators/spring-config-generator";
+import { webAppManifestGeneratorTool } from "@/modules/tools/generators/web-app-manifest-generator";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -473,6 +502,35 @@ export const toolRegistry: ToolRegistryEntry[] = [
   jsonToGoPythonTool,
   musicNoteFrequencyTool,
   fractionDecimalConverterTool,
+  mavenGradleDependencyConverterTool,
+  springPropertyEnvConverterTool,
+  jdbcUrlBuilderTool,
+  jsonToZodTool,
+  jsonToKotlinSwiftTool,
+  packageJsonValidatorTool,
+  kubernetesManifestLinterTool,
+  htpasswdGeneratorTool,
+  opensslCommandBuilderTool,
+  piiMaskerTool,
+  cidrAggregatorTool,
+  corsConfigGeneratorTool,
+  kongConfigGeneratorTool,
+  nginxConfigGeneratorTool,
+  lineToolsTool,
+  unicodeNormalizerTool,
+  subtitleConverterTool,
+  epochFormatConverterTool,
+  numberFormatterTool,
+  electronicsCalculatorTool,
+  sipCalculatorTool,
+  jsonPatchToolTool,
+  yamlAnchorExpanderTool,
+  csvProfilerTool,
+  asciiTableParserTool,
+  badgeGeneratorTool,
+  mavenPomGeneratorTool,
+  springConfigGeneratorTool,
+  webAppManifestGeneratorTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {
