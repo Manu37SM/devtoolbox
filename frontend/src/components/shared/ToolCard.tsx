@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ToolRegistryEntry } from "@devtoolbox/shared";
 import { DynamicIcon } from "@/components/ui/DynamicIcon";
+import { AiBadge } from "@/components/shared/AiBadge";
+import { isAiTool } from "@/lib/tiers";
 
 export function ToolCard({ tool }: { tool: ToolRegistryEntry }) {
   return (
@@ -12,7 +14,10 @@ export function ToolCard({ tool }: { tool: ToolRegistryEntry }) {
         <DynamicIcon name={tool.icon} className="h-4 w-4" aria-hidden="true" />
       </span>
       <span className="min-w-0">
-        <span className="block truncate font-medium text-text-primary">{tool.name}</span>
+        <span className="flex items-center gap-2">
+          <span className="truncate font-medium text-text-primary">{tool.name}</span>
+          {isAiTool(tool) && <AiBadge />}
+        </span>
         <span className="mt-0.5 line-clamp-2 block text-sm text-text-muted">{tool.description}</span>
       </span>
     </Link>

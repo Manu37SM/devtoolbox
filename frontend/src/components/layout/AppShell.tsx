@@ -40,6 +40,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/plugins" className="hover:text-text-primary">
             Plugins
           </Link>
+          <Link href="/pricing" className="hover:text-text-primary">
+            Pricing
+          </Link>
           {isAuthenticated && (
             <Link href="/snippets" className="hover:text-text-primary">
               Snippets
