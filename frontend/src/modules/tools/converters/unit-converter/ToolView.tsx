@@ -9,6 +9,12 @@ const CATEGORIES: { value: UnitConverterOptions["category"]; label: string }[] =
   { value: "time", label: "Time" },
   { value: "length", label: "Length" },
   { value: "weight", label: "Weight" },
+  { value: "temperature", label: "Temperature" },
+  { value: "speed", label: "Speed" },
+  { value: "area", label: "Area" },
+  { value: "volume", label: "Volume" },
+  { value: "pressure", label: "Pressure" },
+  { value: "energy", label: "Energy" },
 ];
 
 export function UnitConverterToolView() {
