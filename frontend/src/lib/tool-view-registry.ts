@@ -261,6 +261,35 @@ import { JsonSortKeysToolView } from "@/modules/tools/data-format/json-sort-keys
 import { JsonToGoPythonToolView } from "@/modules/tools/code/json-to-go-python/ToolView";
 import { MusicNoteFrequencyToolView } from "@/modules/tools/converters/music-note-frequency/ToolView";
 import { FractionDecimalConverterToolView } from "@/modules/tools/converters/fraction-decimal-converter/ToolView";
+import { MavenGradleDependencyConverterToolView } from "@/modules/tools/code/maven-gradle-dependency-converter/ToolView";
+import { SpringPropertyEnvConverterToolView } from "@/modules/tools/code/spring-property-env-converter/ToolView";
+import { JdbcUrlBuilderToolView } from "@/modules/tools/code/jdbc-url-builder/ToolView";
+import { JsonToZodToolView } from "@/modules/tools/code/json-to-zod/ToolView";
+import { JsonToKotlinSwiftToolView } from "@/modules/tools/code/json-to-kotlin-swift/ToolView";
+import { PackageJsonValidatorToolView } from "@/modules/tools/code/package-json-validator/ToolView";
+import { KubernetesManifestLinterToolView } from "@/modules/tools/code/kubernetes-manifest-linter/ToolView";
+import { HtpasswdGeneratorToolView } from "@/modules/tools/security/htpasswd-generator/ToolView";
+import { OpensslCommandBuilderToolView } from "@/modules/tools/security/openssl-command-builder/ToolView";
+import { PiiMaskerToolView } from "@/modules/tools/security/pii-masker/ToolView";
+import { CidrAggregatorToolView } from "@/modules/tools/network/cidr-aggregator/ToolView";
+import { CorsConfigGeneratorToolView } from "@/modules/tools/network/cors-config-generator/ToolView";
+import { KongConfigGeneratorToolView } from "@/modules/tools/network/kong-config-generator/ToolView";
+import { NginxConfigGeneratorToolView } from "@/modules/tools/network/nginx-config-generator/ToolView";
+import { LineToolsToolView } from "@/modules/tools/text/line-tools/ToolView";
+import { UnicodeNormalizerToolView } from "@/modules/tools/text/unicode-normalizer/ToolView";
+import { SubtitleConverterToolView } from "@/modules/tools/text/subtitle-converter/ToolView";
+import { EpochFormatConverterToolView } from "@/modules/tools/converters/epoch-format-converter/ToolView";
+import { NumberFormatterToolView } from "@/modules/tools/converters/number-formatter/ToolView";
+import { ElectronicsCalculatorToolView } from "@/modules/tools/converters/electronics-calculator/ToolView";
+import { SipCalculatorToolView } from "@/modules/tools/converters/sip-calculator/ToolView";
+import { JsonPatchToolToolView } from "@/modules/tools/data-format/json-patch-tool/ToolView";
+import { YamlAnchorExpanderToolView } from "@/modules/tools/data-format/yaml-anchor-expander/ToolView";
+import { CsvProfilerToolView } from "@/modules/tools/data-format/csv-profiler/ToolView";
+import { AsciiTableParserToolView } from "@/modules/tools/data-format/ascii-table-parser/ToolView";
+import { BadgeGeneratorToolView } from "@/modules/tools/generators/badge-generator/ToolView";
+import { MavenPomGeneratorToolView } from "@/modules/tools/generators/maven-pom-generator/ToolView";
+import { SpringConfigGeneratorToolView } from "@/modules/tools/generators/spring-config-generator/ToolView";
+import { WebAppManifestGeneratorToolView } from "@/modules/tools/generators/web-app-manifest-generator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -469,4 +498,33 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "json-to-go-python": JsonToGoPythonToolView,
   "music-note-frequency": MusicNoteFrequencyToolView,
   "fraction-decimal-converter": FractionDecimalConverterToolView,
+  "maven-gradle-dependency-converter": MavenGradleDependencyConverterToolView,
+  "spring-property-env-converter": SpringPropertyEnvConverterToolView,
+  "jdbc-url-builder": JdbcUrlBuilderToolView,
+  "json-to-zod": JsonToZodToolView,
+  "json-to-kotlin-swift": JsonToKotlinSwiftToolView,
+  "package-json-validator": PackageJsonValidatorToolView,
+  "kubernetes-manifest-linter": KubernetesManifestLinterToolView,
+  "htpasswd-generator": HtpasswdGeneratorToolView,
+  "openssl-command-builder": OpensslCommandBuilderToolView,
+  "pii-masker": PiiMaskerToolView,
+  "cidr-aggregator": CidrAggregatorToolView,
+  "cors-config-generator": CorsConfigGeneratorToolView,
+  "kong-config-generator": KongConfigGeneratorToolView,
+  "nginx-config-generator": NginxConfigGeneratorToolView,
+  "line-tools": LineToolsToolView,
+  "unicode-normalizer": UnicodeNormalizerToolView,
+  "subtitle-converter": SubtitleConverterToolView,
+  "epoch-format-converter": EpochFormatConverterToolView,
+  "number-formatter": NumberFormatterToolView,
+  "electronics-calculator": ElectronicsCalculatorToolView,
+  "sip-calculator": SipCalculatorToolView,
+  "json-patch-tool": JsonPatchToolToolView,
+  "yaml-anchor-expander": YamlAnchorExpanderToolView,
+  "csv-profiler": CsvProfilerToolView,
+  "ascii-table-parser": AsciiTableParserToolView,
+  "badge-generator": BadgeGeneratorToolView,
+  "maven-pom-generator": MavenPomGeneratorToolView,
+  "spring-config-generator": SpringConfigGeneratorToolView,
+  "web-app-manifest-generator": WebAppManifestGeneratorToolView,
 };
