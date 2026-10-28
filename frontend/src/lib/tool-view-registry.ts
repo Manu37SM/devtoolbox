@@ -208,6 +208,26 @@ import { ReadingTimeEstimatorToolView } from "@/modules/tools/text/reading-time-
 import { PassphraseGeneratorToolView } from "@/modules/tools/generators/passphrase-generator/ToolView";
 import { JavaDateFormatConverterToolView } from "@/modules/tools/code/java-date-format-converter/ToolView";
 import { OpenapiViewerToolView } from "@/modules/tools/data-format/openapi-viewer/ToolView";
+import { IdDecoderToolView } from "@/modules/tools/encoding/id-decoder/ToolView";
+import { Base58Base62ConverterToolView } from "@/modules/tools/encoding/base58-base62-converter/ToolView";
+import { HashIdentifierToolView } from "@/modules/tools/security/hash-identifier/ToolView";
+import { Json5JsoncConverterToolView } from "@/modules/tools/data-format/json5-jsonc-converter/ToolView";
+import { KubernetesSecretEncoderToolView } from "@/modules/tools/data-format/kubernetes-secret-encoder/ToolView";
+import { KubernetesResourceConverterToolView } from "@/modules/tools/converters/kubernetes-resource-converter/ToolView";
+import { NumberTheoryCalculatorToolView } from "@/modules/tools/converters/number-theory-calculator/ToolView";
+import { StatisticsCalculatorToolView } from "@/modules/tools/converters/statistics-calculator/ToolView";
+import { DurationConverterToolView } from "@/modules/tools/converters/duration-converter/ToolView";
+import { HexDumpViewerToolView } from "@/modules/tools/encoding/hex-dump-viewer/ToolView";
+import { UnicodeInspectorToolView } from "@/modules/tools/text/unicode-inspector/ToolView";
+import { MarkdownTocGeneratorToolView } from "@/modules/tools/text/markdown-toc-generator/ToolView";
+import { GlobPatternTesterToolView } from "@/modules/tools/code/glob-pattern-tester/ToolView";
+import { ConventionalCommitLinterToolView } from "@/modules/tools/code/conventional-commit-linter/ToolView";
+import { UtmLinkBuilderToolView } from "@/modules/tools/network/utm-link-builder/ToolView";
+import { CacheControlBuilderToolView } from "@/modules/tools/network/cache-control-builder/ToolView";
+import { CspBuilderToolView } from "@/modules/tools/security/csp-builder/ToolView";
+import { IcsEventGeneratorToolView } from "@/modules/tools/generators/ics-event-generator/ToolView";
+import { LicenseGeneratorToolView } from "@/modules/tools/generators/license-generator/ToolView";
+import { RobotsTxtGeneratorToolView } from "@/modules/tools/network/robots-txt-generator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -363,4 +383,24 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "passphrase-generator": PassphraseGeneratorToolView,
   "java-date-format-converter": JavaDateFormatConverterToolView,
   "openapi-viewer": OpenapiViewerToolView,
+  "id-decoder": IdDecoderToolView,
+  "base58-base62-converter": Base58Base62ConverterToolView,
+  "hash-identifier": HashIdentifierToolView,
+  "json5-jsonc-converter": Json5JsoncConverterToolView,
+  "kubernetes-secret-encoder": KubernetesSecretEncoderToolView,
+  "kubernetes-resource-converter": KubernetesResourceConverterToolView,
+  "number-theory-calculator": NumberTheoryCalculatorToolView,
+  "statistics-calculator": StatisticsCalculatorToolView,
+  "duration-converter": DurationConverterToolView,
+  "hex-dump-viewer": HexDumpViewerToolView,
+  "unicode-inspector": UnicodeInspectorToolView,
+  "markdown-toc-generator": MarkdownTocGeneratorToolView,
+  "glob-pattern-tester": GlobPatternTesterToolView,
+  "conventional-commit-linter": ConventionalCommitLinterToolView,
+  "utm-link-builder": UtmLinkBuilderToolView,
+  "cache-control-builder": CacheControlBuilderToolView,
+  "csp-builder": CspBuilderToolView,
+  "ics-event-generator": IcsEventGeneratorToolView,
+  "license-generator": LicenseGeneratorToolView,
+  "robots-txt-generator": RobotsTxtGeneratorToolView,
 };
