@@ -42,6 +42,7 @@ export function unflatten(flat: Record<string, Json>, delimiter: string, arrays:
     const segs = splitKey(key, delimiter, arrays);
     if (!segs.length || (segs.length === 1 && segs[0] === "")) { root = val; continue; }
     if (root === null || typeof root !== "object") root = typeof segs[0] === "number" ? [] : {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let cur: any = root;
     for (let i = 0; i < segs.length; i++) {
       const s = segs[i]!;

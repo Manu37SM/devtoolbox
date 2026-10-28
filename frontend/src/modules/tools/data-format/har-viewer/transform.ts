@@ -6,10 +6,12 @@ interface Row { idx: number; method: string; status: number; url: string; mime: 
 const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 
 export function parseHar(text: string): { rows: Row[]; creator: string; pages: number } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let har: any;
   try { har = JSON.parse(text); } catch (e) { throw new Error(`Invalid JSON: ${(e as Error).message}`); }
   const entries = har?.log?.entries;
   if (!Array.isArray(entries)) throw new Error('Not a HAR file: expected "log.entries" array');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows: Row[] = entries.map((e: any, idx: number) => {
     const res = e?.response ?? {};
     const bodySize = num(res.bodySize, -1);
