@@ -13,7 +13,7 @@ export function AccountNavLink() {
     return (
       <Link
         href="/login"
-        className="rounded-sm px-2 py-1 text-sm text-text-secondary hover:bg-bg-raised hover:text-text-primary"
+        className="whitespace-nowrap rounded-sm px-2 py-1 text-sm text-text-secondary hover:bg-bg-raised hover:text-text-primary"
       >
         Log in
       </Link>
@@ -23,10 +23,11 @@ export function AccountNavLink() {
   return (
     <Link
       href="/account"
-      className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-sm text-text-secondary hover:bg-bg-raised hover:text-text-primary"
+      aria-label="Account"
+      className="flex items-center gap-1.5 whitespace-nowrap rounded-sm px-2 py-1 text-sm text-text-secondary hover:bg-bg-raised hover:text-text-primary"
     >
-      <User className="h-4 w-4" />
-      {user.displayName ?? user.email}
+      <User className="h-4 w-4 shrink-0" />
+      <span className="hidden max-w-[10rem] truncate sm:inline">{user.displayName ?? user.email}</span>
     </Link>
   );
 }

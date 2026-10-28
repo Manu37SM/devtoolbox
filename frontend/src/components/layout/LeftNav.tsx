@@ -51,28 +51,27 @@ export function LeftNav() {
           {modules.map((moduleKey) => {
             const meta = MODULE_META[moduleKey];
             const tools = getToolsByModule(moduleKey);
-            const isOpen = isModuleOpen(moduleKey) && !collapsed;
+            const isOpen = isModuleOpen(moduleKey);
             const isActiveModule = activeModule === moduleKey;
             const panelId = `nav-${moduleKey}`;
 
-            if (collapsed) {
-              return (
-                <Link
-                  key={moduleKey}
-                  href={`/category/${moduleKey}`}
-                  title={`${meta.label} (${tools.length})`}
-                  aria-label={meta.label}
-                  className={`mx-2 mb-1 hidden items-center justify-center rounded-sm p-2 lg:flex ${
-                    isActiveModule ? "bg-bg-raised text-text-primary" : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
-                  }`}
-                >
-                  <DynamicIcon name={meta.icon} className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              );
-            }
+            const rail = collapsed ? (
+              <Link
+                href={`/category/${moduleKey}`}
+                title={`${meta.label} (${tools.length})`}
+                aria-label={meta.label}
+                className={`mx-2 mb-1 hidden items-center justify-center rounded-sm p-2 lg:flex ${
+                  isActiveModule ? "bg-bg-raised text-text-primary" : "text-text-secondary hover:bg-bg-raised hover:text-text-primary"
+                }`}
+              >
+                <DynamicIcon name={meta.icon} className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            ) : null;
 
             return (
-              <div key={moduleKey} className="mb-0.5">
+              <div key={moduleKey}>
+                {rail}
+                <div className={`mb-0.5 ${collapsed ? "lg:hidden" : ""}`}>
                 <button
                   type="button"
                   onClick={() => toggle(moduleKey)}
@@ -118,6 +117,7 @@ export function LeftNav() {
                     })}
                   </ul>
                 )}
+                </div>
               </div>
             );
           })}
