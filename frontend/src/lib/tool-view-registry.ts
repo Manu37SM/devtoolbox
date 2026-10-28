@@ -205,6 +205,9 @@ import { PortReferenceToolView } from "@/modules/tools/network/port-reference/To
 import { JavaStacktraceAnalyzerToolView } from "@/modules/tools/text/java-stacktrace-analyzer/ToolView";
 
 import { ReadingTimeEstimatorToolView } from "@/modules/tools/text/reading-time-estimator/ToolView";
+import { PassphraseGeneratorToolView } from "@/modules/tools/generators/passphrase-generator/ToolView";
+import { JavaDateFormatConverterToolView } from "@/modules/tools/code/java-date-format-converter/ToolView";
+import { OpenapiViewerToolView } from "@/modules/tools/data-format/openapi-viewer/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -357,4 +360,7 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "port-reference": PortReferenceToolView,
   "java-stacktrace-analyzer": JavaStacktraceAnalyzerToolView,
   "reading-time-estimator": ReadingTimeEstimatorToolView,
+  "passphrase-generator": PassphraseGeneratorToolView,
+  "java-date-format-converter": JavaDateFormatConverterToolView,
+  "openapi-viewer": OpenapiViewerToolView,
 };

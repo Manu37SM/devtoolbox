@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const unitConverterOptionsSchema = z.object({
-  category: z.enum(["data", "time", "length", "weight"]).default("data"),
+  category: z.enum(["data", "time", "length", "weight", "temperature", "speed", "area", "volume", "pressure", "energy"]).default("data"),
   fromUnit: z.string().default("MB"),
   toUnit: z.string().default("GB"),
   dataBase: z.enum(["1000", "1024"]).default("1024"),

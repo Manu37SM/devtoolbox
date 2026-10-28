@@ -3,8 +3,11 @@ import type { UnitConverterOptions } from "./schema";
 export interface UnitDefinition {
   id: string;
   label: string;
-
+  /** Multiplier to the category's base unit. Ignored when `toBaseFn` / `fromBaseFn` are given. */
   toBase: number;
+  /** For non-proportional units (temperature): convert a value in this unit to the base unit and back. */
+  toBaseFn?: (value: number) => number;
+  fromBaseFn?: (base: number) => number;
 }
 
 const TIME_UNITS: UnitDefinition[] = [
@@ -35,6 +38,74 @@ const WEIGHT_UNITS: UnitDefinition[] = [
   { id: "lb", label: "Pounds", toBase: 453.59237 },
 ];
 
+// Temperature base unit: degrees Celsius.
+const TEMPERATURE_UNITS: UnitDefinition[] = [
+  { id: "C", label: "Celsius", toBase: 1, toBaseFn: (v) => v, fromBaseFn: (b) => b },
+  { id: "F", label: "Fahrenheit", toBase: 1, toBaseFn: (v) => ((v - 32) * 5) / 9, fromBaseFn: (b) => (b * 9) / 5 + 32 },
+  { id: "K", label: "Kelvin", toBase: 1, toBaseFn: (v) => v - 273.15, fromBaseFn: (b) => b + 273.15 },
+  { id: "R", label: "Rankine", toBase: 1, toBaseFn: (v) => ((v - 491.67) * 5) / 9, fromBaseFn: (b) => (b * 9) / 5 + 491.67 },
+];
+
+// Speed base unit: metres per second.
+const SPEED_UNITS: UnitDefinition[] = [
+  { id: "m/s", label: "Metres per second", toBase: 1 },
+  { id: "km/h", label: "Kilometres per hour", toBase: 1 / 3.6 },
+  { id: "mph", label: "Miles per hour", toBase: 0.44704 },
+  { id: "kn", label: "Knots", toBase: 1852 / 3600 },
+  { id: "ft/s", label: "Feet per second", toBase: 0.3048 },
+];
+
+// Area base unit: square metres.
+const AREA_UNITS: UnitDefinition[] = [
+  { id: "mm2", label: "Square millimetres", toBase: 1e-6 },
+  { id: "cm2", label: "Square centimetres", toBase: 1e-4 },
+  { id: "m2", label: "Square metres", toBase: 1 },
+  { id: "ha", label: "Hectares", toBase: 10_000 },
+  { id: "km2", label: "Square kilometres", toBase: 1e6 },
+  { id: "in2", label: "Square inches", toBase: 0.00064516 },
+  { id: "ft2", label: "Square feet", toBase: 0.09290304 },
+  { id: "yd2", label: "Square yards", toBase: 0.83612736 },
+  { id: "ac", label: "Acres", toBase: 4046.8564224 },
+  { id: "mi2", label: "Square miles", toBase: 2_589_988.110336 },
+];
+
+// Volume base unit: litres (US customary units).
+const VOLUME_UNITS: UnitDefinition[] = [
+  { id: "mL", label: "Millilitres", toBase: 0.001 },
+  { id: "L", label: "Litres", toBase: 1 },
+  { id: "m3", label: "Cubic metres", toBase: 1000 },
+  { id: "tsp", label: "Teaspoons (US)", toBase: 0.00492892159375 },
+  { id: "tbsp", label: "Tablespoons (US)", toBase: 0.01478676478125 },
+  { id: "floz", label: "Fluid ounces (US)", toBase: 0.0295735295625 },
+  { id: "cup", label: "Cups (US)", toBase: 0.2365882365 },
+  { id: "pt", label: "Pints (US)", toBase: 0.473176473 },
+  { id: "qt", label: "Quarts (US)", toBase: 0.946352946 },
+  { id: "gal", label: "Gallons (US)", toBase: 3.785411784 },
+];
+
+// Pressure base unit: pascals.
+const PRESSURE_UNITS: UnitDefinition[] = [
+  { id: "Pa", label: "Pascals", toBase: 1 },
+  { id: "kPa", label: "Kilopascals", toBase: 1000 },
+  { id: "MPa", label: "Megapascals", toBase: 1e6 },
+  { id: "bar", label: "Bar", toBase: 100_000 },
+  { id: "atm", label: "Standard atmospheres", toBase: 101_325 },
+  { id: "psi", label: "Pounds per square inch", toBase: 6894.757293168 },
+  { id: "mmHg", label: "Millimetres of mercury", toBase: 133.322387415 },
+  { id: "torr", label: "Torr", toBase: 101_325 / 760 },
+];
+
+// Energy base unit: joules.
+const ENERGY_UNITS: UnitDefinition[] = [
+  { id: "J", label: "Joules", toBase: 1 },
+  { id: "kJ", label: "Kilojoules", toBase: 1000 },
+  { id: "cal", label: "Calories (thermochemical)", toBase: 4.184 },
+  { id: "kcal", label: "Kilocalories (food Calories)", toBase: 4184 },
+  { id: "Wh", label: "Watt-hours", toBase: 3600 },
+  { id: "kWh", label: "Kilowatt-hours", toBase: 3_600_000 },
+  { id: "BTU", label: "British thermal units (IT)", toBase: 1055.05585262 },
+];
+
 function dataUnits(base: 1000 | 1024): UnitDefinition[] {
   return [
     { id: "B", label: "Bytes", toBase: 1 },
@@ -58,6 +129,18 @@ export function getUnitsForCategory(
       return LENGTH_UNITS;
     case "weight":
       return WEIGHT_UNITS;
+    case "temperature":
+      return TEMPERATURE_UNITS;
+    case "speed":
+      return SPEED_UNITS;
+    case "area":
+      return AREA_UNITS;
+    case "volume":
+      return VOLUME_UNITS;
+    case "pressure":
+      return PRESSURE_UNITS;
+    case "energy":
+      return ENERGY_UNITS;
   }
 }
 
@@ -71,6 +154,11 @@ export interface UnitConversionResult {
   result: number | null;
   allUnits: UnitTableRow[];
   error: { message: string } | null;
+}
+
+/** Trim binary floating-point noise (e.g. 212.00000000000003 → 212) without changing meaningful digits. */
+function clean(n: number): number {
+  return Number(n.toPrecision(12));
 }
 
 export function convertUnit(value: number, options: UnitConverterOptions): UnitConversionResult {
@@ -90,9 +178,10 @@ export function convertUnit(value: number, options: UnitConverterOptions): UnitC
     };
   }
 
-  const baseValue = value * fromDef.toBase;
-  const result = baseValue / toDef.toBase;
-  const allUnits = units.map((u) => ({ unit: u.id, label: u.label, value: baseValue / u.toBase }));
+  const baseValue = fromDef.toBaseFn ? fromDef.toBaseFn(value) : value * fromDef.toBase;
+  const fromBase = (u: UnitDefinition) => clean(u.fromBaseFn ? u.fromBaseFn(baseValue) : baseValue / u.toBase);
+  const result = fromBase(toDef);
+  const allUnits = units.map((u) => ({ unit: u.id, label: u.label, value: fromBase(u) }));
 
   return { result, allUnits, error: null };
 }

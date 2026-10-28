@@ -209,6 +209,9 @@ import { portReferenceTool } from "@/modules/tools/network/port-reference";
 import { javaStacktraceAnalyzerTool } from "@/modules/tools/text/java-stacktrace-analyzer";
 
 import { readingTimeEstimatorTool } from "@/modules/tools/text/reading-time-estimator";
+import { passphraseGeneratorTool } from "@/modules/tools/generators/passphrase-generator";
+import { javaDateFormatConverterTool } from "@/modules/tools/code/java-date-format-converter";
+import { openapiViewerTool } from "@/modules/tools/data-format/openapi-viewer";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -361,6 +364,9 @@ export const toolRegistry: ToolRegistryEntry[] = [
   portReferenceTool,
   javaStacktraceAnalyzerTool,
   readingTimeEstimatorTool,
+  passphraseGeneratorTool,
+  javaDateFormatConverterTool,
+  openapiViewerTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {
