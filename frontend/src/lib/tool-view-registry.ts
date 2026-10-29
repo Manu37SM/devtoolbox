@@ -290,6 +290,50 @@ import { BadgeGeneratorToolView } from "@/modules/tools/generators/badge-generat
 import { MavenPomGeneratorToolView } from "@/modules/tools/generators/maven-pom-generator/ToolView";
 import { SpringConfigGeneratorToolView } from "@/modules/tools/generators/spring-config-generator/ToolView";
 import { WebAppManifestGeneratorToolView } from "@/modules/tools/generators/web-app-manifest-generator/ToolView";
+import { BigdecimalRoundingToolView } from "@/modules/tools/code/bigdecimal-rounding/ToolView";
+import { CssSpecificityCalculatorToolView } from "@/modules/tools/code/css-specificity-calculator/ToolView";
+import { DatabaseErrorLookupToolView } from "@/modules/tools/code/database-error-lookup/ToolView";
+import { DockerComposeToKubernetesToolView } from "@/modules/tools/code/docker-compose-to-kubernetes/ToolView";
+import { JavaClassToJsonToolView } from "@/modules/tools/code/java-class-to-json/ToolView";
+import { JvmFlagsExplainerToolView } from "@/modules/tools/code/jvm-flags-explainer/ToolView";
+import { SqlDdlToJpaEntityToolView } from "@/modules/tools/code/sql-ddl-to-jpa-entity/ToolView";
+import { SqlInClauseBuilderToolView } from "@/modules/tools/code/sql-in-clause-builder/ToolView";
+import { ThreadDumpAnalyzerToolView } from "@/modules/tools/code/thread-dump-analyzer/ToolView";
+import { ExcelColumnConverterToolView } from "@/modules/tools/converters/excel-column-converter/ToolView";
+import { SlaUptimeCalculatorToolView } from "@/modules/tools/converters/sla-uptime-calculator/ToolView";
+import { XirrCagrCalculatorToolView } from "@/modules/tools/converters/xirr-cagr-calculator/ToolView";
+import { Iso8583ParserToolView } from "@/modules/tools/data-format/iso8583-parser/ToolView";
+import { JsonSchemaValidatorToolView } from "@/modules/tools/data-format/json-schema-validator/ToolView";
+import { JsonToOpenapiSchemaToolView } from "@/modules/tools/data-format/json-to-openapi-schema/ToolView";
+import { PostmanToCurlToolView } from "@/modules/tools/data-format/postman-to-curl/ToolView";
+import { ProtoToTypescriptToolView } from "@/modules/tools/data-format/proto-to-typescript/ToolView";
+import { StructuredLogConverterToolView } from "@/modules/tools/data-format/structured-log-converter/ToolView";
+import { Asn1DerDecoderToolView } from "@/modules/tools/encoding/asn1-der-decoder/ToolView";
+import { EbcdicConverterToolView } from "@/modules/tools/encoding/ebcdic-converter/ToolView";
+import { EmvTlvDecoderToolView } from "@/modules/tools/encoding/emv-tlv-decoder/ToolView";
+import { LegacyTextEncodingsToolView } from "@/modules/tools/encoding/legacy-text-encodings/ToolView";
+import { MsgpackCborJsonToolView } from "@/modules/tools/encoding/msgpack-cbor-json/ToolView";
+import { PackedDecimalConverterToolView } from "@/modules/tools/encoding/packed-decimal-converter/ToolView";
+import { ProtobufBinaryDecoderToolView } from "@/modules/tools/encoding/protobuf-binary-decoder/ToolView";
+import { DockerComposeGeneratorToolView } from "@/modules/tools/generators/docker-compose-generator/ToolView";
+import { DockerfileGeneratorToolView } from "@/modules/tools/generators/dockerfile-generator/ToolView";
+import { KubernetesManifestGeneratorToolView } from "@/modules/tools/generators/kubernetes-manifest-generator/ToolView";
+import { LogbackConfigGeneratorToolView } from "@/modules/tools/generators/logback-config-generator/ToolView";
+import { ApigeePolicyGeneratorToolView } from "@/modules/tools/network/apigee-policy-generator/ToolView";
+import { EmailHeaderAnalyzerToolView } from "@/modules/tools/network/email-header-analyzer/ToolView";
+import { SecurityHeadersGeneratorToolView } from "@/modules/tools/network/security-headers-generator/ToolView";
+import { TlsCipherSuiteLookupToolView } from "@/modules/tools/network/tls-cipher-suite-lookup/ToolView";
+import { VlsmSubnetPlannerToolView } from "@/modules/tools/network/vlsm-subnet-planner/ToolView";
+import { AwsIamPolicyAnalyzerToolView } from "@/modules/tools/security/aws-iam-policy-analyzer/ToolView";
+import { AwsSigv4CalculatorToolView } from "@/modules/tools/security/aws-sigv4-calculator/ToolView";
+import { JwksInspectorToolView } from "@/modules/tools/security/jwks-inspector/ToolView";
+import { OauthRequestBuilderToolView } from "@/modules/tools/security/oauth-request-builder/ToolView";
+import { SamlDecoderToolView } from "@/modules/tools/security/saml-decoder/ToolView";
+import { WebhookSignatureVerifierToolView } from "@/modules/tools/security/webhook-signature-verifier/ToolView";
+import { ChangelogGeneratorToolView } from "@/modules/tools/text/changelog-generator/ToolView";
+import { MarkdownJiraConverterToolView } from "@/modules/tools/text/markdown-jira-converter/ToolView";
+import { TemplateBulkGeneratorToolView } from "@/modules/tools/text/template-bulk-generator/ToolView";
+import { UnifiedDiffApplierToolView } from "@/modules/tools/text/unified-diff-applier/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -527,4 +571,48 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "maven-pom-generator": MavenPomGeneratorToolView,
   "spring-config-generator": SpringConfigGeneratorToolView,
   "web-app-manifest-generator": WebAppManifestGeneratorToolView,
+  "bigdecimal-rounding": BigdecimalRoundingToolView,
+  "css-specificity-calculator": CssSpecificityCalculatorToolView,
+  "database-error-lookup": DatabaseErrorLookupToolView,
+  "docker-compose-to-kubernetes": DockerComposeToKubernetesToolView,
+  "java-class-to-json": JavaClassToJsonToolView,
+  "jvm-flags-explainer": JvmFlagsExplainerToolView,
+  "sql-ddl-to-jpa-entity": SqlDdlToJpaEntityToolView,
+  "sql-in-clause-builder": SqlInClauseBuilderToolView,
+  "thread-dump-analyzer": ThreadDumpAnalyzerToolView,
+  "excel-column-converter": ExcelColumnConverterToolView,
+  "sla-uptime-calculator": SlaUptimeCalculatorToolView,
+  "xirr-cagr-calculator": XirrCagrCalculatorToolView,
+  "iso8583-parser": Iso8583ParserToolView,
+  "json-schema-validator": JsonSchemaValidatorToolView,
+  "json-to-openapi-schema": JsonToOpenapiSchemaToolView,
+  "postman-to-curl": PostmanToCurlToolView,
+  "proto-to-typescript": ProtoToTypescriptToolView,
+  "structured-log-converter": StructuredLogConverterToolView,
+  "asn1-der-decoder": Asn1DerDecoderToolView,
+  "ebcdic-converter": EbcdicConverterToolView,
+  "emv-tlv-decoder": EmvTlvDecoderToolView,
+  "legacy-text-encodings": LegacyTextEncodingsToolView,
+  "msgpack-cbor-json": MsgpackCborJsonToolView,
+  "packed-decimal-converter": PackedDecimalConverterToolView,
+  "protobuf-binary-decoder": ProtobufBinaryDecoderToolView,
+  "docker-compose-generator": DockerComposeGeneratorToolView,
+  "dockerfile-generator": DockerfileGeneratorToolView,
+  "kubernetes-manifest-generator": KubernetesManifestGeneratorToolView,
+  "logback-config-generator": LogbackConfigGeneratorToolView,
+  "apigee-policy-generator": ApigeePolicyGeneratorToolView,
+  "email-header-analyzer": EmailHeaderAnalyzerToolView,
+  "security-headers-generator": SecurityHeadersGeneratorToolView,
+  "tls-cipher-suite-lookup": TlsCipherSuiteLookupToolView,
+  "vlsm-subnet-planner": VlsmSubnetPlannerToolView,
+  "aws-iam-policy-analyzer": AwsIamPolicyAnalyzerToolView,
+  "aws-sigv4-calculator": AwsSigv4CalculatorToolView,
+  "jwks-inspector": JwksInspectorToolView,
+  "oauth-request-builder": OauthRequestBuilderToolView,
+  "saml-decoder": SamlDecoderToolView,
+  "webhook-signature-verifier": WebhookSignatureVerifierToolView,
+  "changelog-generator": ChangelogGeneratorToolView,
+  "markdown-jira-converter": MarkdownJiraConverterToolView,
+  "template-bulk-generator": TemplateBulkGeneratorToolView,
+  "unified-diff-applier": UnifiedDiffApplierToolView,
 };

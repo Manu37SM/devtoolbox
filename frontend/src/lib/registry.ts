@@ -294,6 +294,50 @@ import { badgeGeneratorTool } from "@/modules/tools/generators/badge-generator";
 import { mavenPomGeneratorTool } from "@/modules/tools/generators/maven-pom-generator";
 import { springConfigGeneratorTool } from "@/modules/tools/generators/spring-config-generator";
 import { webAppManifestGeneratorTool } from "@/modules/tools/generators/web-app-manifest-generator";
+import { bigdecimalRoundingTool } from "@/modules/tools/code/bigdecimal-rounding";
+import { cssSpecificityCalculatorTool } from "@/modules/tools/code/css-specificity-calculator";
+import { databaseErrorLookupTool } from "@/modules/tools/code/database-error-lookup";
+import { dockerComposeToKubernetesTool } from "@/modules/tools/code/docker-compose-to-kubernetes";
+import { javaClassToJsonTool } from "@/modules/tools/code/java-class-to-json";
+import { jvmFlagsExplainerTool } from "@/modules/tools/code/jvm-flags-explainer";
+import { sqlDdlToJpaEntityTool } from "@/modules/tools/code/sql-ddl-to-jpa-entity";
+import { sqlInClauseBuilderTool } from "@/modules/tools/code/sql-in-clause-builder";
+import { threadDumpAnalyzerTool } from "@/modules/tools/code/thread-dump-analyzer";
+import { excelColumnConverterTool } from "@/modules/tools/converters/excel-column-converter";
+import { slaUptimeCalculatorTool } from "@/modules/tools/converters/sla-uptime-calculator";
+import { xirrCagrCalculatorTool } from "@/modules/tools/converters/xirr-cagr-calculator";
+import { iso8583ParserTool } from "@/modules/tools/data-format/iso8583-parser";
+import { jsonSchemaValidatorTool } from "@/modules/tools/data-format/json-schema-validator";
+import { jsonToOpenapiSchemaTool } from "@/modules/tools/data-format/json-to-openapi-schema";
+import { postmanToCurlTool } from "@/modules/tools/data-format/postman-to-curl";
+import { protoToTypescriptTool } from "@/modules/tools/data-format/proto-to-typescript";
+import { structuredLogConverterTool } from "@/modules/tools/data-format/structured-log-converter";
+import { asn1DerDecoderTool } from "@/modules/tools/encoding/asn1-der-decoder";
+import { ebcdicConverterTool } from "@/modules/tools/encoding/ebcdic-converter";
+import { emvTlvDecoderTool } from "@/modules/tools/encoding/emv-tlv-decoder";
+import { legacyTextEncodingsTool } from "@/modules/tools/encoding/legacy-text-encodings";
+import { msgpackCborJsonTool } from "@/modules/tools/encoding/msgpack-cbor-json";
+import { packedDecimalConverterTool } from "@/modules/tools/encoding/packed-decimal-converter";
+import { protobufBinaryDecoderTool } from "@/modules/tools/encoding/protobuf-binary-decoder";
+import { dockerComposeGeneratorTool } from "@/modules/tools/generators/docker-compose-generator";
+import { dockerfileGeneratorTool } from "@/modules/tools/generators/dockerfile-generator";
+import { kubernetesManifestGeneratorTool } from "@/modules/tools/generators/kubernetes-manifest-generator";
+import { logbackConfigGeneratorTool } from "@/modules/tools/generators/logback-config-generator";
+import { apigeePolicyGeneratorTool } from "@/modules/tools/network/apigee-policy-generator";
+import { emailHeaderAnalyzerTool } from "@/modules/tools/network/email-header-analyzer";
+import { securityHeadersGeneratorTool } from "@/modules/tools/network/security-headers-generator";
+import { tlsCipherSuiteLookupTool } from "@/modules/tools/network/tls-cipher-suite-lookup";
+import { vlsmSubnetPlannerTool } from "@/modules/tools/network/vlsm-subnet-planner";
+import { awsIamPolicyAnalyzerTool } from "@/modules/tools/security/aws-iam-policy-analyzer";
+import { awsSigv4CalculatorTool } from "@/modules/tools/security/aws-sigv4-calculator";
+import { jwksInspectorTool } from "@/modules/tools/security/jwks-inspector";
+import { oauthRequestBuilderTool } from "@/modules/tools/security/oauth-request-builder";
+import { samlDecoderTool } from "@/modules/tools/security/saml-decoder";
+import { webhookSignatureVerifierTool } from "@/modules/tools/security/webhook-signature-verifier";
+import { changelogGeneratorTool } from "@/modules/tools/text/changelog-generator";
+import { markdownJiraConverterTool } from "@/modules/tools/text/markdown-jira-converter";
+import { templateBulkGeneratorTool } from "@/modules/tools/text/template-bulk-generator";
+import { unifiedDiffApplierTool } from "@/modules/tools/text/unified-diff-applier";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -531,6 +575,50 @@ export const toolRegistry: ToolRegistryEntry[] = [
   mavenPomGeneratorTool,
   springConfigGeneratorTool,
   webAppManifestGeneratorTool,
+  bigdecimalRoundingTool,
+  cssSpecificityCalculatorTool,
+  databaseErrorLookupTool,
+  dockerComposeToKubernetesTool,
+  javaClassToJsonTool,
+  jvmFlagsExplainerTool,
+  sqlDdlToJpaEntityTool,
+  sqlInClauseBuilderTool,
+  threadDumpAnalyzerTool,
+  excelColumnConverterTool,
+  slaUptimeCalculatorTool,
+  xirrCagrCalculatorTool,
+  iso8583ParserTool,
+  jsonSchemaValidatorTool,
+  jsonToOpenapiSchemaTool,
+  postmanToCurlTool,
+  protoToTypescriptTool,
+  structuredLogConverterTool,
+  asn1DerDecoderTool,
+  ebcdicConverterTool,
+  emvTlvDecoderTool,
+  legacyTextEncodingsTool,
+  msgpackCborJsonTool,
+  packedDecimalConverterTool,
+  protobufBinaryDecoderTool,
+  dockerComposeGeneratorTool,
+  dockerfileGeneratorTool,
+  kubernetesManifestGeneratorTool,
+  logbackConfigGeneratorTool,
+  apigeePolicyGeneratorTool,
+  emailHeaderAnalyzerTool,
+  securityHeadersGeneratorTool,
+  tlsCipherSuiteLookupTool,
+  vlsmSubnetPlannerTool,
+  awsIamPolicyAnalyzerTool,
+  awsSigv4CalculatorTool,
+  jwksInspectorTool,
+  oauthRequestBuilderTool,
+  samlDecoderTool,
+  webhookSignatureVerifierTool,
+  changelogGeneratorTool,
+  markdownJiraConverterTool,
+  templateBulkGeneratorTool,
+  unifiedDiffApplierTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {
