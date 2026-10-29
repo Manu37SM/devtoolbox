@@ -7,7 +7,7 @@ export function transformHexText(input: string, options: HexTextOptions): Transf
   try {
     switch (options.mode) {
       case "text-to-hex":
-        return { output: textToHex(input, options.hexSeparator), error: null };
+        return { output: textToHex(input, options), error: null };
       case "hex-to-text":
         return { output: hexToText(input), error: null };
       case "text-to-binary":
@@ -23,14 +23,20 @@ export function transformHexText(input: string, options: HexTextOptions): Transf
   }
 }
 
-function textToHex(input: string, separator: HexTextOptions["hexSeparator"]): string {
+const SEPARATORS: Record<HexTextOptions["hexSeparator"], string> = { none: "", space: " ", colon: ":", comma: ", " };
+
+function textToHex(input: string, options: HexTextOptions): string {
   const bytes = new TextEncoder().encode(input);
-  const hexBytes = Array.from(bytes, (b) => b.toString(16).padStart(2, "0"));
-  return separator === "space" ? hexBytes.join(" ") : hexBytes.join("");
+  const prefix = !options.hexPrefix || options.hexPrefix === "none" ? "" : options.hexPrefix;
+  const hexBytes = Array.from(bytes, (b) => {
+    const h = b.toString(16).padStart(2, "0");
+    return prefix + (options.hexUppercase ? h.toUpperCase() : h);
+  });
+  return hexBytes.join(SEPARATORS[options.hexSeparator] ?? " ");
 }
 
 function hexToText(input: string): string {
-  const clean = input.replace(/(0x)/gi, "").replace(/[\s,:-]+/g, "");
+  const clean = input.replace(/0x|\\x|%/gi, "").replace(/[\s,:-]+/g, "");
   if (clean.length === 0) return "";
   if (!/^[0-9a-fA-F]+$/.test(clean)) {
     throw new Error("Input contains non-hexadecimal characters.");

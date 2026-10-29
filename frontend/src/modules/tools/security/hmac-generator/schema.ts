@@ -3,12 +3,14 @@ import { z } from "zod";
 export const hmacAlgorithmSchema = z.enum(["SHA-1", "SHA-256", "SHA-384", "SHA-512"]);
 export type HmacAlgorithm = z.infer<typeof hmacAlgorithmSchema>;
 
-export const hmacOutputFormatSchema = z.enum(["hex", "base64"]);
+export const hmacOutputFormatSchema = z.enum(["hex", "base64", "base64url"]);
 export type HmacOutputFormat = z.infer<typeof hmacOutputFormatSchema>;
 
 export const hmacGeneratorOptionsSchema = z.object({
   algorithm: hmacAlgorithmSchema.default("SHA-256"),
   outputFormat: hmacOutputFormatSchema.default("hex"),
+  /** How the secret is written: plain text, or the raw key bytes as hex or Base64 (common for issued API keys). */
+  keyFormat: z.enum(["text", "hex", "base64"]).default("text"),
 });
 export type HmacGeneratorOptions = z.infer<typeof hmacGeneratorOptionsSchema>;
 

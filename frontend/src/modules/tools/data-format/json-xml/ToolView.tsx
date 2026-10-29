@@ -14,6 +14,9 @@ export function JsonXmlToolView() {
     mode: "json-to-xml",
     indent: 2,
     rootName: "root",
+    xmlDeclaration: false,
+    attributePrefix: "@_",
+    coerceTypes: false,
   });
 
   const result = useMemo(() => convertJsonXml(input, options), [input, options]);
@@ -48,6 +51,48 @@ export function JsonXmlToolView() {
               className="w-28 rounded-sm border border-border-default bg-bg-raised px-2 py-1"
             />
           </label>
+        )}
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Indent
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={String(options.indent)}
+            onChange={(e) => setOptions((o) => ({ ...o, indent: (Number(e.target.value) as 2 | 4) }))}
+          >
+            <option value="2">2 spaces</option>
+            <option value="4">4 spaces</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Attribute prefix
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.attributePrefix}
+            onChange={(e) => setOptions((o) => ({ ...o, attributePrefix: e.target.value as JsonXmlOptions["attributePrefix"] }))}
+          >
+            <option value="@_">@_ (fast-xml-parser)</option>
+            <option value="@">@ (BadgerFish)</option>
+            <option value="-">- (xml2json)</option>
+          </select>
+        </label>
+        {options.mode === "json-to-xml" ? (
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.xmlDeclaration}
+            onChange={(e) => setOptions((o) => ({ ...o, xmlDeclaration: e.target.checked }))}
+          />
+          XML declaration
+        </label>
+        ) : (
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.coerceTypes}
+            onChange={(e) => setOptions((o) => ({ ...o, coerceTypes: e.target.checked }))}
+          />
+          Numbers & booleans
+        </label>
         )}
       </div>
       <div className="min-h-0 flex-1">

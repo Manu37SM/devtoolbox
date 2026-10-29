@@ -1,4 +1,5 @@
-import { load as loadYaml, dump as dumpYaml, YAMLException } from "js-yaml";
+import { loadAll, YAMLException } from "js-yaml";
+import { dumpYaml } from "@/lib/yaml-dump";
 import type { YamlFormatterOptions } from "./schema";
 
 export interface YamlFormatResult {
@@ -10,8 +11,9 @@ export function formatYaml(input: string, options: YamlFormatterOptions): YamlFo
   if (input.trim().length === 0) return { output: "", error: null };
 
   try {
-    const parsed = loadYaml(input);
-    const output = dumpYaml(parsed, { indent: options.indent, lineWidth: -1, noRefs: true });
+    // Multi-document files (Kubernetes manifests, Helm output) keep their "---" separators.
+    const docs = loadAll(input);
+    const output = docs.map((doc) => dumpYaml(doc, options)).join("---\n");
     return { output, error: null };
   } catch (err) {
     if (err instanceof YAMLException) {

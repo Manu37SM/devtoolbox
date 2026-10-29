@@ -23,7 +23,7 @@ export async function generateHmac(
   }
 
   try {
-    const keyData = new TextEncoder().encode(secret);
+    const keyData = decodeKey(secret, options.keyFormat ?? "text");
     const key = await crypto.subtle.importKey(
       "raw",
       keyData as BufferSource,
@@ -34,7 +34,12 @@ export async function generateHmac(
     const messageData = new TextEncoder().encode(message);
     const signature = await crypto.subtle.sign("HMAC", key, messageData as BufferSource);
     const bytes = new Uint8Array(signature);
-    const output = options.outputFormat === "hex" ? bytesToHex(bytes) : bytesToBase64(bytes);
+    const output =
+      options.outputFormat === "hex"
+        ? bytesToHex(bytes)
+        : options.outputFormat === "base64url"
+          ? bytesToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+          : bytesToBase64(bytes);
     return { output, error: null };
   } catch (err) {
     return { output: "", error: { message: err instanceof Error ? err.message : "HMAC generation failed" } };
@@ -53,3 +58,19 @@ function bytesToBase64(bytes: Uint8Array): string {
   if (typeof btoa === "function") return btoa(binary);
   return Buffer.from(bytes).toString("base64");
 }
+
+function decodeKey(secret: string, format: HmacGeneratorOptions["keyFormat"]): Uint8Array {
+  if (format === "hex") {
+    const hex = secret.replace(/^0x/i, "").replace(/[\s:]/g, "");
+    if (!/^([0-9a-fA-F]{2})+$/.test(hex)) throw new Error("The key is not valid hex (an even number of 0-9/a-f digits).");
+    return Uint8Array.from(hex.match(/../g)!, (h) => parseInt(h, 16));
+  }
+  if (format === "base64") {
+    const b64 = secret.replace(/\s/g, "").replace(/-/g, "+").replace(/_/g, "/");
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(b64)) throw new Error("The key is not valid Base64.");
+    const bin = atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="));
+    return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  }
+  return new TextEncoder().encode(secret);
+}
+

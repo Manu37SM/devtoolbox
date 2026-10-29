@@ -10,7 +10,7 @@ import type { UrlEncodeOptions } from "./schema";
 
 export function UrlEncodeToolView() {
   const [input, setInput] = useState("");
-  const [options, setOptions] = useState<UrlEncodeOptions>({ mode: "encode", component: true });
+  const [options, setOptions] = useState<UrlEncodeOptions>({ mode: "encode", component: true, formEncoding: false, perLine: false });
 
   const result = useMemo(() => transformUrlEncode(input, options), [input, options]);
 
@@ -42,6 +42,22 @@ export function UrlEncodeToolView() {
             onChange={(e) => setOptions((o) => ({ ...o, component: e.target.checked }))}
           />
           Component mode (encode reserved chars)
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.formEncoding}
+            onChange={(e) => setOptions((o) => ({ ...o, formEncoding: e.target.checked }))}
+          />
+          Form encoding (space = +)
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.perLine}
+            onChange={(e) => setOptions((o) => ({ ...o, perLine: e.target.checked }))}
+          />
+          Line by line
         </label>
       </div>
       <div className="min-h-0 flex-1">

@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { convertCsvTsv } from "./transform";
 import type { CsvTsvOptions } from "./schema";
 
-const csvToTsv: CsvTsvOptions = { mode: "csv-to-tsv" };
-const tsvToCsv: CsvTsvOptions = { mode: "tsv-to-csv" };
-const clean: CsvTsvOptions = { mode: "clean" };
+const csvToTsv: CsvTsvOptions = { mode: "csv-to-tsv", csvDelimiter: ",", quoteAll: false, trimFields: false, lineEnding: "lf" };
+const tsvToCsv: CsvTsvOptions = { mode: "tsv-to-csv", csvDelimiter: ",", quoteAll: false, trimFields: false, lineEnding: "lf" };
+const clean: CsvTsvOptions = { mode: "clean", csvDelimiter: ",", quoteAll: false, trimFields: false, lineEnding: "lf" };
 
 describe("convertCsvTsv", () => {
   it("converts simple CSV to TSV", () => {
@@ -34,7 +34,8 @@ describe("convertCsvTsv", () => {
   it("handles quoted fields containing embedded newlines", () => {
     const result = convertCsvTsv('name,bio\nCarl,"line1\nline2"', csvToTsv);
     expect(result.error).toBeNull();
-    expect(result.output).toBe("name\tbio\nCarl\tline1\nline2");
+    // The line break must stay inside quotes or the TSV gains a bogus row.
+    expect(result.output).toBe('name\tbio\nCarl\t"line1\nline2"');
   });
 
   it("quotes TSV->CSV fields that now contain a comma", () => {
@@ -78,4 +79,22 @@ describe("convertCsvTsv", () => {
     expect(result.error).toBeNull();
     expect(result.output.split("\n")).toHaveLength(1001);
   });
+
+  it("quotes fields that contain quotes or line breaks so the output stays valid", () => {
+    expect(convertCsvTsv('name\tnote\nAsha\tsays "hi"\n', tsvToCsv).output).toBe('name,note\nAsha,"says ""hi"""');
+    expect(convertCsvTsv('a,"line1\nline2"\n', csvToTsv).output).toBe('a\t"line1\nline2"');
+  });
+
+  it("reads and writes semicolon CSV, quotes everything and uses CRLF on request", () => {
+    const r = convertCsvTsv("id\tamount\n1\t1.234,50\n", { ...tsvToCsv, csvDelimiter: ";", quoteAll: true, lineEnding: "crlf" });
+    expect(r.output).toBe('"id";"amount"\r\n"1";"1.234,50"');
+    expect(convertCsvTsv("id;amount\n1;1.234,50\n", { ...csvToTsv, csvDelimiter: ";" }).output).toBe("id\tamount\n1\t1.234,50");
+  });
+
+  it("trims fields and detects semicolon and pipe delimiters when cleaning", () => {
+    expect(convertCsvTsv(" a , b \n 1 , 2 \n", { ...csvToTsv, trimFields: true }).output).toBe("a\tb\n1\t2");
+    expect(convertCsvTsv("a;b\n1;2\n\na;b\n", clean).output).toBe("a;b\n1;2");
+    expect(convertCsvTsv("a|b\n1|2\n", clean).output).toBe("a|b\n1|2");
+  });
 });
+

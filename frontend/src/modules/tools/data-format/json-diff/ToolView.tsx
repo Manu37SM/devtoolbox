@@ -10,7 +10,7 @@ import type { JsonDiffOptions } from "./schema";
 export function JsonDiffToolView() {
   const [before, setBefore] = useState("");
   const [after, setAfter] = useState("");
-  const [options, setOptions] = useState<JsonDiffOptions>({ ignoreArrayOrder: false });
+  const [options, setOptions] = useState<JsonDiffOptions>({ ignoreArrayOrder: false, ignorePaths: "", ignoreCase: false, numericTolerance: 0, output: "summary" });
 
   const result = useMemo(() => diffJson(before, after, options), [before, after, options]);
 
@@ -24,6 +24,46 @@ export function JsonDiffToolView() {
             onChange={(e) => setOptions((o) => ({ ...o, ignoreArrayOrder: e.target.checked }))}
           />
           Ignore array order (primitive arrays)
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.ignoreCase}
+            onChange={(e) => setOptions((o) => ({ ...o, ignoreCase: e.target.checked }))}
+          />
+          Ignore string case
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Number tolerance
+          <input
+            type="number"
+            min={0}
+            step="any"
+            value={options.numericTolerance}
+            onChange={(e) => setOptions((o) => ({ ...o, numericTolerance: Math.max(0, Number(e.target.value) || 0) }))}
+            className="w-24 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Output
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.output}
+            onChange={(e) => setOptions((o) => ({ ...o, output: e.target.value as JsonDiffOptions["output"] }))}
+          >
+            <option value="summary">Change list</option>
+            <option value="patch">JSON Patch (RFC 6902)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Ignore
+          <input
+            type="text"
+            value={options.ignorePaths}
+            placeholder="updatedAt, meta.requestId, items[*].etag"
+            onChange={(e) => setOptions((o) => ({ ...o, ignorePaths: e.target.value }))}
+            className="w-72 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1 font-mono text-sm"
+          />
         </label>
       </div>
       <div className="min-h-0 flex-1">

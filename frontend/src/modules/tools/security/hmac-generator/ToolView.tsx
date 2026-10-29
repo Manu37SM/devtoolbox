@@ -9,7 +9,7 @@ import { generateHmac } from "./transform";
 import type { HmacAlgorithm, HmacGeneratorOptions, HmacOutputFormat } from "./schema";
 
 const ALGORITHMS: HmacAlgorithm[] = ["SHA-1", "SHA-256", "SHA-384", "SHA-512"];
-const OUTPUT_FORMATS: HmacOutputFormat[] = ["hex", "base64"];
+const OUTPUT_FORMATS: HmacOutputFormat[] = ["hex", "base64", "base64url"];
 
 export function HmacGeneratorToolView() {
   const [message, setMessage] = useState("");
@@ -17,6 +17,7 @@ export function HmacGeneratorToolView() {
   const [options, setOptions] = useState<HmacGeneratorOptions>({
     algorithm: "SHA-256",
     outputFormat: "hex",
+    keyFormat: "text",
   });
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,18 @@ export function HmacGeneratorToolView() {
           placeholder="Enter secret key"
           className="w-full rounded-sm border border-border-default bg-bg-raised px-2 py-1.5 text-sm font-mono"
         />
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Key is
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.keyFormat}
+            onChange={(e) => setOptions((o) => ({ ...o, keyFormat: e.target.value as HmacGeneratorOptions["keyFormat"] }))}
+          >
+            <option value="text">Text</option>
+            <option value="hex">Hex bytes</option>
+            <option value="base64">Base64 bytes</option>
+          </select>
+        </label>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -72,7 +85,7 @@ export function HmacGeneratorToolView() {
               className="rounded-none"
               onClick={() => setOptions((o) => ({ ...o, outputFormat: format }))}
             >
-              {format}
+              {format === "base64url" ? "Base64URL" : format === "base64" ? "Base64" : "Hex"}
             </Button>
           ))}
         </div>

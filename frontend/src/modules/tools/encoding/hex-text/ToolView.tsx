@@ -8,7 +8,7 @@ import { ToolInput } from "@/components/tools/ToolInput";
 import { transformHexText } from "./transform";
 import type { HexTextOptions } from "./schema";
 
-const defaultOptions: HexTextOptions = { mode: "text-to-hex", hexSeparator: "space" };
+const defaultOptions: HexTextOptions = { mode: "text-to-hex", hexSeparator: "space", hexUppercase: false, hexPrefix: "none" };
 
 const modes: { value: HexTextOptions["mode"]; label: string }[] = [
   { value: "text-to-hex", label: "Text → Hex" },
@@ -53,10 +53,37 @@ export function HexTextToolView() {
                 }))
               }
             >
-              <option value="space">Space-separated</option>
-              <option value="none">No separator</option>
+              <option value="space">Space</option>
+              <option value="none">None</option>
+              <option value="colon">Colon (41:42)</option>
+              <option value="comma">Comma (41, 42)</option>
             </select>
           </label>
+        )}
+        {options.mode === "text-to-hex" && (
+          <>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Prefix
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.hexPrefix}
+            onChange={(e) => setOptions((o) => ({ ...o, hexPrefix: e.target.value as HexTextOptions["hexPrefix"] }))}
+          >
+            <option value="none">None</option>
+            <option value="0x">0x (C, Java)</option>
+            <option value="\x">\x (Python)</option>
+            <option value="%">% (URL)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.hexUppercase}
+            onChange={(e) => setOptions((o) => ({ ...o, hexUppercase: e.target.checked }))}
+          />
+          Uppercase
+        </label>
+          </>
         )}
       </div>
       <div className="min-h-0 flex-1">

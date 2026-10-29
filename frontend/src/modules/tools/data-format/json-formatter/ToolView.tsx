@@ -8,7 +8,7 @@ import { ToolInput } from "@/components/tools/ToolInput";
 import { formatJson } from "./transform";
 import type { JsonFormatterOptions } from "./schema";
 
-const defaultOptions: JsonFormatterOptions = { indent: 2, sortKeys: false, mode: "beautify" };
+const defaultOptions: JsonFormatterOptions = { indent: 2, sortKeys: false, mode: "beautify", escapeUnicode: false, inlineShortArrays: false };
 
 export function JsonFormatterToolView() {
   const [input, setInput] = useState("");
@@ -44,6 +44,22 @@ export function JsonFormatterToolView() {
             onChange={(e) => setOptions((o) => ({ ...o, sortKeys: e.target.checked }))}
           />
           Sort keys
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.inlineShortArrays}
+            onChange={(e) => setOptions((o) => ({ ...o, inlineShortArrays: e.target.checked }))}
+          />
+          Compact short arrays
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.escapeUnicode}
+            onChange={(e) => setOptions((o) => ({ ...o, escapeUnicode: e.target.checked }))}
+          />
+          Escape non-ASCII
         </label>
         <label className="flex items-center gap-1.5 text-sm text-text-secondary">
           Indent

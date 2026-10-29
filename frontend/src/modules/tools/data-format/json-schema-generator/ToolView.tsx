@@ -9,7 +9,7 @@ import type { JsonSchemaGeneratorOptions } from "./schema";
 
 export function JsonSchemaGeneratorToolView() {
   const [input, setInput] = useState("");
-  const [options, setOptions] = useState<JsonSchemaGeneratorOptions>({ allRequired: true });
+  const [options, setOptions] = useState<JsonSchemaGeneratorOptions>({ allRequired: true, draft: "draft-07", detectFormats: false, forbidAdditional: false, includeExamples: false });
 
   const result = useMemo(() => generateJsonSchema(input, options), [input, options]);
 
@@ -23,6 +23,42 @@ export function JsonSchemaGeneratorToolView() {
             onChange={(e) => setOptions((o) => ({ ...o, allRequired: e.target.checked }))}
           />
           Mark all fields required
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Draft
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.draft}
+            onChange={(e) => setOptions((o) => ({ ...o, draft: e.target.value as JsonSchemaGeneratorOptions["draft"] }))}
+          >
+            <option value="draft-07">Draft 07</option>
+            <option value="2019-09">2019-09</option>
+            <option value="2020-12">2020-12</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.detectFormats}
+            onChange={(e) => setOptions((o) => ({ ...o, detectFormats: e.target.checked }))}
+          />
+          Detect formats
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.forbidAdditional}
+            onChange={(e) => setOptions((o) => ({ ...o, forbidAdditional: e.target.checked }))}
+          />
+          No extra properties
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.includeExamples}
+            onChange={(e) => setOptions((o) => ({ ...o, includeExamples: e.target.checked }))}
+          />
+          Include examples
         </label>
       </div>
       <div className="min-h-0 flex-1">

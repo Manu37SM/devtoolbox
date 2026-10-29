@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { generateTypes } from "./transform";
 import type { JsonToTypesOptions } from "./schema";
 
-const ts: JsonToTypesOptions = { language: "typescript", rootName: "Root" };
-const go: JsonToTypesOptions = { language: "go", rootName: "Root" };
-const py: JsonToTypesOptions = { language: "python", rootName: "Root" };
+const ts: JsonToTypesOptions = { language: "typescript", rootName: "Root", tsDeclaration: "interface", exportTypes: false, readonlyFields: false, goPackage: "main", goOmitEmpty: false, pythonStyle: "dataclass" };
+const go: JsonToTypesOptions = { language: "go", rootName: "Root", tsDeclaration: "interface", exportTypes: false, readonlyFields: false, goPackage: "main", goOmitEmpty: false, pythonStyle: "dataclass" };
+const py: JsonToTypesOptions = { language: "python", rootName: "Root", tsDeclaration: "interface", exportTypes: false, readonlyFields: false, goPackage: "main", goOmitEmpty: false, pythonStyle: "dataclass" };
 
 describe("generateTypes", () => {
   it("generates a TypeScript interface for a flat object", () => {
@@ -59,7 +59,7 @@ describe("generateTypes", () => {
   });
 
   it("respects a custom root name", () => {
-    const result = generateTypes('{"id":1}', { language: "typescript", rootName: "Widget" });
+    const result = generateTypes('{"id":1}', { ...ts, rootName: "Widget" });
     expect(result.output).toContain("interface Widget {");
   });
 
@@ -83,4 +83,36 @@ describe("generateTypes", () => {
     const result = generateTypes('{"first-name":"a"}', ts);
     expect(result.output).toContain('"first-name": string;');
   });
+
+  const users = '{"users":[{"id":1,"name":"Asha","score":1},{"id":2,"name":null,"score":2.5,"email":"b@x.in"}]}';
+
+  it("merges array elements into one type with optional and nullable fields", () => {
+    const out = generateTypes(users, ts).output;
+    expect(out).toContain("interface User {\n  id: number;\n  name: string | null;\n  score: number;\n  email?: string;\n}");
+    expect(out).not.toContain("User2");
+  });
+
+  it("supports type aliases, export and readonly in TypeScript", () => {
+    expect(generateTypes('{"id":1}', { ...ts, tsDeclaration: "type", exportTypes: true, readonlyFields: true }).output).toBe(
+      "export type Root = {\n  readonly id: number;\n};",
+    );
+  });
+
+  it("uses pointers and omitempty for optional Go fields and honours the package name", () => {
+    const out = generateTypes(users, { ...go, goPackage: "model" }).output;
+    expect(out).toContain("package model");
+    expect(out).toContain('Name *string `json:"name"`');
+    expect(out).toContain('Email *string `json:"email,omitempty"`');
+    expect(generateTypes('{"id":1}', { ...go, goOmitEmpty: true }).output).toContain('Id int `json:"id,omitempty"`');
+  });
+
+  it("renders TypedDict and Pydantic models with optional fields last where required", () => {
+    const td = generateTypes(users, { ...py, pythonStyle: "typeddict" }).output;
+    expect(td).toContain("from typing import List, NotRequired, Optional, TypedDict");
+    expect(td).toContain("class User(TypedDict):\n    id: int\n    name: Optional[str]\n    score: float\n    email: NotRequired[str]");
+    const pd = generateTypes(users, { ...py, pythonStyle: "pydantic" }).output;
+    expect(pd).toContain("from pydantic import BaseModel");
+    expect(pd).toContain("class User(BaseModel):\n    id: int\n    name: Optional[str]\n    score: float\n    email: Optional[str] = None");
+  });
 });
+

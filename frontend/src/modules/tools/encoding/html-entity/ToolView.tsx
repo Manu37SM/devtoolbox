@@ -13,6 +13,8 @@ export function HtmlEntityToolView() {
   const [options, setOptions] = useState<HtmlEntityOptions>({
     mode: "encode",
     encodeAllNonAscii: false,
+    entityStyle: "basic",
+    escapeQuotes: true,
   });
 
   const result = useMemo(() => transformHtmlEntity(input, options), [input, options]);
@@ -39,6 +41,7 @@ export function HtmlEntityToolView() {
           </Button>
         </div>
         {options.mode === "encode" && (
+          <>
           <label className="flex items-center gap-1.5 text-sm text-text-secondary">
             <input
               type="checkbox"
@@ -47,6 +50,28 @@ export function HtmlEntityToolView() {
             />
             Encode all non-ASCII
           </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Style
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.entityStyle}
+            onChange={(e) => setOptions((o) => ({ ...o, entityStyle: e.target.value as HtmlEntityOptions["entityStyle"] }))}
+          >
+            <option value="basic">Basic named + numeric</option>
+            <option value="named">Named (&amp;copy;)</option>
+            <option value="decimal">Decimal (&amp;#169;)</option>
+            <option value="hex">Hex (&amp;#xA9;)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.escapeQuotes}
+            onChange={(e) => setOptions((o) => ({ ...o, escapeQuotes: e.target.checked }))}
+          />
+          Escape quotes
+        </label>
+          </>
         )}
       </div>
       <div className="min-h-0 flex-1">

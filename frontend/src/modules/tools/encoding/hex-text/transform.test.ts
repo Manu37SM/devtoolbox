@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { transformHexText } from "./transform";
 import type { HexTextOptions } from "./schema";
 
-const textToHexSpace: HexTextOptions = { mode: "text-to-hex", hexSeparator: "space" };
-const textToHexNone: HexTextOptions = { mode: "text-to-hex", hexSeparator: "none" };
-const hexToText: HexTextOptions = { mode: "hex-to-text", hexSeparator: "space" };
-const textToBinary: HexTextOptions = { mode: "text-to-binary", hexSeparator: "space" };
-const binaryToText: HexTextOptions = { mode: "binary-to-text", hexSeparator: "space" };
+const textToHexSpace: HexTextOptions = { mode: "text-to-hex", hexSeparator: "space", hexUppercase: false, hexPrefix: "none" as const };
+const textToHexNone: HexTextOptions = { mode: "text-to-hex", hexSeparator: "none", hexUppercase: false, hexPrefix: "none" as const };
+const hexToText: HexTextOptions = { mode: "hex-to-text", hexSeparator: "space", hexUppercase: false, hexPrefix: "none" as const };
+const textToBinary: HexTextOptions = { mode: "text-to-binary", hexSeparator: "space", hexUppercase: false, hexPrefix: "none" as const };
+const binaryToText: HexTextOptions = { mode: "binary-to-text", hexSeparator: "space", hexUppercase: false, hexPrefix: "none" as const };
 
 describe("transformHexText", () => {
   it("converts text to hex with a space separator", () => {
@@ -83,4 +83,20 @@ describe("transformHexText", () => {
     const result = transformHexText("", textToHexSpace);
     expect(result).toEqual({ output: "", error: null });
   });
+
+  const hex = { mode: "text-to-hex" as const, hexSeparator: "space" as const, hexUppercase: false, hexPrefix: "none" as const };
+
+  it("formats bytes as C, Python, URL or MAC-style hex", () => {
+    expect(transformHexText("AB", { ...hex, hexSeparator: "comma", hexPrefix: "0x", hexUppercase: true }).output).toBe("0x41, 0x42");
+    expect(transformHexText("AB", { ...hex, hexSeparator: "none", hexPrefix: "\\x" }).output).toBe("\\x41\\x42");
+    expect(transformHexText("₹", { ...hex, hexSeparator: "none", hexPrefix: "%", hexUppercase: true }).output).toBe("%E2%82%B9");
+    expect(transformHexText("AB", { ...hex, hexSeparator: "colon" }).output).toBe("41:42");
+  });
+
+  it("reads hex written with any of those prefixes back", () => {
+    for (const src of ["0x41, 0x42", "\\x41\\x42", "%41%42", "41:42"]) {
+      expect(transformHexText(src, { ...hex, mode: "hex-to-text" }).output).toBe("AB");
+    }
+  });
 });
+

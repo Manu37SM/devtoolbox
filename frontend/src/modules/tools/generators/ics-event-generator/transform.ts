@@ -4,7 +4,7 @@ import type { IcsEventGeneratorOptions } from "./schema";
 const pad = (n: number, w = 2) => String(n).padStart(w, "0");
 
 export function escapeText(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 }
 
 /** RFC 5545 line folding: max 75 octets per line, continuation lines start with one space. */
