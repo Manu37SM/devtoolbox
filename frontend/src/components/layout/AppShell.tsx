@@ -51,12 +51,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <button
           onClick={openPalette}
-          aria-label="Search tools"
           className="ml-auto flex items-center gap-2 rounded-sm border border-border-default bg-bg-raised p-2 text-sm text-text-muted hover:border-accent sm:ml-4 sm:max-w-sm sm:flex-1 sm:px-3 sm:py-1.5 lg:ml-4"
           aria-haspopup="dialog"
           aria-keyshortcuts="Control+K Meta+K"
         >
-          <Search className="h-4 w-4" />
+          <Search className="h-4 w-4" aria-hidden="true" />
+          <span className="sr-only sm:hidden">Search tools</span>
           <span className="hidden sm:inline">Search tools…</span>
           <kbd className="ml-auto hidden rounded-sm border border-border-subtle px-1.5 py-0.5 text-xs sm:inline">⌘K</kbd>
         </button>

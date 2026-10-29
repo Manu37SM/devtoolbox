@@ -14,9 +14,13 @@ test("use a tool: JSON Formatter formats input end-to-end", async ({ page }) => 
 test("command palette: search + smart-paste detection", async ({ page }) => {
   await page.goto("/");
 
-  await page.keyboard.press("ControlOrMeta+k");
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
+  // The shortcut listener attaches on hydration, so retry until the palette opens
+  // instead of racing the first keypress.
+  await expect(async () => {
+    if (!(await dialog.isVisible())) await page.keyboard.press("ControlOrMeta+k");
+    await expect(dialog).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 10_000 });
 
   const search = page.getByPlaceholder(/search tools/i);
   await search.fill("json");
@@ -30,5 +34,5 @@ test("command palette: search + smart-paste detection", async ({ page }) => {
 
 test("home page shows the tool catalog grouped by module", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: "JSON Formatter" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "JSON Formatter" }).first()).toBeVisible();
 });
