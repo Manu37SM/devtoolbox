@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { UploadCloud, X } from "lucide-react";
 
 interface ImageDropzoneProps {
@@ -35,6 +35,21 @@ export function ImageDropzone({
     },
     [onFileSelect],
   );
+
+  // Paste an image (screenshot, copied image file) anywhere on the page, unless
+  // the user is pasting into a text field.
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ["INPUT", "TEXTAREA"].includes(target.tagName))) return;
+      const file = Array.from(e.clipboardData?.files ?? []).find((f) => f.type.startsWith("image/") || accept !== "image/*");
+      if (!file) return;
+      e.preventDefault();
+      onFileSelect(file);
+    }
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [accept, onFileSelect]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -84,7 +99,7 @@ export function ImageDropzone({
           <>
             <UploadCloud className="h-8 w-8 text-text-muted" aria-hidden="true" />
             <p className="text-sm text-text-secondary">
-              Drop an image here, or <span className="text-accent">click to browse</span>
+              Drop an image here, <span className="text-accent">click to browse</span>, or paste (Ctrl/⌘+V)
             </p>
           </>
         )}

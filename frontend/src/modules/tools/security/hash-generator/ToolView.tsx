@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { hashFile, hashText } from "./transform";
 import type { HashAlgorithm, HashGeneratorOptions } from "./schema";
 
@@ -102,7 +102,7 @@ export function HashGeneratorToolView() {
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
               {mode === "text" ? (
-                <Textarea value={input} onChange={(e) => setInput(e.target.value)} aria-label="Text to hash" />
+                <ToolInput value={input} onChange={(e) => setInput(e.target.value)} aria-label="Text to hash" />
               ) : (
                 <div className="flex flex-1 flex-col items-start gap-2 rounded-md border border-dashed border-border-default p-4">
                   <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>

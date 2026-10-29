@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { transformUrlEncode } from "./transform";
 import type { UrlEncodeOptions } from "./schema";
 
@@ -49,14 +49,14 @@ export function UrlEncodeToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 aria-label="URL input"
               />
             </div>
           }
-          output={<OutputPane value={result.output} error={result.error?.message ?? null} />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "encode" ? "decode" : o.mode === "decode" ? "encode" : o.mode }))} value={result.output} error={result.error?.message ?? null} />}
         />
       </div>
     </div>

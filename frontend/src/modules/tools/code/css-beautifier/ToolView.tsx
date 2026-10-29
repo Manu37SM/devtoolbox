@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { beautifyCss } from "./transform";
 import type { CssBeautifierOptions } from "./schema";
 
@@ -51,10 +51,10 @@ export function CssBeautifierToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <CodeEditor value={input} onChange={(e) => setInput(e.target.value)} language="css" aria-label="CSS input" />
+              <ToolInput as="code" value={input} onChange={(e) => setInput(e.target.value)} language="css" aria-label="CSS input" />
             </div>
           }
-          output={<OutputPane value={output} error={error} />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "beautify" ? "minify" : o.mode === "minify" ? "beautify" : o.mode }))} value={output} error={error} />}
         />
       </div>
     </div>

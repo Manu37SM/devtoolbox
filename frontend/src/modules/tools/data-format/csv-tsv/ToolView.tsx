@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertCsvTsv } from "./transform";
 import type { CsvTsvOptions } from "./schema";
 
@@ -51,7 +51,7 @@ export function CsvTsvToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="a,b,c&#10;1,2,3"
@@ -61,6 +61,7 @@ export function CsvTsvToolView() {
           }
           output={
             <OutputPane
+              onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "csv-to-tsv" ? "tsv-to-csv" : o.mode === "tsv-to-csv" ? "csv-to-tsv" : o.mode }))}
               value={result.output}
               error={result.error?.message ?? null}
               placeholder="Converted output will appear here"

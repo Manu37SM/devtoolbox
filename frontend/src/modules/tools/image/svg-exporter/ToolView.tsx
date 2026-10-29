@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { exportSvg } from "./transform";
 import type { SvgExporterOptions } from "./schema";
 import { mimeToExtension } from "@/lib/image-canvas";
@@ -60,7 +60,7 @@ export function SvgExporterToolView() {
     <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
       <div className="flex flex-col gap-3">
         <label className="text-sm font-medium text-text-secondary">SVG markup</label>
-        <Textarea
+        <ToolInput
           value={svgMarkup}
           onChange={(e) => handleTextChange(e.target.value)}
           placeholder={PLACEHOLDER_SVG}

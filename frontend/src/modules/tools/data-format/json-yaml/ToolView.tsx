@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertJsonYaml } from "./transform";
 import type { JsonYamlOptions } from "./schema";
 
@@ -43,7 +43,8 @@ export function JsonYamlToolView() {
               <label className="text-sm font-medium text-text-secondary">
                 {options.mode === "json-to-yaml" ? "JSON" : "YAML"}
               </label>
-              <CodeEditor
+              <ToolInput
+                as="code"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 language={options.mode === "json-to-yaml" ? "json" : "yaml"}
@@ -53,6 +54,7 @@ export function JsonYamlToolView() {
           }
           output={
             <OutputPane
+              onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "json-to-yaml" ? "yaml-to-json" : o.mode === "yaml-to-json" ? "json-to-yaml" : o.mode }))}
               label={options.mode === "json-to-yaml" ? "YAML" : "JSON"}
               value={result.output}
               error={result.error?.message ?? null}

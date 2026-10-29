@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { analyzeText } from "./transform";
+import { ToolInput } from "@/components/tools/ToolInput";
+import { ResultActions, toLines } from "@/components/tools/ResultActions";
 
 const STAT_LABELS: { key: keyof ReturnType<typeof analyzeText>; label: string }[] = [
   { key: "characters", label: "Characters" },
@@ -22,7 +23,7 @@ export function StringCounterToolView() {
     <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
       <div className="flex min-h-[240px] flex-col gap-2">
         <label className="text-sm font-medium text-text-secondary">Input</label>
-        <Textarea value={input} onChange={(e) => setInput(e.target.value)} aria-label="Text input" />
+        <ToolInput value={input} onChange={(e) => setInput(e.target.value)} aria-label="Text input" />
       </div>
       <div className="flex flex-col gap-2">
         {STAT_LABELS.map(({ key, label }) => (
@@ -42,6 +43,7 @@ export function StringCounterToolView() {
               : `${Math.round(stats.readingTimeMinutes)} min`}
           </span>
         </div>
+        <ResultActions text={toLines(STAT_LABELS.map(({ key, label }) => [label, stats[key]]))} json={stats} />
       </div>
     </div>
   );

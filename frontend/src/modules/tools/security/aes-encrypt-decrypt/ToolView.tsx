@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import type { TransformResult } from "@/lib/tool-transform";
 import { aesEncryptDecrypt } from "./transform";
 import type { AesEncryptDecryptOptions } from "./schema";
@@ -59,7 +59,7 @@ export function AesEncryptDecryptToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Text</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Text to encrypt, or Base64 to decrypt"
@@ -68,7 +68,7 @@ export function AesEncryptDecryptToolView() {
               />
             </div>
           }
-          output={<OutputPane label="Result" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "encrypt" ? "decrypt" : o.mode === "decrypt" ? "encrypt" : o.mode }))} label="Result" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
         />
       </div>
     </div>

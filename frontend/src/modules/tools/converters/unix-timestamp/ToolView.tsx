@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { timestampToHuman, humanToTimestamp } from "./transform";
 import type { UnixTimestampUnit } from "./schema";
+import { CopyValue } from "@/components/tools/ResultActions";
 
 export function UnixTimestampToolView() {
   const [now, setNow] = useState(() => Date.now());
@@ -22,6 +23,7 @@ export function UnixTimestampToolView() {
     <div className="flex h-full flex-col gap-6">
       <div className="rounded-md border border-border-subtle bg-bg-raised px-3 py-2 text-sm text-text-muted">
         Current time: <span className="font-mono text-text-primary">{Math.floor(now / 1000)}</span>{" "}
+        <CopyValue value={String(Math.floor(now / 1000))} label="current Unix time" className="align-middle" />{" "}
         ({new Date(now).toISOString()})
       </div>
 
@@ -47,10 +49,10 @@ export function UnixTimestampToolView() {
           <p role="alert" className="text-sm text-danger">{tsResult.error}</p>
         ) : (
           <div className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
-            <div><span className="text-text-muted">ISO 8601: </span><span className="font-mono">{tsResult.iso}</span></div>
-            <div><span className="text-text-muted">UTC: </span><span className="font-mono">{tsResult.utc}</span></div>
-            <div><span className="text-text-muted">Local: </span><span className="font-mono">{tsResult.local}</span></div>
-            <div><span className="text-text-muted">Relative: </span><span className="font-mono">{tsResult.relative}</span></div>
+            <div className="flex items-center gap-1"><span className="text-text-muted">ISO 8601: </span><span className="font-mono">{tsResult.iso}</span><CopyValue value={String(tsResult.iso)} label="ISO 8601" /></div>
+            <div className="flex items-center gap-1"><span className="text-text-muted">UTC: </span><span className="font-mono">{tsResult.utc}</span><CopyValue value={String(tsResult.utc)} label="UTC" /></div>
+            <div className="flex items-center gap-1"><span className="text-text-muted">Local: </span><span className="font-mono">{tsResult.local}</span><CopyValue value={String(tsResult.local)} label="Local" /></div>
+            <div className="flex items-center gap-1"><span className="text-text-muted">Relative: </span><span className="font-mono">{tsResult.relative}</span><CopyValue value={String(tsResult.relative)} label="Relative" /></div>
           </div>
         )}
       </section>
@@ -68,8 +70,8 @@ export function UnixTimestampToolView() {
           <p role="alert" className="text-sm text-danger">{dateResult.error}</p>
         ) : (
           <div className="flex gap-4 text-sm">
-            <div><span className="text-text-muted">Seconds: </span><span className="font-mono">{dateResult.seconds}</span></div>
-            <div><span className="text-text-muted">Milliseconds: </span><span className="font-mono">{dateResult.milliseconds}</span></div>
+            <div className="flex items-center gap-1"><span className="text-text-muted">Seconds: </span><span className="font-mono">{dateResult.seconds}</span><CopyValue value={String(dateResult.seconds)} label="Seconds" /></div>
+            <div className="flex items-center gap-1"><span className="text-text-muted">Milliseconds: </span><span className="font-mono">{dateResult.milliseconds}</span><CopyValue value={String(dateResult.milliseconds)} label="Milliseconds" /></div>
           </div>
         )}
       </section>

@@ -1,5 +1,6 @@
 import type { ToolRegistryEntry } from "@devtoolbox/shared";
 import { ToolPageEffects } from "@/components/tools/ToolPageEffects";
+import { ToolIoProvider } from "@/components/tools/ToolIoProvider";
 
 interface ToolShellProps {
   tool: ToolRegistryEntry;
@@ -16,7 +17,9 @@ export function ToolShell({ tool, children }: ToolShellProps) {
         </div>
         <ToolPageEffects toolSlug={tool.slug} />
       </div>
-      <div className="min-h-0 flex-1">{children}</div>
+      <div className="min-h-0 flex-1">
+        <ToolIoProvider slug={tool.slug}>{children}</ToolIoProvider>
+      </div>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { diffJson } from "./transform";
 import type { JsonDiffOptions } from "./schema";
 
@@ -32,7 +32,8 @@ export function JsonDiffToolView() {
             <div className="flex h-full flex-col gap-3">
               <div className="flex min-h-0 flex-1 flex-col gap-2">
                 <label className="text-sm font-medium text-text-secondary">Before</label>
-                <CodeEditor
+                <ToolInput
+                  as="code"
                   value={before}
                   onChange={(e) => setBefore(e.target.value)}
                   language="json"
@@ -41,7 +42,8 @@ export function JsonDiffToolView() {
               </div>
               <div className="flex min-h-0 flex-1 flex-col gap-2">
                 <label className="text-sm font-medium text-text-secondary">After</label>
-                <CodeEditor
+                <ToolInput
+                  as="code"
                   value={after}
                   onChange={(e) => setAfter(e.target.value)}
                   language="json"

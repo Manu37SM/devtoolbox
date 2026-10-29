@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { convertUnit, getUnitsForCategory } from "./transform";
 import type { UnitConverterOptions } from "./schema";
+import { CopyValue } from "@/components/tools/ResultActions";
 
 const CATEGORIES: { value: UnitConverterOptions["category"]; label: string }[] = [
   { value: "data", label: "Data size" },
@@ -131,6 +132,7 @@ export function UnitConverterToolView() {
       ) : (
         <div className="font-mono text-2xl text-text-primary">
           {value} {options.fromUnit} = {result.result} {options.toUnit}
+          <CopyValue value={String(result.result)} label="converted value" className="ml-2 align-middle" />
         </div>
       )}
 
@@ -144,7 +146,10 @@ export function UnitConverterToolView() {
                 className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-raised px-3 py-1.5"
               >
                 <span className="text-text-muted">{u.label}</span>
-                <span className="font-mono text-text-primary">{u.value}</span>
+                <span className="flex items-center gap-1">
+                  <span className="font-mono text-text-primary">{u.value}</span>
+                  <CopyValue value={String(u.value)} label={`value in ${u.label}`} />
+                </span>
               </div>
             ))}
           </div>

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { convertCssTailwind } from "./transform";
 import type { CssTailwindDirection } from "./schema";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 const CSS_PLACEHOLDER = "margin: 16px;\ncolor: #ef4444;\ndisplay: flex;\nborder-radius: 8px;";
 const TAILWIND_PLACEHOLDER = "m-4 text-red-500 flex rounded-lg";
@@ -43,15 +44,15 @@ export function CssTailwindHelperToolView() {
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="flex h-full flex-col gap-1 text-sm text-text-secondary">
-          {direction === "css-to-tailwind" ? "CSS declarations" : "Tailwind classes"}
-          <textarea
+        <div className="flex h-full min-h-[200px] flex-col gap-1">
+          <span className="text-sm text-text-secondary">{direction === "css-to-tailwind" ? "CSS declarations" : "Tailwind classes"}</span>
+          <ToolInput
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="h-full min-h-[160px] flex-1 resize-none rounded-md border border-border-default bg-bg-raised p-3 font-mono text-sm"
+            className="font-mono"
             aria-label={direction === "css-to-tailwind" ? "CSS declarations input" : "Tailwind classes input"}
           />
-        </label>
+        </div>
         <div className="h-full min-h-[160px]">
           <OutputPane
             value={result.output}

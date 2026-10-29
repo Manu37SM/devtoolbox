@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { AiDisclosureBanner } from "@/components/tools/AiDisclosureBanner";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { commentCode } from "./transform";
 
@@ -51,7 +51,7 @@ export function CodeCommenterToolView() {
         <label className="text-sm font-medium text-text-secondary" htmlFor="code-commenter-code">
           Code
         </label>
-        <Textarea
+        <ToolInput
           id="code-commenter-code"
           value={code}
           onChange={(e) => setCode(e.target.value)}

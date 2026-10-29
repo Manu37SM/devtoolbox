@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import DOMPurify from "dompurify";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { markdownToHtml } from "./transform";
 
 export function MarkdownHtmlToolView() {
@@ -28,7 +28,8 @@ export function MarkdownHtmlToolView() {
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="flex h-full flex-col gap-2">
           <label className="text-sm font-medium text-text-secondary">Markdown</label>
-          <CodeEditor
+          <ToolInput
+            as="code"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             language="markdown"

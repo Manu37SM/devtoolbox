@@ -5,6 +5,7 @@ import type { DnsLookupDto, DnsLookupResult } from "@devtoolbox/shared";
 import { Button } from "@/components/ui/button";
 import { ApiClientError } from "@/lib/api-client";
 import { lookupDns } from "./transform";
+import { CopyValue, ResultActions } from "@/components/tools/ResultActions";
 
 const RECORD_TYPES: DnsLookupDto["recordType"][] = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SOA"];
 
@@ -43,6 +44,9 @@ export function DnsLookupToolView() {
           onChange={(e) => setDomain(e.target.value)}
           placeholder="example.com"
           aria-label="Domain"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !loading && domain.trim()) void handleLookup();
+          }}
           className="flex-1 rounded-sm border border-border-default bg-bg-raised px-3 py-2 font-mono text-sm outline-none focus-visible:border-accent"
         />
         <select
@@ -71,14 +75,18 @@ export function DnsLookupToolView() {
           result.records.length === 0 ? (
             <p className="text-sm text-text-muted">No records found.</p>
           ) : (
+            <div className="flex flex-col gap-2">
+            <ResultActions text={result.records.join("\n")} json={result} />
             <div className="rounded-md border border-border-default">
               <div className="divide-y divide-border-default">
                 {result.records.map((record, i) => (
-                  <div key={i} className="break-all px-3 py-1.5 font-mono text-sm text-text-primary">
-                    {record}
+                  <div key={i} className="flex items-start justify-between gap-2 px-3 py-1.5 font-mono text-sm text-text-primary">
+                    <span className="break-all">{record}</span>
+                    <CopyValue value={record} label={`record ${i + 1}`} />
                   </div>
                 ))}
               </div>
+            </div>
             </div>
           )
         ) : (

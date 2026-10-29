@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runVlsmSubnetPlanner } from "./transform";
 import type { VlsmSubnetPlannerOptions } from "./schema";
@@ -51,7 +51,7 @@ export function VlsmSubnetPlannerToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Parent network, then one subnet per line: name hosts</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={"10.0.0.0/22\nApp 200"}

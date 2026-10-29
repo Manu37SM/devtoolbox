@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertJsonToml } from "./transform";
 import type { JsonTomlOptions } from "./schema";
 
@@ -43,7 +43,8 @@ export function JsonTomlToolView() {
               <label className="text-sm font-medium text-text-secondary">
                 {options.mode === "json-to-toml" ? "JSON" : "TOML"}
               </label>
-              <CodeEditor
+              <ToolInput
+                as="code"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 language={options.mode === "json-to-toml" ? "json" : "plain"}
@@ -53,6 +54,7 @@ export function JsonTomlToolView() {
           }
           output={
             <OutputPane
+              onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "json-to-toml" ? "toml-to-json" : o.mode === "toml-to-json" ? "json-to-toml" : o.mode }))}
               label={options.mode === "json-to-toml" ? "TOML" : "JSON"}
               value={result.output}
               error={result.error?.message ?? null}

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useShortcutsOverlayStore } from "@/store/shortcuts-overlay-store";
+import { TOOL_SHORTCUTS } from "@/components/tools/ToolIoProvider";
 
 const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: "⌘/Ctrl + K", description: "Open the command palette" },
@@ -10,6 +11,7 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: "Enter", description: "Open the selected tool" },
   { keys: "Esc", description: "Close any open dialog" },
   { keys: "?", description: "Show this shortcuts overlay" },
+  ...TOOL_SHORTCUTS,
 ];
 
 export function KeyboardShortcutsOverlay() {
@@ -32,7 +34,7 @@ export function KeyboardShortcutsOverlay() {
     <Dialog.Root open={isOpen} onOpenChange={(next) => (next ? open() : close())}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border-default bg-bg-overlay p-4 shadow-lg">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border-default bg-bg-overlay p-4 shadow-lg">
           <Dialog.Title className="mb-3 text-sm font-semibold text-text-primary">
             Keyboard shortcuts
           </Dialog.Title>

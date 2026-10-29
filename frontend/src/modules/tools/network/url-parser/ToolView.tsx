@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { parseUrl } from "./transform";
 import type { UrlParserOptions } from "./schema";
+import { CopyValue, ResultActions, toLines } from "@/components/tools/ResultActions";
 
 const ROWS: { label: string; key: "protocol" | "username" | "password" | "hostname" | "port" | "origin" | "pathname" | "search" | "hash" }[] = [
   { label: "Protocol", key: "protocol" },
@@ -47,6 +48,18 @@ export function UrlParserToolView() {
         </label>
       </div>
 
+      {!result.error && input.trim().length > 0 && (
+        <ResultActions
+          text={[
+            toLines(ROWS.map((row) => [row.label, result[row.key]])),
+            ...result.queryParams.map((param) => `${param.key}=${param.value}`),
+          ].join("\n")}
+          json={{
+            ...Object.fromEntries(ROWS.map((row) => [row.key, result[row.key]])),
+            query: result.queryParams.map((param) => ({ key: param.key, value: param.value })),
+          }}
+        />
+      )}
       <div className="min-h-0 flex-1 overflow-auto">
         {result.error ? (
           <p role="alert" className="text-sm text-danger">
@@ -61,7 +74,10 @@ export function UrlParserToolView() {
                 {ROWS.map((row) => (
                   <div key={row.key} className="grid grid-cols-[minmax(120px,1fr)_2fr] gap-2 px-3 py-1.5 text-sm">
                     <span className="text-text-secondary">{row.label}</span>
-                    <span className="break-all font-mono text-text-primary">{result[row.key] || "—"}</span>
+                    <span className="flex items-start justify-between gap-2">
+                      <span className="break-all font-mono text-text-primary">{result[row.key] || "—"}</span>
+                      <CopyValue value={result[row.key] || ""} label={row.label} />
+                    </span>
                   </div>
                 ))}
               </div>
@@ -80,7 +96,10 @@ export function UrlParserToolView() {
                         className="grid grid-cols-[minmax(120px,1fr)_2fr] gap-2 px-3 py-1.5 text-sm"
                       >
                         <span className="break-all font-mono text-text-secondary">{param.key}</span>
-                        <span className="break-all font-mono text-text-primary">{param.value}</span>
+                        <span className="flex items-start justify-between gap-2">
+                          <span className="break-all font-mono text-text-primary">{param.value}</span>
+                          <CopyValue value={param.value} label={`${param.key} value`} />
+                        </span>
                       </div>
                     ))}
                   </div>

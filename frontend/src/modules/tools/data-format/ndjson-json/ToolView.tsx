@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertNdjson } from "./transform";
 import type { NdjsonJsonOptions } from "./schema";
 
@@ -54,7 +54,7 @@ export function NdjsonJsonToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder=""
@@ -63,7 +63,7 @@ export function NdjsonJsonToolView() {
               />
             </div>
           }
-          output={<OutputPane label="Output" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "ndjson-to-json" ? "json-to-ndjson" : o.mode === "json-to-ndjson" ? "ndjson-to-json" : o.mode }))} label="Output" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
         />
       </div>
     </div>

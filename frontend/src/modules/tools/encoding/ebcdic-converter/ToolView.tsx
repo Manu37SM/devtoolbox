@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runEbcdicConverter } from "./transform";
 import type { EbcdicConverterOptions } from "./schema";
@@ -63,7 +63,7 @@ export function EbcdicConverterToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">EBCDIC hex or text</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="C8 85 93 93 96"
@@ -72,7 +72,7 @@ export function EbcdicConverterToolView() {
               />
             </div>
           }
-          output={<OutputPane label="Output" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, direction: o.direction === "to-ebcdic" ? "from-ebcdic" : o.direction === "from-ebcdic" ? "to-ebcdic" : o.direction }))} label="Output" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
         />
       </div>
     </div>

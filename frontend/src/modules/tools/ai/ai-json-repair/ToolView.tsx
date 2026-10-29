@@ -3,10 +3,10 @@
 import { useState } from "react";
 import type { AiJsonRepairResult } from "@devtoolbox/shared";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { AiDisclosureBanner } from "@/components/tools/AiDisclosureBanner";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { repairJson } from "./transform";
 
@@ -37,7 +37,7 @@ export function AiJsonRepairToolView() {
         <label className="text-sm font-medium text-text-secondary" htmlFor="ai-json-repair-input">
           Malformed JSON
         </label>
-        <Textarea
+        <ToolInput
           id="ai-json-repair-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}

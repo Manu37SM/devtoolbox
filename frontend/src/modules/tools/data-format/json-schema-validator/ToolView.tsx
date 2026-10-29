@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runJsonSchemaValidator } from "./transform";
 import type { JsonSchemaValidatorOptions } from "./schema";
@@ -32,7 +32,7 @@ export function JsonSchemaValidatorToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">JSON data</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={"{\"id\": 1}"}
@@ -40,7 +40,7 @@ export function JsonSchemaValidatorToolView() {
                 className="font-mono h-auto min-h-[120px] flex-1"
               />
               <label className="text-sm font-medium text-text-secondary">JSON Schema</label>
-              <Textarea
+              <ToolInput
                 value={input2}
                 onChange={(e) => setInput2(e.target.value)}
                 placeholder={"{\"type\": \"object\"}"}

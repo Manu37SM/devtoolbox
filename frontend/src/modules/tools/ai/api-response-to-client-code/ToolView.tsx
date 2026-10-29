@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { AiDisclosureBanner } from "@/components/tools/AiDisclosureBanner";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { generateClientCode } from "./transform";
 import { apiResponseToClientCodeTargets, type ApiResponseToClientCodeTarget } from "./schema";
@@ -67,7 +67,7 @@ export function ApiResponseToClientCodeToolView() {
         <label className="text-sm font-medium text-text-secondary" htmlFor="api-response-to-client-code-sample">
           Sample JSON response
         </label>
-        <Textarea
+        <ToolInput
           id="api-response-to-client-code-sample"
           value={sampleResponse}
           onChange={(e) => setSampleResponse(e.target.value)}

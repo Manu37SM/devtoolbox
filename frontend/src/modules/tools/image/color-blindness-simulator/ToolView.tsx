@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { simulateColorBlindnessOnImage } from "./transform";
 import type { ColorBlindnessType } from "./schema";
+import { Download } from "lucide-react";
 
 const TYPES: { value: ColorBlindnessType; label: string }[] = [
   { value: "protanopia", label: "Protanopia (red-weak)" },
@@ -71,7 +72,17 @@ export function ColorBlindnessSimulatorToolView() {
           )}
           {resultUrl && (
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-text-muted">Simulated</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-text-muted">Simulated</span>
+                <a
+                  href={resultUrl}
+                  download={`simulated-${type}.png`}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                >
+                  <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                  Download PNG
+                </a>
+              </div>
               {}
               <img src={resultUrl} alt="Color blindness simulation result" className="max-h-72 w-full rounded-md border border-border-default object-contain" />
             </div>

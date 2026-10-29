@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { testRegex } from "./transform";
 import type { RegexFlags } from "./schema";
+import { ToolInput } from "@/components/tools/ToolInput";
+import { CopyValue, ResultActions } from "@/components/tools/ResultActions";
 
 export function RegexTesterToolView() {
   const [pattern, setPattern] = useState("");
@@ -17,6 +18,10 @@ export function RegexTesterToolView() {
   });
 
   const result = useMemo(() => testRegex(pattern, flags, input), [pattern, flags, input]);
+  const flagString = (["global", "ignoreCase", "multiline", "dotAll", "unicode"] as const)
+    .filter((f) => flags[f])
+    .map((f) => ({ global: "g", ignoreCase: "i", multiline: "m", dotAll: "s", unicode: "u" })[f])
+    .join("");
 
   const highlighted = useMemo(() => {
     if (result.matches.length === 0) return input;
@@ -61,6 +66,7 @@ export function RegexTesterToolView() {
             </button>
           ))}
         </div>
+        <CopyValue value={pattern ? `/${pattern}/${flagString}` : ""} label="regex as a JavaScript literal" />
       </div>
       {result.error && (
         <p role="alert" className="text-sm text-danger">{result.error}</p>
@@ -68,7 +74,7 @@ export function RegexTesterToolView() {
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-text-secondary">Test string</label>
-          <Textarea value={input} onChange={(e) => setInput(e.target.value)} aria-label="Test string" />
+          <ToolInput value={input} onChange={(e) => setInput(e.target.value)} aria-label="Test string" />
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-text-secondary">
@@ -77,6 +83,11 @@ export function RegexTesterToolView() {
           <div className="flex-1 overflow-auto rounded-md border border-border-default bg-bg-raised p-3 font-mono text-sm whitespace-pre-wrap">
             {highlighted}
           </div>
+          <ResultActions
+            text={result.matches.map((m) => m.match).join("\n")}
+            json={result.matches}
+            fileName="regex-matches.json"
+          />
         </div>
       </div>
     </div>

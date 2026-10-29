@@ -4,9 +4,9 @@ import { useState } from "react";
 import type { AiExplainSubject } from "@devtoolbox/shared";
 import { AiExplainSubjects } from "@devtoolbox/shared";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { AiDisclosureBanner } from "@/components/tools/AiDisclosureBanner";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { explainExpression } from "./transform";
 
@@ -64,7 +64,7 @@ export function ExplainThisToolView() {
         <label className="text-sm font-medium text-text-secondary" htmlFor="explain-this-input">
           {SUBJECT_LABEL[subject]}
         </label>
-        <Textarea
+        <ToolInput
           id="explain-this-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}

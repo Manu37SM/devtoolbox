@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertTable } from "./transform";
 import type { TextTableFromFormat, TextTableOptions, TextTableToFormat } from "./schema";
 
@@ -65,10 +65,10 @@ export function TextTableToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea value={input} onChange={(e) => setInput(e.target.value)} aria-label="Table input" />
+              <ToolInput value={input} onChange={(e) => setInput(e.target.value)} aria-label="Table input" />
             </div>
           }
-          output={<OutputPane value={result.output} error={result.error?.message ?? null} placeholder="Converted table will appear here" />}
+          output={<OutputPane onSwap={() => setOptions((o) => (o.to === "ascii" ? o : { ...o, from: o.to, to: o.from }))} value={result.output} error={result.error?.message ?? null} placeholder="Converted table will appear here" />}
         />
       </div>
     </div>

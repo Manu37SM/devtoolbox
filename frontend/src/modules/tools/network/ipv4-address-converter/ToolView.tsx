@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertIpv4Address } from "./transform";
 import type { Ipv4AddressConverterOptions } from "./schema";
 
@@ -26,7 +26,7 @@ export function Ipv4AddressConverterToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">IPv4 address (any notation, one per line)</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="192.168.0.1 · 3232235521 · 0xC0A80001"
