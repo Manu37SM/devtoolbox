@@ -131,3 +131,49 @@ describe("PlanThrottleGuard", () => {
     await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 });
+
+describe("PlanThrottleGuard launch promo", () => {
+  const AI_CONFIG: PlanThrottleConfig = { ...CONFIG, route: "ai-explain" };
+  const original = process.env.LAUNCH_PROMO_UNTIL;
+  afterEach(() => {
+    if (original === undefined) delete process.env.LAUNCH_PROMO_UNTIL;
+    else process.env.LAUNCH_PROMO_UNTIL = original;
+  });
+
+  function freeUserGuard(config: PlanThrottleConfig) {
+    const redis = makeRedis();
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ plan: "FREE" }) },
+      organizationMember: { findFirst: jest.fn().mockResolvedValue(null) },
+    };
+    return { redis, guard: new PlanThrottleGuard(makeReflector(config), prisma as never, redis as never) };
+  }
+
+  it("gives signed-in FREE users the pro tier on AI routes while the promo is active", async () => {
+    process.env.LAUNCH_PROMO_UNTIL = "2999-01-01T00:00:00Z";
+    const { redis, guard } = freeUserGuard(AI_CONFIG);
+    await guard.canActivate(makeContext({ user: { userId: "u1" } }).context);
+    expect(redis.incr).toHaveBeenCalledWith(expect.stringContaining("pro:u1"));
+  });
+
+  it("does not apply to non-AI routes", async () => {
+    process.env.LAUNCH_PROMO_UNTIL = "2999-01-01T00:00:00Z";
+    const { redis, guard } = freeUserGuard(CONFIG);
+    await guard.canActivate(makeContext({ user: { userId: "u1" } }).context);
+    expect(redis.incr).toHaveBeenCalledWith(expect.stringContaining("free:u1"));
+  });
+
+  it("does not upgrade anonymous callers", async () => {
+    process.env.LAUNCH_PROMO_UNTIL = "2999-01-01T00:00:00Z";
+    const { redis, guard } = freeUserGuard(AI_CONFIG);
+    await guard.canActivate(makeContext({}).context);
+    expect(redis.incr).toHaveBeenCalledWith(expect.stringContaining("anonymous:"));
+  });
+
+  it("is off once the date has passed", async () => {
+    process.env.LAUNCH_PROMO_UNTIL = "2000-01-01T00:00:00Z";
+    const { redis, guard } = freeUserGuard(AI_CONFIG);
+    await guard.canActivate(makeContext({ user: { userId: "u1" } }).context);
+    expect(redis.incr).toHaveBeenCalledWith(expect.stringContaining("free:u1"));
+  });
+});

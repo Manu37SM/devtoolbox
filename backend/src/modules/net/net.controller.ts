@@ -49,17 +49,38 @@ export class NetController {
     }
   }
 
+  @PlanThrottle({
+    route: "net-dns",
+    anonymous: { limit: 30, ttlSeconds: 3_600 },
+    free: { limit: 200, ttlSeconds: 3_600 },
+    pro: { limit: 1000, ttlSeconds: 3_600 },
+  })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
   @Get("dns")
   async dns(@Query(new ZodValidationPipe(DnsLookupSchema)) dto: unknown) {
     return this.netService.dnsLookup(dto as Parameters<NetService["dnsLookup"]>[0]);
   }
 
+  @PlanThrottle({
+    route: "net-ip-lookup",
+    anonymous: { limit: 30, ttlSeconds: 3_600 },
+    free: { limit: 200, ttlSeconds: 3_600 },
+    pro: { limit: 1000, ttlSeconds: 3_600 },
+  })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
   @Get("ip-lookup")
   async ipLookup(@Query(new ZodValidationPipe(IpLookupSchema)) dto: unknown, @Req() req: Request) {
     const callerIp = req.ip ?? req.socket.remoteAddress ?? "";
     return this.netService.ipLookup(dto as Parameters<NetService["ipLookup"]>[0], callerIp);
   }
 
+  @PlanThrottle({
+    route: "net-webhook-create",
+    anonymous: { limit: 5, ttlSeconds: 3_600 },
+    free: { limit: 30, ttlSeconds: 3_600 },
+    pro: { limit: 200, ttlSeconds: 3_600 },
+  })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
   @Post("webhook-inbox")
   @HttpCode(201)
   async createWebhookInbox(@Req() req: Request) {
@@ -67,6 +88,13 @@ export class NetController {
     return this.netService.createWebhookInbox(originUrl);
   }
 
+  @PlanThrottle({
+    route: "net-webhook-events",
+    anonymous: { limit: 1800, ttlSeconds: 3_600 },
+    free: { limit: 3600, ttlSeconds: 3_600 },
+    pro: { limit: 7200, ttlSeconds: 3_600 },
+  })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
   @Get("webhook-inbox/:id/events")
   async getWebhookEvents(@Param("id") id: string) {
     const events = await this.netService.getWebhookEvents(id);
@@ -76,6 +104,13 @@ export class NetController {
     return { events };
   }
 
+  @PlanThrottle({
+    route: "net-webhook-capture",
+    anonymous: { limit: 600, ttlSeconds: 3_600 },
+    free: { limit: 600, ttlSeconds: 3_600 },
+    pro: { limit: 600, ttlSeconds: 3_600 },
+  })
+  @UseGuards(OptionalJwtAuthGuard, PlanThrottleGuard)
   @All("webhook-inbox/:id/capture")
   async captureWebhookEvent(@Param("id") id: string, @Req() req: Request) {
     const headers: Record<string, string> = {};

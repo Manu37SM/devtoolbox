@@ -6,7 +6,7 @@ export const htmlEntityTool: ToolRegistryEntry = {
   module: "encoding",
   description: "Escape HTML-reserved characters to entities, or decode entities back to text.",
   aliases: ["html escape", "html entity encoder", "html entity decoder"],
-  icon: "Code2",
+  icon: "Code",
   isClientOnly: true,
   isWorkerEligible: false,
   seo: { keywords: ["html entity encoder", "html entity decoder", "html escape online"] },

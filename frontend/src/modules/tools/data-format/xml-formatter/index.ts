@@ -6,7 +6,7 @@ export const xmlFormatterTool: ToolRegistryEntry = {
   module: "data-format",
   description: "Format and validate XML with consistent indentation and error reporting.",
   aliases: ["xml formatter", "xml validator", "xml pretty print"],
-  icon: "FileCode2",
+  icon: "FileCodeCorner",
   isClientOnly: true,
   isWorkerEligible: false,
   seo: { keywords: ["xml formatter", "xml validator online", "xml pretty print"] },

@@ -6,7 +6,7 @@ export const ipv6UlaGeneratorTool: ToolRegistryEntry = {
   module: "network",
   description: "Generate RFC 4193 unique local IPv6 /48 prefixes (fd00::/8) with example /64 subnets for private networks.",
   aliases: ["ula prefix","rfc 4193","private ipv6 prefix","fd00::/8"],
-  icon: "Fingerprint",
+  icon: "FingerprintPattern",
   isClientOnly: true,
   isWorkerEligible: false,
   seo: { keywords: ["ula prefix","rfc 4193","private ipv6 prefix","fd00::/8"] },

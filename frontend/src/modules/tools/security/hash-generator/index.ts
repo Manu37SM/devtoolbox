@@ -6,7 +6,7 @@ export const hashGeneratorTool: ToolRegistryEntry = {
   module: "security",
   description: "Generate MD5, SHA-1, SHA-256, or SHA-512 hashes from text, entirely client-side.",
   aliases: ["md5 generator", "sha256 generator", "checksum generator"],
-  icon: "Fingerprint",
+  icon: "FingerprintPattern",
   isClientOnly: true,
   isWorkerEligible: true,
   seo: { keywords: ["md5 hash generator", "sha256 hash generator", "sha1 online"] },

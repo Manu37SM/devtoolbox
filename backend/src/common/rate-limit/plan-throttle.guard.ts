@@ -7,6 +7,7 @@ import { PrismaService } from "../../database/prisma.service";
 import { PLAN_THROTTLE_KEY, type PlanThrottleConfig } from "./plan-throttle.decorator";
 import type { AuthenticatedUser } from "../../modules/auth/decorators/current-user.decorator";
 import { resolveEffectivePlan } from "../plan/effective-plan";
+import { isLaunchPromoActive, promoAppliesToRoute } from "../plan/launch-promo";
 
 @Injectable()
 export class PlanThrottleGuard implements CanActivate {
@@ -23,7 +24,12 @@ export class PlanThrottleGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request & { user?: AuthenticatedUser }>();
     const res = context.switchToHttp().getResponse<Response>();
 
-    const { tier, identity } = await this.resolveTierAndIdentity(req);
+    const resolved = await this.resolveTierAndIdentity(req);
+    const { identity } = resolved;
+    const tier =
+      resolved.tier === "free" && promoAppliesToRoute(config.route) && isLaunchPromoActive(process.env.LAUNCH_PROMO_UNTIL)
+        ? "pro"
+        : resolved.tier;
     const { limit, ttlSeconds } = config[tier];
 
     const key = `ratelimit:${config.route}:${tier}:${identity}`;

@@ -6,7 +6,7 @@ export const jsonSchemaGeneratorTool: ToolRegistryEntry = {
   module: "data-format",
   description: "Infer a draft-07 JSON Schema from a sample JSON document.",
   aliases: ["generate json schema", "json to schema", "schema inference"],
-  icon: "FileJson",
+  icon: "FileBraces",
   isClientOnly: true,
   isWorkerEligible: false,
   seo: {

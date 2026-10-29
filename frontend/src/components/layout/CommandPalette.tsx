@@ -94,13 +94,13 @@ export function CommandPalette() {
             </button>
           )}
 
-          <ul role="listbox" className="max-h-80 overflow-auto py-1">
-            {results.length === 0 && (
-              <li className="px-3 py-6 text-center text-sm text-text-muted">No tools found.</li>
-            )}
-            {results.map((tool, i) => (
-              <li key={tool.slug}>
+          {results.length === 0 ? (
+            <p className="px-3 py-6 text-center text-sm text-text-muted">No tools found.</p>
+          ) : (
+            <div role="listbox" aria-label="Matching tools" className="max-h-80 overflow-auto py-1">
+              {results.map((tool, i) => (
                 <button
+                  key={tool.slug}
                   role="option"
                   aria-selected={i === activeIndex}
                   onClick={() => navigateToTool(tool.slug)}
@@ -110,13 +110,11 @@ export function CommandPalette() {
                   }`}
                 >
                   <span>{tool.name}</span>
-                  <span className={i === activeIndex ? "text-accent-foreground/70" : "text-text-muted"}>
-                    {tool.module}
-                  </span>
+                  <span className={i === activeIndex ? "text-accent-foreground" : "text-text-muted"}>{tool.module}</span>
                 </button>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

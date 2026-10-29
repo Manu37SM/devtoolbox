@@ -8,7 +8,7 @@ interface ToolShellProps {
 
 export function ToolShell({ tool, children }: ToolShellProps) {
   return (
-    <div className="mx-auto flex h-[calc(100vh-56px)] max-w-7xl flex-col px-6 py-6">
+    <div className="mx-auto flex min-h-[calc(100dvh-56px-3.5rem)] max-w-7xl flex-col px-4 py-4 sm:px-6 sm:py-6 lg:h-[calc(100vh-56px)] lg:min-h-0">
       <div className="mb-4 flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-text-primary">{tool.name}</h1>

@@ -6,7 +6,7 @@ export const yamlFormatterTool: ToolRegistryEntry = {
   module: "data-format",
   description: "Format and validate YAML with consistent indentation and inline error reporting.",
   aliases: ["yaml formatter", "yaml validator", "yaml linter"],
-  icon: "FileCode2",
+  icon: "FileCodeCorner",
   isClientOnly: true,
   isWorkerEligible: false,
   seo: { keywords: ["yaml formatter", "yaml validator online", "yaml linter"] },
