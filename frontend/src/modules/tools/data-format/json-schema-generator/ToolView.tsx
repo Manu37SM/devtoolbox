@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { generateJsonSchema } from "./transform";
 import type { JsonSchemaGeneratorOptions } from "./schema";
 
@@ -30,7 +30,8 @@ export function JsonSchemaGeneratorToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Sample JSON</label>
-              <CodeEditor
+              <ToolInput
+                as="code"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 language="json"

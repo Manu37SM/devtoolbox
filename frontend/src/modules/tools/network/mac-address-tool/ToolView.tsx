@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { macAddressTool } from "./transform";
 import type { MacAddressToolOptions } from "./schema";
 
@@ -86,7 +86,7 @@ export function MacAddressToolToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">MAC addresses (one per line)</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="00:1A:2B:3C:4D:5E"

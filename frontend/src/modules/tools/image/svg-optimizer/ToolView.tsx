@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { DualPane } from "@/components/tools/DualPane";
 import { OutputPane } from "@/components/tools/OutputPane";
-import { Textarea } from "@/components/ui/textarea";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { optimizeSvg } from "./transform";
 import type { SvgOptimizerOptions } from "./schema";
 
@@ -83,7 +83,7 @@ export function SvgOptimizerToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">SVG markup</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Paste SVG markup here"

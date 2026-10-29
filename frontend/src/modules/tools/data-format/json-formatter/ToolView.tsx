@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { formatJson } from "./transform";
 import type { JsonFormatterOptions } from "./schema";
 
@@ -68,7 +68,8 @@ export function JsonFormatterToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <CodeEditor
+              <ToolInput
+                as="code"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 language="json"
@@ -79,6 +80,7 @@ export function JsonFormatterToolView() {
           }
           output={
             <OutputPane
+              onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "beautify" ? "minify" : o.mode === "minify" ? "beautify" : o.mode }))}
               value={result.output}
               error={
                 result.error

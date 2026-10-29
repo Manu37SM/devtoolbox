@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { beautifyJsTs } from "./transform";
 import type { JsTsBeautifierOptions } from "./schema";
 
@@ -92,7 +92,8 @@ export function JsTsBeautifierToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <CodeEditor
+              <ToolInput
+                as="code"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 language={options.language === "typescript" ? "typescript" : "javascript"}
@@ -100,7 +101,7 @@ export function JsTsBeautifierToolView() {
               />
             </div>
           }
-          output={<OutputPane value={output} error={error} />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "beautify" ? "minify" : o.mode === "minify" ? "beautify" : o.mode }))} value={output} error={error} />}
         />
       </div>
     </div>

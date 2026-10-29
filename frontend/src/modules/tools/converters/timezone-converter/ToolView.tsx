@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { COMMON_TIMEZONES, convertTimezones } from "./transform";
 import type { TimezoneConverterOptions } from "./schema";
+import { CopyValue } from "@/components/tools/ResultActions";
 
 function nowAsDatetimeLocal(): string {
   const d = new Date();
@@ -82,6 +83,7 @@ export function TimezoneConverterToolView() {
                 <div className="text-xs text-text-muted">{row.timezone}</div>
                 <div className="font-mono text-sm text-text-primary">{row.formatted}</div>
               </div>
+              <CopyValue value={row.formatted} label={`time in ${row.timezone}`} className="ml-auto mr-1" />
               <Button variant="ghost" size="sm" onClick={() => removeTimezone(row.timezone)}>
                 Remove
               </Button>

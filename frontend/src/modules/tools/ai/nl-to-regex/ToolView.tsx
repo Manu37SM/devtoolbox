@@ -3,10 +3,10 @@
 import { useState } from "react";
 import type { AiGenerateResult } from "@devtoolbox/shared";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { AiDisclosureBanner } from "@/components/tools/AiDisclosureBanner";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { generateRegex } from "./transform";
 
@@ -43,7 +43,7 @@ export function NlToRegexToolView() {
         <label className="text-sm font-medium text-text-secondary" htmlFor="nl-to-regex-prompt">
           Describe what to match
         </label>
-        <Textarea
+        <ToolInput
           id="nl-to-regex-prompt"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -56,7 +56,7 @@ export function NlToRegexToolView() {
         <label className="text-sm font-medium text-text-secondary" htmlFor="nl-to-regex-examples">
           Example strings it should match (one per line, optional but strongly recommended)
         </label>
-        <Textarea
+        <ToolInput
           id="nl-to-regex-examples"
           value={examplesText}
           onChange={(e) => setExamplesText(e.target.value)}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runThreadDumpAnalyzer } from "./transform";
 import type { ThreadDumpAnalyzerOptions } from "./schema";
@@ -55,7 +55,7 @@ export function ThreadDumpAnalyzerToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Thread dump</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={"\"main\" #1 prio=5 ..."}

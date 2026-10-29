@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { compareEnvFiles } from "./transform";
 import type { EnvFileCompareOptions } from "./schema";
@@ -35,7 +35,7 @@ export function EnvFileCompareToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">File A, a line containing only ---, then file B</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={"A=1\n---\nA=2"}

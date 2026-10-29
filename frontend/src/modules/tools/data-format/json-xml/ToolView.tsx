@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CodeEditor } from "@/components/ui/CodeEditor";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertJsonXml } from "./transform";
 import type { JsonXmlOptions } from "./schema";
 
@@ -57,7 +57,8 @@ export function JsonXmlToolView() {
               <label className="text-sm font-medium text-text-secondary">
                 {options.mode === "json-to-xml" ? "JSON" : "XML"}
               </label>
-              <CodeEditor
+              <ToolInput
+                as="code"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 language={options.mode === "json-to-xml" ? "json" : "xml"}
@@ -67,6 +68,7 @@ export function JsonXmlToolView() {
           }
           output={
             <OutputPane
+              onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "json-to-xml" ? "xml-to-json" : o.mode === "xml-to-json" ? "json-to-xml" : o.mode }))}
               label={options.mode === "json-to-xml" ? "XML" : "JSON"}
               value={result.output}
               error={result.error?.message ?? null}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runCidrAggregator } from "./transform";
 import type { CidrAggregatorOptions } from "./schema";
@@ -39,7 +39,7 @@ export function CidrAggregatorToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">IPs and CIDRs (space, comma or newline separated)</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={"10.0.0.0/25\n10.0.0.128/25"}

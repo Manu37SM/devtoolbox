@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { generateBadges } from "./transform";
 import type { BadgeGeneratorOptions } from "./schema";
@@ -68,7 +68,7 @@ export function BadgeGeneratorToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Fields (repo, workflow, package, group, artifact, or label, message, color, logo, link)</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="repo: owner/name"

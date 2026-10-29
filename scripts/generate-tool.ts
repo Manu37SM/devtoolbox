@@ -96,7 +96,11 @@ describe("${lowerFirst(pascalSlug)}", () => {
 
   writeFileSync(
     join(dir, "ToolView.tsx"),
-    `// Compose ToolShell + OptionsPanel + OutputPane.
+    `// Compose ToolShell + OptionsPanel + DualPane with ToolInput (input) and OutputPane (output).
+// ToolInput/OutputPane bring the shared toolbars: paste, open/drop file, clear with undo,
+// copy, download, use-as-input/swap, wrap, full screen and the page shortcuts. Per-tool
+// download names, binary file handling and chaining are configured in
+// frontend/src/lib/tool-io.ts; two-way tools pass onSwap to OutputPane.
 // Do not build a bespoke layout without design review sign-off.
 export function ${pascalSlug}ToolView() {
   return null; // TODO

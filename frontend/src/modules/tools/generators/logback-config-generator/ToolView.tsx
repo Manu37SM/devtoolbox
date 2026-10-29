@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runLogbackConfigGenerator } from "./transform";
 import type { LogbackConfigGeneratorOptions } from "./schema";
@@ -60,7 +60,7 @@ export function LogbackConfigGeneratorToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Fields: app, log-dir, levels, max-file-size, max-history, total-size-cap, json-profiles</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="app: orders"

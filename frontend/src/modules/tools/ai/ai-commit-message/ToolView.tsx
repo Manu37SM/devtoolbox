@@ -3,9 +3,9 @@
 import { useState } from "react";
 import type { AiCommitMessageResult } from "@devtoolbox/shared";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { AiDisclosureBanner } from "@/components/tools/AiDisclosureBanner";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { generateCommitMessage } from "./transform";
 
@@ -36,7 +36,7 @@ export function AiCommitMessageToolView() {
         <label className="text-sm font-medium text-text-secondary" htmlFor="ai-commit-message-diff">
           Git diff
         </label>
-        <Textarea
+        <ToolInput
           id="ai-commit-message-diff"
           value={diff}
           onChange={(e) => setDiff(e.target.value)}

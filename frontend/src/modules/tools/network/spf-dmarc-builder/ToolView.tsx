@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runSpfDmarc } from "./transform";
 import type { SpfDmarcBuilderOptions } from "./schema";
@@ -76,7 +76,7 @@ export function SpfDmarcBuilderToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">SPF: one mechanism per line. DMARC: key=value per line (rua, ruf, sp, adkim, aspf, fo)</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={"include:_spf.google.com\nip4:203.0.113.0/24"}

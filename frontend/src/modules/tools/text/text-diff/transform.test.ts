@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diffText, diffTokenStats } from "./transform";
+import { diffAsText, diffText, diffTokenStats } from "./transform";
 
 const base = { mode: "line" as const, ignoreWhitespace: false, ignoreCase: false };
 
@@ -75,5 +75,17 @@ describe("diffTokenStats", () => {
   it("returns all-unchanged for identical input", () => {
     const stats = diffTokenStats("a\nb", "a\nb", base);
     expect(stats).toEqual({ additions: 0, removals: 0, unchanged: 2 });
+  });
+});
+
+describe("diffAsText", () => {
+  it("prefixes every line of merged line-mode ops", () => {
+    const ops = diffText("a\nb\nc", "a\nB\nc\nd", { ...base, mode: "line" });
+    expect(diffAsText(ops, "line").split("\n")).toEqual([" a", "-b", "+B", " c", "+d"]);
+  });
+
+  it("uses word-diff markers in word mode", () => {
+    const ops = diffText("the quick fox", "the slow fox", { ...base, mode: "word" });
+    expect(diffAsText(ops, "word")).toBe("the [-quick-]{+slow+} fox");
   });
 });

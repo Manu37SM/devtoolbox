@@ -3,10 +3,10 @@
 import { useState } from "react";
 import type { AiGenerateResult } from "@devtoolbox/shared";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { AiDisclosureBanner } from "@/components/tools/AiDisclosureBanner";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { generateFromExample } from "./transform";
 import { generateFromExampleTargets, type GenerateFromExampleTarget } from "./schema";
@@ -67,7 +67,7 @@ export function GenerateFromExampleToolView() {
         <label className="text-sm font-medium text-text-secondary" htmlFor="generate-from-example-sample">
           {target === "regex" ? "Example strings it should match (one per line)" : "Sample JSON document"}
         </label>
-        <Textarea
+        <ToolInput
           id="generate-from-example-sample"
           value={sample}
           onChange={(e) => setSample(e.target.value)}

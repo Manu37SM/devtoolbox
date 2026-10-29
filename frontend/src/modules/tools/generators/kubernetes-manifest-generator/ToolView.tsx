@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runKubernetesManifestGenerator } from "./transform";
 import type { KubernetesManifestGeneratorOptions } from "./schema";
@@ -47,7 +47,7 @@ export function KubernetesManifestGeneratorToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Fields: name, image, port, replicas, namespace, host, env, secret-env, cpu-request, memory-limit</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={"name: orders\nimage: ghcr.io/acme/orders:1.0.0"}

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import type { HttpRequestProxyResult } from "@devtoolbox/shared";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { sendHttpRequest } from "./transform";
 
@@ -145,7 +145,7 @@ export function HttpRequestTesterToolView() {
           <label className="text-sm font-medium text-text-secondary" htmlFor="http-body">
             Body
           </label>
-          <Textarea
+          <ToolInput
             id="http-body"
             value={body}
             onChange={(e) => setBody(e.target.value)}

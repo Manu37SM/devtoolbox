@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { parseUserAgentStructured } from "./transform";
+import { ToolInput } from "@/components/tools/ToolInput";
+import { CopyValue, ResultActions, toLines } from "@/components/tools/ResultActions";
 
 interface Section {
   title: string;
@@ -71,7 +72,7 @@ export function UserAgentParserToolView() {
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-text-secondary">User-Agent string</label>
-        <Textarea
+        <ToolInput
           value={input}
           onChange={(e) => setInput(e.target.value)}
           aria-label="User-Agent string"
@@ -84,6 +85,10 @@ export function UserAgentParserToolView() {
           <p className="text-sm text-text-secondary">Enter a User-Agent string above to see parsed details.</p>
         ) : (
           <div className="flex flex-col gap-4">
+            <ResultActions
+              text={sections.map((section) => `${section.title}\n${toLines(section.rows)}`).join("\n\n")}
+              json={Object.fromEntries(sections.map((section) => [section.title, Object.fromEntries(section.rows)]))}
+            />
             {sections.map((section) => (
               <div key={section.title} className="rounded-md border border-border-default">
                 <div className="border-b border-border-default bg-bg-raised px-3 py-1.5 text-sm font-medium text-text-primary">
@@ -93,7 +98,10 @@ export function UserAgentParserToolView() {
                   {section.rows.map(([label, value]) => (
                     <div key={label} className="grid grid-cols-[minmax(120px,1fr)_2fr] gap-2 px-3 py-1.5 text-sm">
                       <span className="text-text-secondary">{label}</span>
-                      <span className="font-mono text-text-primary">{value}</span>
+                      <span className="flex items-start justify-between gap-2">
+                        <span className="font-mono text-text-primary">{value}</span>
+                        <CopyValue value={String(value ?? "")} label={`${section.title} ${label}`} />
+                      </span>
                     </div>
                   ))}
                 </div>

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { calculateCidrSubnet } from "./transform";
+import { CopyValue, ResultActions, toLines } from "@/components/tools/ResultActions";
 
 const ROWS: { label: string; key: "networkAddress" | "broadcastAddress" | "subnetMask" | "wildcardMask" | "firstHost" | "lastHost" | "totalHosts" | "usableHosts" | "prefixLength" }[] = [
   { label: "Network Address", key: "networkAddress" },
@@ -35,6 +36,12 @@ export function CidrSubnetCalculatorToolView() {
           className="w-full rounded-sm border border-border-default bg-bg-raised px-3 py-2 font-mono text-sm outline-none focus-visible:border-accent"
         />
       </div>
+      {!result.error && (
+        <ResultActions
+          text={toLines(ROWS.map((row) => [row.label, String(result[row.key])]))}
+          json={Object.fromEntries(ROWS.map((row) => [row.key, result[row.key]]))}
+        />
+      )}
       <div className="min-h-0 flex-1 overflow-auto">
         {result.error ? (
           <p role="alert" className="text-sm text-danger">
@@ -46,7 +53,10 @@ export function CidrSubnetCalculatorToolView() {
               {ROWS.map((row) => (
                 <div key={row.key} className="grid grid-cols-[minmax(160px,1fr)_2fr] gap-2 px-3 py-1.5 text-sm">
                   <span className="text-text-secondary">{row.label}</span>
-                  <span className="font-mono text-text-primary">{result[row.key]}</span>
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="font-mono text-text-primary">{result[row.key]}</span>
+                    <CopyValue value={String(result[row.key] ?? "")} label={row.label} />
+                  </span>
                 </div>
               ))}
             </div>

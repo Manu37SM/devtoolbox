@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { transformHexText } from "./transform";
 import type { HexTextOptions } from "./schema";
 
@@ -64,7 +64,7 @@ export function HexTextToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type text, hex, or binary depending on the selected mode"
@@ -74,6 +74,7 @@ export function HexTextToolView() {
           }
           output={
             <OutputPane
+              onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "text-to-hex" ? "hex-to-text" : o.mode === "hex-to-text" ? "text-to-hex" : o.mode === "text-to-binary" ? "binary-to-text" : o.mode === "binary-to-text" ? "text-to-binary" : o.mode }))}
               value={result.output}
               error={result.error?.message ?? null}
               placeholder="Converted output will appear here"

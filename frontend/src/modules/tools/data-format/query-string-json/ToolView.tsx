@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertQueryStringJson } from "./transform";
 import type { QueryStringJsonOptions } from "./schema";
 
@@ -78,7 +78,7 @@ export function QueryStringJsonToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={options.mode === "qs-to-json" ? "https://example.com/search?q=hello&tag=a&tag=b" : '{"q": "hello", "tag": ["a", "b"]}'}
@@ -86,7 +86,7 @@ export function QueryStringJsonToolView() {
               />
             </div>
           }
-          output={<OutputPane value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "qs-to-json" ? "json-to-qs" : o.mode === "json-to-qs" ? "qs-to-json" : o.mode }))} value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
         />
       </div>
     </div>

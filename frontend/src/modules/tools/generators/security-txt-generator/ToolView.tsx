@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { generateSecurityTxt } from "./transform";
 import type { SecurityTxtGeneratorOptions } from "./schema";
@@ -40,7 +40,7 @@ export function SecurityTxtGeneratorToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Fields (one per line: contact, policy, encryption, hiring, canonical, acknowledgments, language)</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="contact: security@example.com"

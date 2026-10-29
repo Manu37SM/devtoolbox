@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runMarkdownJiraConverter } from "./transform";
 import type { MarkdownJiraConverterOptions } from "./schema";
@@ -39,7 +39,7 @@ export function MarkdownJiraConverterToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Text</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="# Title"
@@ -48,7 +48,7 @@ export function MarkdownJiraConverterToolView() {
               />
             </div>
           }
-          output={<OutputPane label="Output" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, direction: o.direction === "md-to-jira" ? "jira-to-md" : o.direction === "jira-to-md" ? "md-to-jira" : o.direction }))} label="Output" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
         />
       </div>
     </div>

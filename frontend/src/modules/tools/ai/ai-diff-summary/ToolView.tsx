@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { AiDisclosureBanner } from "@/components/tools/AiDisclosureBanner";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { ApiClientError } from "@/lib/api-client";
 import { summarizeDiff } from "./transform";
 
@@ -54,13 +54,13 @@ export function AiDiffSummaryToolView() {
           <label className="text-sm font-medium text-text-secondary" htmlFor="ai-diff-before">
             Before
           </label>
-          <Textarea id="ai-diff-before" value={before} onChange={(e) => setBefore(e.target.value)} className="h-40" />
+          <ToolInput id="ai-diff-before" value={before} onChange={(e) => setBefore(e.target.value)} className="h-40" />
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-text-secondary" htmlFor="ai-diff-after">
             After
           </label>
-          <Textarea id="ai-diff-after" value={after} onChange={(e) => setAfter(e.target.value)} className="h-40" />
+          <ToolInput id="ai-diff-after" value={after} onChange={(e) => setAfter(e.target.value)} className="h-40" />
         </div>
       </div>
 

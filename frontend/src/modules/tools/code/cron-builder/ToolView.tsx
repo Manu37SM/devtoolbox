@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { parseCron } from "./transform";
+import { ResultActions } from "@/components/tools/ResultActions";
 
 export function CronBuilderToolView() {
   const [input, setInput] = useState("*/15 9-17 * * 1-5");
@@ -33,6 +34,11 @@ export function CronBuilderToolView() {
               ))}
             </ul>
           </div>
+          <ResultActions
+            text={`${input.trim()}\n${result.description}\n\nNext runs (UTC):\n${result.nextRuns.join("\n")}`}
+            json={{ expression: input.trim(), description: result.description, nextRunsUtc: result.nextRuns }}
+            className="justify-start"
+          />
         </>
       ) : (
         <p className="text-sm text-text-muted">Enter a 5-field cron expression above.</p>

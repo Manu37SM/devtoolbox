@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CodeEditor, type CodeEditorLanguage } from "@/components/ui/CodeEditor";
-import { Textarea } from "@/components/ui/textarea";
+import { type CodeEditorLanguage } from "@/components/ui/CodeEditor";
 import { Badge } from "@/components/ui/badge";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { generateCodeDiff } from "./transform";
 import type { CodeDiffOptions } from "./schema";
+import { ResultActions } from "@/components/tools/ResultActions";
+import { ArrowLeftRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const LANGUAGES: { value: CodeDiffOptions["language"]; label: string }[] = [
   { value: "javascript", label: "JavaScript" },
@@ -62,6 +65,19 @@ export function CodeDiffToolView() {
           />
           Ignore case
         </label>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            setBefore(after);
+            setAfter(before);
+          }}
+          aria-label="Swap before and after"
+          title="Swap before and after"
+        >
+          <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
+          Swap
+        </Button>
         <Badge variant="success">+{result.stats.additions}</Badge>
         <Badge variant="danger">-{result.stats.removals}</Badge>
       </div>
@@ -70,23 +86,26 @@ export function CodeDiffToolView() {
         <div className="flex min-h-[200px] flex-col gap-2">
           <label className="text-sm font-medium text-text-secondary">Before</label>
           {editorLanguage ? (
-            <CodeEditor value={before} onChange={(e) => setBefore(e.target.value)} language={editorLanguage} aria-label="Before code" />
+            <ToolInput as="code" value={before} onChange={(e) => setBefore(e.target.value)} language={editorLanguage} aria-label="Before code" />
           ) : (
-            <Textarea value={before} onChange={(e) => setBefore(e.target.value)} aria-label="Before code" />
+            <ToolInput value={before} onChange={(e) => setBefore(e.target.value)} aria-label="Before code" />
           )}
         </div>
         <div className="flex min-h-[200px] flex-col gap-2">
           <label className="text-sm font-medium text-text-secondary">After</label>
           {editorLanguage ? (
-            <CodeEditor value={after} onChange={(e) => setAfter(e.target.value)} language={editorLanguage} aria-label="After code" />
+            <ToolInput as="code" value={after} onChange={(e) => setAfter(e.target.value)} language={editorLanguage} aria-label="After code" />
           ) : (
-            <Textarea value={after} onChange={(e) => setAfter(e.target.value)} aria-label="After code" />
+            <ToolInput value={after} onChange={(e) => setAfter(e.target.value)} aria-label="After code" />
           )}
         </div>
       </div>
 
       <div className="flex min-h-[140px] flex-col gap-2">
-        <label className="text-sm font-medium text-text-secondary">Diff</label>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-text-secondary">Diff</span>
+          <ResultActions text={result.output} fileName="code.diff" />
+        </div>
         <pre
           aria-live="polite"
           className="max-h-72 overflow-auto whitespace-pre-wrap rounded-md border border-border-default bg-bg-raised p-3 font-mono text-sm"

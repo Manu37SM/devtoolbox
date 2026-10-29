@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { convertDependencies } from "./transform";
 import type { MavenGradleDependencyConverterOptions } from "./schema";
@@ -53,7 +53,7 @@ export function MavenGradleDependencyConverterToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Dependencies (XML or Gradle lines)</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="<dependency>...</dependency>"
@@ -62,7 +62,7 @@ export function MavenGradleDependencyConverterToolView() {
               />
             </div>
           }
-          output={<OutputPane label="Output" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, direction: o.direction === "maven-to-gradle" ? "gradle-to-maven" : o.direction === "gradle-to-maven" ? "maven-to-gradle" : o.direction }))} label="Output" value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
         />
       </div>
     </div>

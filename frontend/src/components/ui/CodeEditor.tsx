@@ -33,6 +33,8 @@ export interface CodeEditorProps {
   placeholder?: string;
   readOnly?: boolean;
   className?: string;
+  /** Soft-wrap long lines. */
+  wrap?: boolean;
 }
 
 function languageExtension(language: CodeEditorLanguage | undefined): Extension[] {
@@ -110,10 +112,12 @@ export function CodeEditor({
   placeholder,
   readOnly = false,
   className,
+  wrap = false,
 }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const languageCompartment = useRef(new Compartment());
+  const wrapCompartment = useRef(new Compartment());
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -126,6 +130,7 @@ export function CodeEditor({
         basicSetup,
         keymap.of([indentWithTab]),
         languageCompartment.current.of(languageExtension(language)),
+        wrapCompartment.current.of(wrap ? EditorView.lineWrapping : []),
         appTheme,
         EditorView.editable.of(!readOnly),
         EditorView.contentAttributes.of(ariaLabel ? { "aria-label": ariaLabel } : {}),
@@ -162,6 +167,10 @@ export function CodeEditor({
     if (!view) return;
     view.dispatch({ effects: languageCompartment.current.reconfigure(languageExtension(language)) });
   }, [language]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: wrapCompartment.current.reconfigure(wrap ? EditorView.lineWrapping : []) });
+  }, [wrap]);
 
   return <div ref={containerRef} className={className ?? "h-full min-h-0 overflow-hidden"} />;
 }

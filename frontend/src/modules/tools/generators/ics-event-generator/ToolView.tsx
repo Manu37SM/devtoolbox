@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { generateIcs } from "./transform";
 import type { IcsEventGeneratorOptions } from "./schema";
@@ -72,7 +72,7 @@ export function IcsEventGeneratorToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Event(s) — key: value lines, blank line between events</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="title: Team sync\nstart: 2026-11-05 14:30\nend: 2026-11-05 15:00"

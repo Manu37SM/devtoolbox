@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
+import { ToolInput } from "@/components/tools/ToolInput";
 
 import { runSamlDecoder } from "./transform";
 import type { SamlDecoderOptions } from "./schema";
@@ -48,7 +48,7 @@ export function SamlDecoderToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">SAMLResponse / SAMLRequest value, URL or XML</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="PHNhbWxwOlJlc3BvbnNlIC4uLg=="

@@ -5,6 +5,7 @@ import type { IpLookupResult } from "@devtoolbox/shared";
 import { Button } from "@/components/ui/button";
 import { ApiClientError } from "@/lib/api-client";
 import { lookupIp } from "./transform";
+import { CopyValue, ResultActions, toLines } from "@/components/tools/ResultActions";
 
 const ROWS: { label: string; key: keyof IpLookupResult }[] = [
   { label: "IP address", key: "ip" },
@@ -51,6 +52,9 @@ export function IpLookupToolView() {
           onChange={(e) => setIp(e.target.value)}
           placeholder="Leave blank to look up your own IP"
           aria-label="IP address"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !loading) void handleLookup();
+          }}
           className="flex-1 rounded-sm border border-border-default bg-bg-raised px-3 py-2 font-mono text-sm outline-none focus-visible:border-accent"
         />
         <Button onClick={handleLookup} disabled={loading}>
@@ -64,15 +68,21 @@ export function IpLookupToolView() {
             {error}
           </p>
         ) : result ? (
+          <div className="flex flex-col gap-2">
+          <ResultActions text={toLines(rows.map((row) => [row.label, String(result[row.key])]))} json={result} />
           <div className="rounded-md border border-border-default">
             <div className="divide-y divide-border-default">
               {rows.map((row) => (
                 <div key={row.key} className="grid grid-cols-[minmax(120px,1fr)_2fr] gap-2 px-3 py-1.5 text-sm">
                   <span className="text-text-secondary">{row.label}</span>
-                  <span className="font-mono text-text-primary">{String(result[row.key])}</span>
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="font-mono text-text-primary">{String(result[row.key])}</span>
+                    <CopyValue value={String(result[row.key])} label={row.label} />
+                  </span>
                 </div>
               ))}
             </div>
+          </div>
           </div>
         ) : (
           <p className="text-sm text-text-muted">Click Look up to see IP details.</p>

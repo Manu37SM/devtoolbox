@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertNumberWords } from "./transform";
 import type { NumberToWordsOptions } from "./schema";
 
@@ -64,7 +64,7 @@ export function NumberToWordsConverterToolView() {
           input={
             <div className="flex h-full flex-col gap-2">
               <label className="text-sm font-medium text-text-secondary">Input</label>
-              <Textarea
+              <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={options.mode === "to-words" ? "e.g. 1234 or -3.14" : "e.g. one thousand two hundred thirty-four"}
@@ -72,7 +72,7 @@ export function NumberToWordsConverterToolView() {
               />
             </div>
           }
-          output={<OutputPane value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
+          output={<OutputPane onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "to-words" ? "to-number" : o.mode === "to-number" ? "to-words" : o.mode }))} value={result.output} error={result.error?.message ?? null} placeholder="Result will appear here" />}
         />
       </div>
     </div>

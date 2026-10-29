@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { REGEX_PATTERNS, filterPatterns } from "./transform";
+import { CopyValue } from "@/components/tools/ResultActions";
 
 export function RegexCheatsheetToolView() {
   const [query, setQuery] = useState("");
@@ -39,9 +40,12 @@ export function RegexCheatsheetToolView() {
               {results.map((entry) => (
                 <tr key={`${entry.category}-${entry.pattern}`}>
                   <td className="px-2 py-1.5 align-top">
-                    <code className="rounded-sm bg-bg-raised px-1.5 py-0.5 font-mono text-text-primary">
-                      {entry.pattern}
-                    </code>
+                    <span className="inline-flex items-center gap-1">
+                      <code className="rounded-sm bg-bg-raised px-1.5 py-0.5 font-mono text-text-primary">
+                        {entry.pattern}
+                      </code>
+                      <CopyValue value={entry.pattern} label={`pattern ${entry.pattern}`} />
+                    </span>
                   </td>
                   <td className="px-2 py-1.5 align-top text-text-primary">{entry.description}</td>
                   <td className="px-2 py-1.5 align-top">

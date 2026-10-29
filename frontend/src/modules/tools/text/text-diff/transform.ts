@@ -109,3 +109,20 @@ export function diffStats(ops: DiffOp[]): DiffStats {
     { additions: 0, removals: 0, unchanged: 0 },
   );
 }
+
+/**
+ * Plain-text form of a diff for copying or downloading: unified-style "+"/"-"
+ * prefixes per line in line mode, git --word-diff markers ([-old-]{+new+})
+ * in word and char mode.
+ */
+export function diffAsText(ops: DiffOp[], mode: TextDiffOptions["mode"]): string {
+  if (mode === "line") {
+    return ops
+      .flatMap((op) => {
+        const prefix = op.type === "add" ? "+" : op.type === "remove" ? "-" : " ";
+        return op.value.split("\n").map((line) => prefix + line);
+      })
+      .join("\n");
+  }
+  return ops.map((op) => (op.type === "add" ? `{+${op.value}+}` : op.type === "remove" ? `[-${op.value}-]` : op.value)).join("");
+}

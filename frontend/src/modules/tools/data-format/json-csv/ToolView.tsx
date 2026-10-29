@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { Button } from "@/components/ui/button";
+import { ToolInput } from "@/components/tools/ToolInput";
 import { convertJsonCsv } from "./transform";
 import type { JsonCsvOptions } from "./schema";
 
@@ -69,11 +69,12 @@ export function JsonCsvToolView() {
               <label className="text-sm font-medium text-text-secondary">
                 {options.mode === "json-to-csv" ? "JSON array" : "CSV"}
               </label>
-              <Textarea value={input} onChange={(e) => setInput(e.target.value)} aria-label="Input" />
+              <ToolInput value={input} onChange={(e) => setInput(e.target.value)} aria-label="Input" />
             </div>
           }
           output={
             <OutputPane
+              onSwap={() => setOptions((o) => ({ ...o, mode: o.mode === "json-to-csv" ? "csv-to-json" : o.mode === "csv-to-json" ? "json-to-csv" : o.mode }))}
               label={options.mode === "json-to-csv" ? "CSV" : "JSON"}
               value={result.output}
               error={result.error?.message ?? null}

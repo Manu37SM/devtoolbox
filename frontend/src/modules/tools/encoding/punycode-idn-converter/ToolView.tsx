@@ -39,6 +39,7 @@ export function PunycodeIdnConverterToolView() {
 
       <div className="min-h-[100px]">
         <OutputPane
+          onSwap={() => setMode((m) => (m === "encode" ? "decode" : "encode"))}
           value={result.output}
           error={result.error?.message ?? null}
           label={mode === "encode" ? "Punycode (ASCII) domain" : "Unicode domain"}
