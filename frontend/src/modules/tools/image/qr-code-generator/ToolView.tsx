@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { generateQrCode } from "./transform";
+import { useEffect, useMemo, useState } from "react";
+import { generateQrCode, qrContrastWarning } from "./transform";
 import type { QrCodeGeneratorOptions } from "./schema";
 import { Button } from "@/components/ui/button";
 import { ToolInput } from "@/components/tools/ToolInput";
@@ -14,8 +14,12 @@ export function QrCodeGeneratorToolView() {
     scale: 6,
     darkColor: "#000000",
     lightColor: "#ffffff",
+    transparentBackground: false,
   });
   const [dataUrl, setDataUrl] = useState("");
+  const [svg, setSvg] = useState("");
+  const svgUrl = useMemo(() => (svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` : ""), [svg]);
+  const contrast = qrContrastWarning(options.darkColor, options.lightColor);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -23,6 +27,7 @@ export function QrCodeGeneratorToolView() {
     generateQrCode(text, options).then((result) => {
       if (cancelled) return;
       setDataUrl(result.dataUrl);
+      setSvg(result.svg ?? "");
       setError(result.error);
     });
     return () => {
@@ -50,11 +55,20 @@ export function QrCodeGeneratorToolView() {
           )}
         </div>
         {dataUrl && (
-          <a href={dataUrl} download="qrcode.png">
-            <Button variant="secondary" size="sm">
-              Download PNG
-            </Button>
-          </a>
+          <div className="flex gap-2">
+            <a href={dataUrl} download="qrcode.png">
+              <Button variant="secondary" size="sm">
+                Download PNG
+              </Button>
+            </a>
+            {svgUrl && (
+              <a href={svgUrl} download="qrcode.svg">
+                <Button variant="secondary" size="sm">
+                  Download SVG
+                </Button>
+              </a>
+            )}
+          </div>
         )}
       </div>
       <div className="flex flex-col gap-3">
@@ -87,6 +101,42 @@ export function QrCodeGeneratorToolView() {
             type="color"
             value={options.lightColor}
             onChange={(e) => setOptions((o) => ({ ...o, lightColor: e.target.value }))}
+            disabled={options.transparentBackground}
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.transparentBackground}
+            onChange={(e) => setOptions((o) => ({ ...o, transparentBackground: e.target.checked }))}
+          />
+          Transparent background
+        </label>
+        {contrast && (
+          <p role="status" className="text-xs text-warning">
+            {contrast}
+          </p>
+        )}
+        <label className="flex flex-col gap-1 text-sm text-text-secondary">
+          Module size (px per square)
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={options.scale}
+            onChange={(e) => setOptions((o) => ({ ...o, scale: Math.min(20, Math.max(1, Number(e.target.value) || 1)) }))}
+            className="rounded-sm border border-border-default bg-bg-raised px-2 py-1.5"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-text-secondary">
+          Quiet zone (modules)
+          <input
+            type="number"
+            min={0}
+            max={10}
+            value={options.margin}
+            onChange={(e) => setOptions((o) => ({ ...o, margin: Math.min(10, Math.max(0, Number(e.target.value) || 0)) }))}
+            className="rounded-sm border border-border-default bg-bg-raised px-2 py-1.5"
           />
         </label>
       </div>

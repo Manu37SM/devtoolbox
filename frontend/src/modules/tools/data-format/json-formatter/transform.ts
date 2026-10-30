@@ -1,58 +1,33 @@
 import type { JsonFormatterOptions } from "./schema";
+import { JsonSyntaxError, parseJsonLossless, stringifyJsonLossless } from "@/lib/json-lossless";
 
 export interface TransformResult {
   output: string;
   error: { message: string; line?: number; column?: number } | null;
 }
 
+/**
+ * Formats JSON without changing it: numbers are re-emitted exactly as written
+ * (JSON.parse would round 64-bit IDs and long decimals) and key order is kept
+ * unless sorting is requested.
+ */
 export function formatJson(input: string, options: JsonFormatterOptions): TransformResult {
   if (input.trim().length === 0) {
     return { output: "", error: null };
   }
 
   try {
-    const parsed: unknown = JSON.parse(input);
-    const normalized = options.sortKeys ? sortKeysDeep(parsed) : parsed;
-
-    if (options.mode === "minify") {
-      return { output: JSON.stringify(normalized), error: null };
-    }
-
-    const indent = options.indent === "tab" ? "\t" : options.indent;
-    return { output: JSON.stringify(normalized, null, indent), error: null };
+    const tree = parseJsonLossless(input);
+    const minify = options.mode === "minify";
+    const output = stringifyJsonLossless(tree, {
+      indent: minify ? 0 : options.indent === "tab" ? "\t" : options.indent,
+      sortKeys: options.sortKeys,
+      escapeUnicode: options.escapeUnicode,
+      inlineArraysUpTo: options.inlineShortArrays && !minify ? 80 : 0,
+    });
+    return { output, error: null };
   } catch (err) {
-    return { output: "", error: parseJsonError(err, input) };
+    if (err instanceof JsonSyntaxError) return { output: "", error: { message: err.message, line: err.line, column: err.column } };
+    return { output: "", error: { message: err instanceof Error ? err.message : "Invalid JSON" } };
   }
-}
-
-function sortKeysDeep(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(sortKeysDeep);
-  }
-  if (value !== null && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
-      a.localeCompare(b),
-    );
-    return Object.fromEntries(entries.map(([k, v]) => [k, sortKeysDeep(v)]));
-  }
-  return value;
-}
-
-function parseJsonError(
-  err: unknown,
-  input: string,
-): { message: string; line?: number; column?: number } {
-  const message = err instanceof Error ? err.message : "Invalid JSON";
-  const positionMatch = /position (\d+)/.exec(message);
-
-  if (!positionMatch) {
-    return { message };
-  }
-
-  const position = Number(positionMatch[1]);
-  const upToError = input.slice(0, position);
-  const line = upToError.split("\n").length;
-  const column = position - upToError.lastIndexOf("\n");
-
-  return { message, line, column };
 }

@@ -10,7 +10,16 @@ import type { HtmlBeautifierOptions } from "./schema";
 
 export function HtmlBeautifierToolView() {
   const [input, setInput] = useState("");
-  const [options, setOptions] = useState<HtmlBeautifierOptions>({ mode: "beautify", tabWidth: 2 });
+  const [options, setOptions] = useState<HtmlBeautifierOptions>({
+    mode: "beautify",
+    tabWidth: 2,
+    useTabs: false,
+    printWidth: 80,
+    whitespace: "css",
+    singleAttributePerLine: false,
+    bracketSameLine: false,
+    keepComments: false,
+  });
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +37,7 @@ export function HtmlBeautifierToolView() {
 
   return (
     <div className="flex h-full flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
       <div className="flex overflow-hidden rounded-sm border border-border-default w-fit">
         <Button
           variant={options.mode === "beautify" ? "primary" : "ghost"}
@@ -45,6 +55,80 @@ export function HtmlBeautifierToolView() {
         >
           Minify
         </Button>
+      </div>
+        {options.mode === "beautify" ? (
+          <>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Indent
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={String(options.tabWidth)}
+            onChange={(e) => setOptions((o) => ({ ...o, tabWidth: (Number(e.target.value) as 2 | 4) }))}
+          >
+            <option value="2">2 spaces</option>
+            <option value="4">4 spaces</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.useTabs}
+            onChange={(e) => setOptions((o) => ({ ...o, useTabs: e.target.checked }))}
+          />
+          Tabs
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Line width
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={String(options.printWidth)}
+            onChange={(e) => setOptions((o) => ({ ...o, printWidth: (Number(e.target.value) as 80 | 100 | 120 | 160) }))}
+          >
+            <option value="80">80</option>
+            <option value="100">100</option>
+            <option value="120">120</option>
+            <option value="160">160</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Whitespace
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.whitespace}
+            onChange={(e) => setOptions((o) => ({ ...o, whitespace: e.target.value as HtmlBeautifierOptions["whitespace"] }))}
+          >
+            <option value="css">Respect inline (css)</option>
+            <option value="ignore">Reflow (ignore)</option>
+            <option value="strict">Keep exactly (strict)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.singleAttributePerLine}
+            onChange={(e) => setOptions((o) => ({ ...o, singleAttributePerLine: e.target.checked }))}
+          />
+          One attribute per line
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.bracketSameLine}
+            onChange={(e) => setOptions((o) => ({ ...o, bracketSameLine: e.target.checked }))}
+          />
+          {"Closing > on last line"}
+        </label>
+          </>
+        ) : (
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.keepComments}
+            onChange={(e) => setOptions((o) => ({ ...o, keepComments: e.target.checked }))}
+          />
+          Keep comments
+        </label>
+        )}
       </div>
       <div className="min-h-0 flex-1">
         <DualPane

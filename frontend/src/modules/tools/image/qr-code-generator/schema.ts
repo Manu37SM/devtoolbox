@@ -9,6 +9,8 @@ export const qrCodeGeneratorOptionsSchema = z.object({
   scale: z.number().int().min(1).max(20).default(6),
   darkColor: z.string().default("#000000"),
   lightColor: z.string().default("#ffffff"),
+  /** PNG/SVG with no background fill, for placing on coloured layouts. */
+  transparentBackground: z.boolean().default(false),
 });
 export type QrCodeGeneratorOptions = z.infer<typeof qrCodeGeneratorOptionsSchema>;
 

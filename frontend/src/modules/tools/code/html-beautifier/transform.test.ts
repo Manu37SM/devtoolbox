@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { beautifyHtml } from "./transform";
 
-const base = { mode: "beautify" as const, tabWidth: 2 as const };
+const base = { mode: "beautify" as const, tabWidth: 2 as const, useTabs: false, printWidth: 80 as const, whitespace: "css" as const, singleAttributePerLine: false, bracketSameLine: false, keepComments: false };
 
 describe("beautifyHtml — beautify mode", () => {
   it("formats a nested HTML document", async () => {
@@ -47,5 +47,15 @@ describe("beautifyHtml — minify mode", () => {
 
   it("returns empty output for empty input", async () => {
     expect(await beautifyHtml("", { ...base, mode: "minify" })).toEqual({ output: "", error: null });
+  });
+
+  it("puts each attribute on its own line, indents with tabs and keeps comments when minifying", async () => {
+    const src = '<a href="/x" class="btn btn-primary" data-track="cta" target="_blank" rel="noopener">Go</a>';
+    expect((await beautifyHtml(src, { ...base, singleAttributePerLine: true, printWidth: 80 })).output).toBe(
+      '<a\n  href="/x"\n  class="btn btn-primary"\n  data-track="cta"\n  target="_blank"\n  rel="noopener"\n  >Go</a\n>\n',
+    );
+    expect((await beautifyHtml("<div><p>x</p></div>", { ...base, useTabs: true })).output).toBe("<div><p>x</p></div>\n");
+    expect((await beautifyHtml("<!-- keep --><p>x</p>", { ...base, mode: "minify", keepComments: true })).output).toBe("<!-- keep --><p>x</p>");
+    expect((await beautifyHtml("<!-- drop --><p>x</p>", { ...base, mode: "minify" })).output).toBe("<p>x</p>");
   });
 });

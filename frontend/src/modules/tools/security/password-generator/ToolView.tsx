@@ -21,6 +21,10 @@ export function PasswordGeneratorToolView() {
     numbers: true,
     symbols: true,
     excludeAmbiguous: false,
+    excludeChars: "",
+    symbolSet: "full",
+    requireEach: false,
+    count: 1,
   });
   const [seed, setSeed] = useState(0);
 
@@ -35,9 +39,17 @@ export function PasswordGeneratorToolView() {
     <div className="flex h-full flex-col gap-4">
       <div className="rounded-md border border-border-default bg-bg-raised p-4">
         <div className="flex items-center justify-between gap-3">
-          <span className="break-all font-mono text-lg text-text-primary">
-            {result.password || "—"}
-          </span>
+          {(result.passwords?.length ?? 0) > 1 ? (
+            <ol className="flex min-w-0 flex-col gap-1 font-mono text-sm text-text-primary">
+              {result.passwords!.map((p, i) => (
+                <li key={i} className="break-all">
+                  {p}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <span className="break-all font-mono text-lg text-text-primary">{result.password || "—"}</span>
+          )}
           <div className="flex items-center gap-2">
             <CopyButton value={result.password} />
             <Button variant="secondary" size="sm" onClick={() => setSeed((s) => s + 1)}>
@@ -96,6 +108,48 @@ export function PasswordGeneratorToolView() {
           />
           Exclude ambiguous characters (Il1O0o)
         </label>
+        <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Symbols
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.symbolSet}
+            onChange={(e) => setOptions((o) => ({ ...o, symbolSet: e.target.value as PasswordGeneratorOptions["symbolSet"] }))}
+          >
+            <option value="full">All (!@#$%…)</option>
+            <option value="safe">URL/shell-safe (- _ . ~)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Never use
+          <input
+            type="text"
+            value={options.excludeChars}
+            placeholder={"e.g. quotes, $ or \\"}
+            onChange={(e) => setOptions((o) => ({ ...o, excludeChars: e.target.value }))}
+            className="w-32 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1 font-mono text-sm"
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.requireEach}
+            onChange={(e) => setOptions((o) => ({ ...o, requireEach: e.target.checked }))}
+          />
+          At least one of each type
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          How many
+          <input
+            type="number"
+            min={1}
+            max={50}
+            value={options.count}
+            onChange={(e) => setOptions((o) => ({ ...o, count: Math.min(50, Math.max(1, Number(e.target.value) || 0)) }))}
+            className="w-16 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+          />
+        </label>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { convertJsonXml } from "./transform";
 
-const base = { mode: "json-to-xml" as const, indent: 2 as const, rootName: "root" };
+const base = { mode: "json-to-xml" as const, indent: 2 as const, rootName: "root", xmlDeclaration: false, attributePrefix: "@_" as const, coerceTypes: false };
 
 describe("convertJsonXml", () => {
   it("converts a simple JSON object to XML", () => {
@@ -65,4 +65,23 @@ describe("convertJsonXml", () => {
     const result = convertJsonXml('{"a":"1"}', { ...base, rootName: "config" });
     expect(result.output).toBe("<config>\n  <a>1</a>\n</config>");
   });
+
+  it("turns a top-level array into <item> elements instead of gluing values together", () => {
+    expect(convertJsonXml("[1,2]", base).output).toBe("<root>\n  <item>1</item>\n  <item>2</item>\n</root>");
+  });
+
+  it("adds an XML declaration on request", () => {
+    expect(convertJsonXml('{"a":1}', { ...base, xmlDeclaration: true }).output).toBe('<?xml version="1.0" encoding="UTF-8"?>\n<root>\n  <a>1</a>\n</root>');
+  });
+
+  it("uses the chosen attribute prefix in both directions", () => {
+    expect(convertJsonXml('{"@id":"5","#text":"x"}', { ...base, attributePrefix: "@" }).output).toBe('<root id="5">x</root>');
+    expect(JSON.parse(convertJsonXml('<root id="5">x</root>', { ...base, mode: "xml-to-json", attributePrefix: "-" }).output)).toEqual({ "-id": "5", "#text": "x" });
+  });
+
+  it("coerces numbers and booleans but keeps codes with leading zeros and huge integers as text", () => {
+    const r = convertJsonXml("<r><n>42</n><f>2.5</f><b>true</b><pin>0071</pin><acct>12345678901234567890</acct></r>", { ...base, mode: "xml-to-json", coerceTypes: true });
+    expect(JSON.parse(r.output)).toEqual({ n: 42, f: 2.5, b: true, pin: "0071", acct: "12345678901234567890" });
+  });
 });
+

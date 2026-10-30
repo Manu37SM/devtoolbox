@@ -10,7 +10,7 @@ import { mimeToExtension } from "@/lib/image-canvas";
 export function ImageFormatConverterToolView() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [options, setOptions] = useState<ImageFormatConverterOptions>({ targetFormat: "image/png", quality: 92 });
+  const [options, setOptions] = useState<ImageFormatConverterOptions>({ targetFormat: "image/png", quality: 92, maxDimension: 0, background: "#ffffff" });
   const [dataUrl, setDataUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -111,6 +111,33 @@ export function ImageFormatConverterToolView() {
               value={options.quality}
               onChange={(e) => setOptions((o) => ({ ...o, quality: Number(e.target.value) }))}
               aria-label="Output quality"
+            />
+          </label>
+        )}
+        <label className="flex flex-col gap-1 text-sm text-text-secondary">
+          Max width/height
+          <select
+            value={options.maxDimension}
+            onChange={(e) => setOptions((o) => ({ ...o, maxDimension: Number(e.target.value) }))}
+            className="rounded-sm border border-border-default bg-bg-raised px-2 py-1.5"
+          >
+            <option value={0}>Original size</option>
+            <option value={3840}>3840 px (4K)</option>
+            <option value={2560}>2560 px</option>
+            <option value={1920}>1920 px (Full HD)</option>
+            <option value={1280}>1280 px</option>
+            <option value={1024}>1024 px</option>
+            <option value={800}>800 px</option>
+            <option value={512}>512 px</option>
+          </select>
+        </label>
+        {options.targetFormat === "image/jpeg" && (
+          <label className="flex flex-col gap-1 text-sm text-text-secondary">
+            Background for transparent areas
+            <input
+              type="color"
+              value={options.background}
+              onChange={(e) => setOptions((o) => ({ ...o, background: e.target.value }))}
             />
           </label>
         )}

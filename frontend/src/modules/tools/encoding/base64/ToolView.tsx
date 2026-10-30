@@ -10,7 +10,7 @@ import type { Base64Options } from "./schema";
 
 export function Base64ToolView() {
   const [input, setInput] = useState("");
-  const [options, setOptions] = useState<Base64Options>({ mode: "encode", urlSafe: false });
+  const [options, setOptions] = useState<Base64Options>({ mode: "encode", urlSafe: false, inputFormat: "text", decodeAs: "auto", lineLength: 0, padding: "auto" });
 
   const result = useMemo(() => transformBase64(input, options), [input, options]);
 
@@ -43,6 +43,58 @@ export function Base64ToolView() {
           />
           URL-safe
         </label>
+        {options.mode === "encode" ? (
+          <>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Input
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.inputFormat}
+            onChange={(e) => setOptions((o) => ({ ...o, inputFormat: e.target.value as Base64Options["inputFormat"] }))}
+          >
+            <option value="text">Text (UTF-8)</option>
+            <option value="hex">Hex bytes</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Line length
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={String(options.lineLength)}
+            onChange={(e) => setOptions((o) => ({ ...o, lineLength: (Number(e.target.value) as 0 | 64 | 76) }))}
+          >
+            <option value="0">One line</option>
+            <option value="64">64 (PEM)</option>
+            <option value="76">76 (MIME)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Padding
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.padding}
+            onChange={(e) => setOptions((o) => ({ ...o, padding: e.target.value as Base64Options["padding"] }))}
+          >
+            <option value="auto">Auto</option>
+            <option value="always">Always =</option>
+            <option value="never">None</option>
+          </select>
+        </label>
+          </>
+        ) : (
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Show result as
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.decodeAs}
+            onChange={(e) => setOptions((o) => ({ ...o, decodeAs: e.target.value as Base64Options["decodeAs"] }))}
+          >
+            <option value="auto">Auto (text or hex)</option>
+            <option value="text">Text</option>
+            <option value="hex">Hex</option>
+          </select>
+        </label>
+        )}
       </div>
       <div className="min-h-0 flex-1">
         <DualPane

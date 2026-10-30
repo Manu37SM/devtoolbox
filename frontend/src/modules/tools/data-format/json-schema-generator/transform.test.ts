@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { generateJsonSchema } from "./transform";
 import type { JsonSchemaGeneratorOptions } from "./schema";
 
-const defaultOptions: JsonSchemaGeneratorOptions = { allRequired: true };
+const defaultOptions: JsonSchemaGeneratorOptions = { allRequired: true, draft: "draft-07" as const, detectFormats: false, forbidAdditional: false, includeExamples: false };
 
 describe("generateJsonSchema", () => {
   it("infers a schema for a flat object", () => {
@@ -22,7 +22,7 @@ describe("generateJsonSchema", () => {
   });
 
   it("omits required when allRequired is false", () => {
-    const result = generateJsonSchema('{"a":1}', { allRequired: false });
+    const result = generateJsonSchema('{"a":1}', { ...defaultOptions, allRequired: false });
     const schema = JSON.parse(result.output);
     expect(schema.required).toBeUndefined();
   });
@@ -85,4 +85,38 @@ describe("generateJsonSchema", () => {
     const schema = JSON.parse(result.output);
     expect(schema.$schema).toBe("http://json-schema.org/draft-07/schema#");
   });
+
+  it("merges every array element: optional keys, nullable and mixed numeric types", () => {
+    const schema = JSON.parse(generateJsonSchema('[{"id":1,"name":"a","score":1},{"id":2,"nick":null,"score":2.5,"name":null}]', defaultOptions).output);
+    expect(schema.items.required).toEqual(["id", "name", "score"]);
+    expect(schema.items.properties.name).toEqual({ type: ["string", "null"] });
+    expect(schema.items.properties.score).toEqual({ type: "number" });
+    expect(schema.items.properties.nick).toEqual({ type: "null" });
+  });
+
+  it("uses the selected draft, detects formats and forbids extra properties", () => {
+    const schema = JSON.parse(
+      generateJsonSchema('{"at":"2024-01-31T10:00:00Z","email":"a@b.in","id":"3f2504e0-4f89-11d3-9a0c-0305e82c3301","ip":"10.0.0.1","site":"https://x.io"}', {
+        ...defaultOptions,
+        draft: "2020-12",
+        detectFormats: true,
+        forbidAdditional: true,
+      }).output,
+    );
+    expect(schema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
+    expect(Object.fromEntries(Object.entries(schema.properties).map(([k, v]) => [k, (v as { format: string }).format]))).toEqual({
+      at: "date-time",
+      email: "email",
+      id: "uuid",
+      ip: "ipv4",
+      site: "uri",
+    });
+    expect(schema.additionalProperties).toBe(false);
+  });
+
+  it("adds examples on request", () => {
+    const schema = JSON.parse(generateJsonSchema('{"currency":"INR"}', { ...defaultOptions, includeExamples: true }).output);
+    expect(schema.properties.currency).toEqual({ type: "string", examples: ["INR"] });
+  });
 });
+

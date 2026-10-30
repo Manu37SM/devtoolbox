@@ -120,15 +120,60 @@ describe("generators", () => {
 
 describe("convertCurl", () => {
   it("returns errors as values", () => {
-    expect(convertCurl("curl", { target: "fetch" }).error).not.toBeNull();
+    expect(convertCurl("curl", { target: "fetch", javaTextBlocks: true }).error).not.toBeNull();
   });
 
   it("returns empty output for blank input", () => {
-    expect(convertCurl("  ", { target: "fetch" })).toEqual({ output: "", error: null });
+    expect(convertCurl("  ", { target: "fetch", javaTextBlocks: true })).toEqual({ output: "", error: null });
   });
 
   it("dispatches on the selected target", () => {
-    expect(convertCurl("curl https://a.test", { target: "axios" }).output).toContain("axios");
-    expect(convertCurl("curl https://a.test", { target: "python" }).output).toContain("import requests");
+    expect(convertCurl("curl https://a.test", { target: "axios", javaTextBlocks: true }).output).toContain("axios");
+    expect(convertCurl("curl https://a.test", { target: "python", javaTextBlocks: true }).output).toContain("import requests");
+  });
+
+  // The Java, Go and OkHttp outputs were also compiled (javac against Spring 6.2 / OkHttp 4.12 jars, go run)
+  // and run against a local echo server during development to confirm the exact request they send.
+  const post = String.raw`curl -X POST https://api.example.com/pay -H 'Content-Type: application/json' -H 'Host: api.example.com' -u 'u:p"w' -d '{"amount":1250}'`;
+  const gen = (target: Parameters<typeof convertCurl>[1]["target"], javaTextBlocks = true) => convertCurl(post, { target, javaTextBlocks }).output;
+
+  it("Java HttpClient: drops JDK-restricted headers with an explanation and uses text blocks", () => {
+    const out = gen("java-httpclient");
+    expect(out).not.toContain('.header("Host"');
+    expect(out).toContain("// The Host header is managed by HttpClient, which rejects it, so it was left out.");
+    expect(out).toContain("-Djdk.httpclient.allowRestrictedHeaders=host");
+    expect(out).toContain('.method("POST", HttpRequest.BodyPublishers.ofString("""\n            {\n              "amount": 1250\n            }\n            """))');
+    expect(gen("java-httpclient", false)).toContain('ofString("{\\n  \\"amount\\": 1250\\n}")');
+  });
+
+  it("Spring RestClient and WebClient use setBasicAuth and the right body methods", () => {
+    expect(gen("spring-restclient")).toContain('.headers(h -> h.setBasicAuth("u", "p\\"w"))');
+    expect(gen("spring-restclient")).toContain(".retrieve()\n        .body(String.class);");
+    expect(gen("spring-webclient")).toContain(".bodyValue(");
+    expect(gen("spring-webclient")).toContain('.header("Host", "api.example.com")');
+  });
+
+  it("OkHttp builds a RequestBody with the content type and uses Credentials.basic", () => {
+    const out = gen("okhttp");
+    expect(out).toContain('MediaType.parse("application/json")');
+    expect(out).toContain('Credentials.basic("u", "p\\"w")');
+    expect(convertCurl("curl https://x.io", { target: "okhttp", javaTextBlocks: true }).output).toContain(".get()");
+  });
+
+  it("Go sets Host on the request, not in the header map", () => {
+    const out = gen("go");
+    expect(out).toContain('req.Host = "api.example.com"');
+    expect(out).toContain('req.SetBasicAuth("u", "p\\"w")');
+  });
+
+  it("C# and PowerShell pass Content-Type with the content, never as a request header", () => {
+    const cs = gen("csharp");
+    expect(cs).not.toContain('TryAddWithoutValidation("Content-Type"');
+    expect(cs).toContain('new StringContent(@"{\n  ""amount"": 1250\n}", Encoding.UTF8, "application/json")');
+    const ps = gen("powershell");
+    expect(ps).toContain("-ContentType 'application/json'");
+    expect(ps).not.toMatch(/'Content-Type' =/);
+    expect(ps).toContain("$body = @'\n{\n  \"amount\": 1250\n}\n'@");
   });
 });
+

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { convertNumberBase } from "./transform";
-import type { NumberBase } from "./schema";
+import { numberBaseOptionsSchema, type NumberBase, type NumberBaseOptions } from "./schema";
 import { CopyButton } from "@/components/tools/CopyButton";
 
 const BASES: { value: NumberBase; label: string; key: "binary" | "octal" | "decimal" | "hex" }[] = [
@@ -15,8 +15,9 @@ const BASES: { value: NumberBase; label: string; key: "binary" | "octal" | "deci
 export function NumberBaseConverterToolView() {
   const [input, setInput] = useState("255");
   const [fromBase, setFromBase] = useState<NumberBase>(10);
+  const [options, setOptions] = useState<NumberBaseOptions>(() => numberBaseOptionsSchema.parse({}));
 
-  const result = useMemo(() => convertNumberBase(input, fromBase), [input, fromBase]);
+  const result = useMemo(() => convertNumberBase(input, fromBase, options), [input, fromBase, options]);
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -42,6 +43,47 @@ export function NumberBaseConverterToolView() {
           </select>
         </label>
       </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Bit width
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.bitWidth}
+            onChange={(e) => setOptions((o) => ({ ...o, bitWidth: e.target.value as NumberBaseOptions["bitWidth"] }))}
+          >
+            <option value="none">Unbounded</option>
+            <option value="8">8-bit</option>
+            <option value="16">16-bit</option>
+            <option value="32">32-bit</option>
+            <option value="64">64-bit</option>
+            <option value="128">128-bit</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.grouping}
+            onChange={(e) => setOptions((o) => ({ ...o, grouping: e.target.checked }))}
+          />
+          Group digits
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.uppercase}
+            onChange={(e) => setOptions((o) => ({ ...o, uppercase: e.target.checked }))}
+          />
+          Uppercase hex
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.prefixes}
+            onChange={(e) => setOptions((o) => ({ ...o, prefixes: e.target.checked }))}
+          />
+          0x / 0b / 0o prefixes
+        </label>
+      </div>
       {result.error ? (
         <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
           {result.error}
@@ -60,6 +102,15 @@ export function NumberBaseConverterToolView() {
               <CopyButton value={result[b.key]} />
             </div>
           ))}
+          {result.signed !== undefined && (
+            <div className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-raised px-3 py-2 sm:col-span-2">
+              <div>
+                <div className="text-xs text-text-muted">Signed (two&apos;s complement, {options.bitWidth}-bit)</div>
+                <div className="break-all font-mono text-sm text-text-primary">{result.signed}</div>
+              </div>
+              <CopyButton value={result.signed} />
+            </div>
+          )}
         </div>
       )}
     </div>

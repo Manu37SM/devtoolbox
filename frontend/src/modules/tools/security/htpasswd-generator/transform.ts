@@ -1,3 +1,4 @@
+import { bcrypt } from "hash-wasm";
 import type { TransformResult } from "@/lib/tool-transform";
 import type { HtpasswdGeneratorOptions } from "./schema";
 
@@ -111,7 +112,34 @@ export function generateHtpasswd(input: string, o: HtpasswdGeneratorOptions, _no
     if (users.has(user)) return { output: "", error: { message: `Duplicate user "${user}"`, line: i + 1 } };
     if (pw.length === 0) return { output: "", error: { message: "Password is empty", line: i + 1 } };
     users.add(user);
+    if (o.algorithm === "bcrypt") return { output: "", error: { message: "bcrypt entries are generated asynchronously; use generateHtpasswdAsync" } };
     out.push(`${user}:${o.algorithm === "apr1" ? apr1(pw, (salt ?? randomSalt)()) : sha1Entry(pw)}`);
   }
   return { output: out.join("\n") + "\n", error: null };
 }
+
+/** Same input format; supports bcrypt ($2y$, as `htpasswd -B` writes) in addition to the synchronous algorithms. */
+export async function generateHtpasswdAsync(
+  input: string,
+  o: HtpasswdGeneratorOptions,
+  saltBytes?: () => Uint8Array,
+): Promise<TransformResult> {
+  if (o.algorithm !== "bcrypt") return generateHtpasswd(input, o);
+  // Validate lines with the synchronous path first so errors match.
+  const check = generateHtpasswd(input, { ...o, algorithm: "sha1" });
+  if (check.error || !check.output) return check;
+  const out: string[] = [];
+  for (const line of input.split(/\r?\n/).filter((l) => l.trim() !== "")) {
+    const idx = line.indexOf(":");
+    const user = line.slice(0, idx);
+    const pw = line.slice(idx + 1);
+    if (new TextEncoder().encode(pw).length > 72) {
+      return { output: "", error: { message: `bcrypt only uses the first 72 bytes of a password; ${user}'s is longer` } };
+    }
+    const salt = saltBytes ? saltBytes() : globalThis.crypto.getRandomValues(new Uint8Array(16));
+    const hash = await bcrypt({ password: pw, salt, costFactor: o.bcryptCost ?? 10, outputType: "encoded" });
+    out.push(`${user}:${hash.replace(/^\$2[abx]\$/, "$2y$")}`);
+  }
+  return { output: out.join("\n") + "\n", error: null };
+}
+

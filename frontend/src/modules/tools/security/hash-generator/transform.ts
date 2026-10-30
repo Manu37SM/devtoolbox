@@ -1,4 +1,5 @@
-import type { HashGeneratorOptions } from "./schema";
+import { blake2b, blake3, crc32, keccak, ripemd160, sha224, sha3, sha384, sm3, xxhash64 } from "hash-wasm";
+import type { HashAlgorithm, HashGeneratorOptions } from "./schema";
 
 export interface HashResult {
   output: string;
@@ -7,14 +8,19 @@ export interface HashResult {
 
 export async function hashText(input: string, options: HashGeneratorOptions): Promise<HashResult> {
   if (input.length === 0) return { output: "", error: null };
+  if (options.inputFormat === "hex") {
+    const hex = input.replace(/0x|\\x/gi, "").replace(/[\s:,-]/g, "");
+    if (!/^[0-9a-fA-F]*$/.test(hex)) return { output: "", error: { message: "Hex input may only contain 0-9, a-f and separators" } };
+    if (hex.length % 2) return { output: "", error: { message: `Hex input has an odd number of digits (${hex.length})` } };
+    return hashBytes(Uint8Array.from(hex.match(/../g) ?? [], (h) => parseInt(h, 16)), options);
+  }
   return hashBytes(new TextEncoder().encode(input), options);
 }
 
 export async function hashBytes(bytes: Uint8Array, options: HashGeneratorOptions): Promise<HashResult> {
   try {
-    const digest = options.algorithm === "MD5" ? md5(bytes) : await webCryptoDigest(bytes, options.algorithm);
-    const hex = bytesToHex(digest);
-    return { output: options.uppercase ? hex.toUpperCase() : hex, error: null };
+    const digest = await digestBytes(bytes, options.algorithm);
+    return { output: encodeDigest(digest, options), error: null };
   } catch (err) {
     return { output: "", error: { message: err instanceof Error ? err.message : "Hashing failed" } };
   }
@@ -27,6 +33,66 @@ export async function hashFile(file: File, options: HashGeneratorOptions): Promi
   } catch (err) {
     return { output: "", error: { message: err instanceof Error ? err.message : "Could not read this file" } };
   }
+}
+
+async function digestBytes(bytes: Uint8Array, algorithm: HashAlgorithm): Promise<Uint8Array> {
+  switch (algorithm) {
+    case "MD5":
+      return md5(bytes);
+    case "SHA-1":
+    case "SHA-256":
+    case "SHA-512":
+      return webCryptoDigest(bytes, algorithm);
+    default:
+      return hexToBytes(await wasmDigest(bytes, algorithm));
+  }
+}
+
+function wasmDigest(bytes: Uint8Array, algorithm: HashAlgorithm): Promise<string> {
+  switch (algorithm) {
+    case "SHA-224":
+      return sha224(bytes);
+    case "SHA-384":
+      return sha384(bytes);
+    case "SHA3-256":
+      return sha3(bytes, 256);
+    case "SHA3-512":
+      return sha3(bytes, 512);
+    case "Keccak-256":
+      return keccak(bytes, 256);
+    case "BLAKE2b-256":
+      return blake2b(bytes, 256);
+    case "BLAKE2b-512":
+      return blake2b(bytes, 512);
+    case "BLAKE3":
+      return blake3(bytes);
+    case "RIPEMD-160":
+      return ripemd160(bytes);
+    case "SM3":
+      return sm3(bytes);
+    case "xxHash64":
+      return xxhash64(bytes);
+    case "CRC32":
+      return crc32(bytes);
+    default:
+      throw new Error(`Unsupported algorithm ${algorithm}`);
+  }
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  return Uint8Array.from(hex.match(/../g) ?? [], (h) => parseInt(h, 16));
+}
+
+function encodeDigest(digest: Uint8Array, options: HashGeneratorOptions): string {
+  const encoding = options.outputEncoding ?? "hex";
+  if (encoding === "hex") {
+    const hex = bytesToHex(digest);
+    return options.uppercase ? hex.toUpperCase() : hex;
+  }
+  let bin = "";
+  for (const b of digest) bin += String.fromCharCode(b);
+  const b64 = btoa(bin);
+  return encoding === "base64" ? b64 : b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 async function webCryptoDigest(bytes: Uint8Array, algorithm: "SHA-1" | "SHA-256" | "SHA-512") {

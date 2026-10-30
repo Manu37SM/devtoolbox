@@ -41,6 +41,38 @@ export function mimeToExtension(mime: CanvasMimeType): string {
   }
 }
 
+/** Scales (width, height) down so the longer side is at most maxDimension; never upscales. 0 = no limit. */
+export function fitWithin(width: number, height: number, maxDimension: number): { width: number; height: number } {
+  if (!maxDimension || maxDimension <= 0 || (width <= maxDimension && height <= maxDimension)) return { width, height };
+  const scale = maxDimension / Math.max(width, height);
+  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
+}
+
+/**
+ * Binary-searches the highest quality (1-100) whose encoded size fits targetBytes.
+ * `encode` returns the encoded size for a quality. Falls back to the lowest quality
+ * when even that is too big (the caller reports that the target was missed).
+ */
+export async function findQualityForTarget(
+  encode: (quality: number) => Promise<number>,
+  targetBytes: number,
+  maxQuality = 95,
+): Promise<{ quality: number; bytes: number; met: boolean }> {
+  let lo = 1;
+  let hi = maxQuality;
+  let best: { quality: number; bytes: number } | null = null;
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const bytes = await encode(mid);
+    if (bytes <= targetBytes) {
+      best = { quality: mid, bytes };
+      lo = mid + 1;
+    } else hi = mid - 1;
+  }
+  if (best) return { ...best, met: true };
+  return { quality: 1, bytes: await encode(1), met: false };
+}
+
 export function dataUrlByteLength(dataUrl: string): number {
   const commaIndex = dataUrl.indexOf(",");
   if (commaIndex === -1) return 0;

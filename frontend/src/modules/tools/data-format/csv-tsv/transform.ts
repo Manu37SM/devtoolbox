@@ -5,20 +5,21 @@ export function convertCsvTsv(input: string, options: CsvTsvOptions): TransformR
   if (input.trim().length === 0) return { output: "", error: null };
 
   try {
+    const csv = options.csvDelimiter ?? ",";
+    const out = (rows: string[][], delimiter: string) =>
+      stringifyDelimited(options.trimFields ? rows.map((r) => r.map((c) => c.trim())) : rows, delimiter, options);
+
     if (options.mode === "csv-to-tsv") {
-      const rows = parseDelimited(input, ",");
-      return { output: stringifyDelimited(rows, "\t"), error: null };
+      return { output: out(parseDelimited(input, csv), "\t"), error: null };
     }
 
     if (options.mode === "tsv-to-csv") {
-      const rows = parseDelimited(input, "\t");
-      return { output: stringifyDelimited(rows, ","), error: null };
+      return { output: out(parseDelimited(input, "\t"), csv), error: null };
     }
 
     const delimiter = detectDelimiter(input);
-    const rows = parseDelimited(input, delimiter);
-    const cleaned = cleanRows(rows);
-    return { output: stringifyDelimited(cleaned, delimiter), error: null };
+    const cleaned = cleanRows(parseDelimited(input, delimiter));
+    return { output: out(cleaned, delimiter), error: null };
   } catch (err) {
     return {
       output: "",
@@ -29,9 +30,16 @@ export function convertCsvTsv(input: string, options: CsvTsvOptions): TransformR
 
 function detectDelimiter(input: string): string {
   const firstLine = input.split(/\r\n|\r|\n/, 1)[0] ?? "";
-  const tabCount = (firstLine.match(/\t/g) ?? []).length;
-  const commaCount = (firstLine.match(/,/g) ?? []).length;
-  return tabCount > commaCount ? "\t" : ",";
+  let best = ",";
+  let bestCount = 0;
+  for (const d of [",", "\t", ";", "|"]) {
+    const count = firstLine.split(d).length - 1;
+    if (count > bestCount) {
+      best = d;
+      bestCount = count;
+    }
+  }
+  return best;
 }
 
 function cleanRows(rows: string[][]): string[][] {
@@ -74,7 +82,8 @@ function parseDelimited(input: string, delimiter: string): string[][] {
       continue;
     }
 
-    if (char === '"') {
+    if (char === '"' && field.length === 0) {
+      // Quotes only open a quoted field at its start; a quote mid-field is literal text.
       inQuotes = true;
     } else if (char === delimiter) {
       row.push(field);
@@ -98,13 +107,18 @@ function parseDelimited(input: string, delimiter: string): string[][] {
   return rows.filter((r) => !(r.length === 1 && r[0] === ""));
 }
 
-function stringifyDelimited(rows: string[][], delimiter: string): string {
-  return rows.map((row) => row.map((cell) => escapeCell(cell, delimiter)).join(delimiter)).join("\n");
+function stringifyDelimited(rows: string[][], delimiter: string, options: CsvTsvOptions): string {
+  const eol = options.lineEnding === "crlf" ? "\r\n" : "\n";
+  return rows.map((row) => row.map((cell) => escapeCell(cell, delimiter, options.quoteAll ?? false)).join(delimiter)).join(eol);
 }
 
-function escapeCell(value: string, delimiter: string): string {
-
-  if (value.includes(delimiter)) {
+/**
+ * CSV (RFC 4180): quote fields containing the delimiter, a quote or a line break.
+ * TSV has no quoting convention for quotes, so only tabs and line breaks force quoting there.
+ */
+function escapeCell(value: string, delimiter: string, quoteAll: boolean): string {
+  const needs = delimiter === "\t" ? /[\t\r\n]/.test(value) : value.includes(delimiter) || /["\r\n]/.test(value);
+  if (quoteAll || needs) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;

@@ -7,7 +7,7 @@ const unfold = (s: string) => s.replace(/\r\n /g, "");
 
 describe("helpers", () => {
   it("escapes text per RFC 5545", () => {
-    expect(escapeText("a,b;c\\d\ne")).toBe("a\\,b\;c\\\\d\\ne");
+    expect(escapeText("a,b;c\\d\ne")).toBe("a\\,b\\;c\\\\d\\ne");
   });
   it("folds long lines at 75 octets without splitting characters", () => {
     const line = "DESCRIPTION:" + "é".repeat(60);
@@ -36,7 +36,7 @@ describe("generateIcs", () => {
     expect(t).toContain("DTSTART:20261105T143000\r\n");
     expect(t).toContain("DTEND:20261105T153000\r\n");
     expect(t).toContain("SUMMARY:Team sync\\, weekly");
-    expect(t).toContain("LOCATION:Room 4\; HQ");
+    expect(t).toContain("LOCATION:Room 4\\; HQ");
     expect(t).toContain("DTSTAMP:20260102T030405Z");
     expect(t.endsWith("END:VCALENDAR\r\n")).toBe(true);
     expect(r.output.replace(/\r\n/g, "").includes("\n")).toBe(false);

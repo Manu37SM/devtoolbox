@@ -6,9 +6,8 @@ import { OutputPane } from "@/components/tools/OutputPane";
 import { DualPane } from "@/components/tools/DualPane";
 import { ToolInput } from "@/components/tools/ToolInput";
 import { hashFile, hashText } from "./transform";
-import type { HashAlgorithm, HashGeneratorOptions } from "./schema";
+import { HASH_ALGORITHMS, type HashAlgorithm, type HashGeneratorOptions } from "./schema";
 
-const ALGORITHMS: HashAlgorithm[] = ["MD5", "SHA-1", "SHA-256", "SHA-512"];
 
 type InputMode = "text" | "file";
 
@@ -20,9 +19,16 @@ export function HashGeneratorToolView() {
   const [options, setOptions] = useState<HashGeneratorOptions>({
     algorithm: "SHA-256",
     uppercase: false,
+    outputEncoding: "hex",
+    inputFormat: "text",
   });
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [expected, setExpected] = useState("");
+  // Hex comparisons ignore case, spaces and colons; Base64 must match exactly.
+  const normalise = (v: string) =>
+    options.outputEncoding === "hex" ? v.replace(/[\s:]/g, "").toLowerCase() : v.trim();
+  const comparison = expected.trim() && output ? (normalise(expected) === normalise(output) ? "match" : "mismatch") : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -54,21 +60,20 @@ export function HashGeneratorToolView() {
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex overflow-hidden rounded-sm border border-border-default">
-          {ALGORITHMS.map((algo) => (
-            <button
-              key={algo}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors duration-fast ${
-                options.algorithm === algo
-                  ? "bg-accent text-accent-foreground"
-                  : "text-text-secondary hover:bg-bg-raised"
-              }`}
-              onClick={() => setOptions((o) => ({ ...o, algorithm: algo }))}
-            >
-              {algo}
-            </button>
-          ))}
-        </div>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Algorithm
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.algorithm}
+            onChange={(e) => setOptions((o) => ({ ...o, algorithm: e.target.value as HashAlgorithm }))}
+          >
+            {HASH_ALGORITHMS.map((algo) => (
+              <option key={algo} value={algo}>
+                {algo}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="flex overflow-hidden rounded-sm border border-border-default">
           <Button
             variant={mode === "text" ? "primary" : "ghost"}
@@ -95,6 +100,50 @@ export function HashGeneratorToolView() {
           />
           Uppercase
         </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Output
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.outputEncoding}
+            onChange={(e) => setOptions((o) => ({ ...o, outputEncoding: e.target.value as HashGeneratorOptions["outputEncoding"] }))}
+          >
+            <option value="hex">Hex</option>
+            <option value="base64">Base64</option>
+            <option value="base64url">Base64URL</option>
+          </select>
+        </label>
+        {mode === "text" && (
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Input as
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.inputFormat}
+            onChange={(e) => setOptions((o) => ({ ...o, inputFormat: e.target.value as HashGeneratorOptions["inputFormat"] }))}
+          >
+            <option value="text">Text (UTF-8)</option>
+            <option value="hex">Hex bytes</option>
+          </select>
+        </label>
+        )}
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Expected
+          <input
+            type="text"
+            value={expected}
+            onChange={(e) => setExpected(e.target.value)}
+            placeholder="Paste a checksum to compare"
+            aria-label="Expected hash to compare against"
+            className="w-56 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1 font-mono text-xs"
+          />
+        </label>
+        {comparison && (
+          <span
+            role="status"
+            className={`rounded-sm px-2 py-0.5 text-xs font-medium ${comparison === "match" ? "bg-success/15 text-success" : "bg-danger/15 text-danger"}`}
+          >
+            {comparison === "match" ? "Matches" : "Does not match"}
+          </span>
+        )}
       </div>
       <div className="min-h-0 flex-1">
         <DualPane

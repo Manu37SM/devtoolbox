@@ -6,6 +6,15 @@ const defaultOptions: SqlFormatterOptions = {
   dialect: "sql",
   keywordCase: "upper",
   tabWidth: 2,
+  useTabs: false,
+  functionCase: "preserve",
+  dataTypeCase: "preserve",
+  indentStyle: "standard",
+  logicalOperatorNewline: "before",
+  expressionWidth: 50,
+  linesBetweenQueries: 1,
+  denseOperators: false,
+  newlineBeforeSemicolon: false,
 };
 
 describe("formatSql", () => {
@@ -71,4 +80,37 @@ describe("formatSql", () => {
     expect(result.error).toBeNull();
     expect(result.output.length).toBeGreaterThan(0);
   });
+
+  it("formats Oracle PL/SQL with bind variables and functions in lower case", () => {
+    const r = formatSql("select nvl(a,0) from accounts where id = :id and status='A'", { ...defaultOptions, dialect: "plsql", functionCase: "lower" });
+    expect(r.output).toBe("SELECT\n  nvl(a, 0)\nFROM\n  accounts\nWHERE\n  id = :id\n  AND status = 'A'");
+  });
+
+  it("supports T-SQL bracket identifiers", () => {
+    expect(formatSql("select [order id] from dbo.[orders]", { ...defaultOptions, dialect: "transactsql" }).output).toBe(
+      "SELECT\n  [order id]\nFROM\n  dbo.[orders]",
+    );
+  });
+
+  it("puts AND/OR at the end of lines and uses dense operators on request", () => {
+    const r = formatSql("select a from t where x = 1 and y = 2", { ...defaultOptions, logicalOperatorNewline: "after", denseOperators: true });
+    expect(r.output).toBe("SELECT\n  a\nFROM\n  t\nWHERE\n  x=1 AND\n  y=2");
+  });
+
+  it("aligns clauses in tabular style and indents with tabs", () => {
+    expect(formatSql("select a, b from t", { ...defaultOptions, indentStyle: "tabularLeft" }).output).toBe("SELECT    a,\n          b\nFROM      t");
+    expect(formatSql("select a from t", { ...defaultOptions, useTabs: true }).output).toBe("SELECT\n\ta\nFROM\n\tt");
+  });
+
+  it("controls data type case, blank lines between queries and the semicolon position", () => {
+    const r = formatSql("create table t (id number(10)); select 1 from dual;", {
+      ...defaultOptions,
+      dialect: "plsql",
+      dataTypeCase: "upper",
+      linesBetweenQueries: 2,
+      newlineBeforeSemicolon: true,
+    });
+    expect(r.output).toBe("CREATE TABLE t (id NUMBER(10))\n;\n\n\nSELECT\n  1\nFROM\n  dual\n;");
+  });
 });
+

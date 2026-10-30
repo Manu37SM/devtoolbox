@@ -10,7 +10,7 @@ function fakeImageFile(name = "photo.jpg", size = 12345): File {
 describe("compressImage", () => {
   it("never throws, and reports the original file size even on failure", async () => {
     const file = fakeImageFile("photo.jpg", 20_000);
-    const result = await compressImage(file, { format: "image/jpeg", quality: 80 });
+    const result = await compressImage(file, { format: "image/jpeg", quality: 80, maxDimension: 0, targetSizeKb: 0, background: "#ffffff" });
 
     expect(result.originalSize).toBe(20_000);
 
@@ -21,7 +21,7 @@ describe("compressImage", () => {
 
   it("surfaces a human-readable error message rather than a raw exception object", async () => {
     const file = fakeImageFile();
-    const result = await compressImage(file, { format: "image/webp", quality: 50 });
+    const result = await compressImage(file, { format: "image/webp", quality: 50, maxDimension: 0, targetSizeKb: 0, background: "#ffffff" });
 
     expect(typeof result.error).toBe("string");
     expect(result.error!.length).toBeGreaterThan(0);

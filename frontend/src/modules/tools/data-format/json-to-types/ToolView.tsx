@@ -19,6 +19,12 @@ export function JsonToTypesToolView() {
   const [options, setOptions] = useState<JsonToTypesOptions>({
     language: "typescript",
     rootName: "Root",
+    tsDeclaration: "interface",
+    exportTypes: false,
+    readonlyFields: false,
+    goPackage: "main",
+    goOmitEmpty: false,
+    pythonStyle: "dataclass",
   });
 
   const result = useMemo(() => generateTypes(input, options), [input, options]);
@@ -49,6 +55,73 @@ export function JsonToTypesToolView() {
             aria-label="Root type name"
           />
         </label>
+        {options.language === "typescript" && (
+          <>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Declare as
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.tsDeclaration}
+            onChange={(e) => setOptions((o) => ({ ...o, tsDeclaration: e.target.value as JsonToTypesOptions["tsDeclaration"] }))}
+          >
+            <option value="interface">interface</option>
+            <option value="type">type</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.exportTypes}
+            onChange={(e) => setOptions((o) => ({ ...o, exportTypes: e.target.checked }))}
+          />
+          export
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.readonlyFields}
+            onChange={(e) => setOptions((o) => ({ ...o, readonlyFields: e.target.checked }))}
+          />
+          readonly
+        </label>
+          </>
+        )}
+        {options.language === "go" && (
+          <>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Package
+          <input
+            type="text"
+            value={options.goPackage}
+            placeholder="main"
+            onChange={(e) => setOptions((o) => ({ ...o, goPackage: e.target.value }))}
+            className="w-24 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1 font-mono text-sm"
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.goOmitEmpty}
+            onChange={(e) => setOptions((o) => ({ ...o, goOmitEmpty: e.target.checked }))}
+          />
+          omitempty on all
+        </label>
+          </>
+        )}
+        {options.language === "python" && (
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Style
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.pythonStyle}
+            onChange={(e) => setOptions((o) => ({ ...o, pythonStyle: e.target.value as JsonToTypesOptions["pythonStyle"] }))}
+          >
+            <option value="dataclass">dataclass</option>
+            <option value="typeddict">TypedDict</option>
+            <option value="pydantic">Pydantic</option>
+          </select>
+        </label>
+        )}
       </div>
       <div className="min-h-0 flex-1">
         <DualPane

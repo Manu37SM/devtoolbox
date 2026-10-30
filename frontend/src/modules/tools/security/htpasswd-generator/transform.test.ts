@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { apr1, generateHtpasswd, md5, sha1, sha1Entry } from "./transform";
+import { apr1, generateHtpasswd, generateHtpasswdAsync, md5, sha1, sha1Entry } from "./transform";
+import { bcryptVerify } from "hash-wasm";
 
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
 const enc = (s: string) => new TextEncoder().encode(s);
@@ -24,10 +25,10 @@ describe("hash formats (reference values from passlib / hashlib)", () => {
 });
 
 describe("generateHtpasswd", () => {
-  const o = { algorithm: "apr1" as const };
+  const o = { algorithm: "apr1" as const, bcryptCost: 10 };
   it("writes user:hash lines with an injectable salt", () => {
     expect(generateHtpasswd("alice:password", o, 0, () => "abcdefgh").output).toBe("alice:$apr1$abcdefgh$FBwExRW4dCc8aL.OvjpIE1\n");
-    expect(generateHtpasswd("bob:password", { algorithm: "sha1" }).output).toBe("bob:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=\n");
+    expect(generateHtpasswd("bob:password", { algorithm: "sha1", bcryptCost: 10 }).output).toBe("bob:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=\n");
   });
   it("uses random salts by default", () => {
     const a = generateHtpasswd("u:pw", o).output, b = generateHtpasswd("u:pw", o).output;
@@ -45,4 +46,19 @@ describe("generateHtpasswd", () => {
     expect(generateHtpasswd("a b:c", o).error?.message).toMatch(/spaces/);
     expect(generateHtpasswd("", o)).toEqual({ output: "", error: null });
   });
+
+  it("writes bcrypt entries in Apache's $2y$ form that verify against the password", async () => {
+    // Also cross-checked with Python's bcrypt.checkpw during development.
+    const r = await generateHtpasswdAsync("alice:pässwörd", { algorithm: "bcrypt", bcryptCost: 5 }, () => new Uint8Array(16).fill(7));
+    const hash = r.output.trim().split(":")[1]!;
+    expect(hash).toMatch(/^\$2y\$05\$[./A-Za-z0-9]{53}$/);
+    expect(await bcryptVerify({ password: "pässwörd", hash: hash.replace("$2y$", "$2a$") })).toBe(true);
+    expect(await bcryptVerify({ password: "wrong", hash: hash.replace("$2y$", "$2a$") })).toBe(false);
+  });
+
+  it("rejects passwords bcrypt would silently truncate, and keeps line errors", async () => {
+    expect((await generateHtpasswdAsync(`u:${"x".repeat(73)}`, { algorithm: "bcrypt", bcryptCost: 4 })).error?.message).toMatch(/72 bytes/);
+    expect((await generateHtpasswdAsync("nocolon", { algorithm: "bcrypt", bcryptCost: 4 })).error?.line).toBe(1);
+  });
 });
+
