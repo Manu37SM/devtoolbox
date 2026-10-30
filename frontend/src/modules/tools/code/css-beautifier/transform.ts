@@ -9,7 +9,10 @@ export async function beautifyCss(input: string, options: CssBeautifierOptions):
 
   if (options.mode === "minify") {
     try {
-      const result = minify(input);
+      const result = minify(input, {
+        restructure: options.restructure ?? true,
+        comments: options.keepLicenseComments === false ? false : "exclamation",
+      });
       return { output: result.css, error: null };
     } catch (err) {
       return { output: "", error: { message: err instanceof Error ? err.message : "Could not minify this CSS." } };
@@ -21,6 +24,9 @@ export async function beautifyCss(input: string, options: CssBeautifierOptions):
       parser: "css",
       plugins: [postcssPlugin],
       tabWidth: options.tabWidth,
+      useTabs: options.useTabs ?? false,
+      printWidth: options.printWidth ?? 80,
+      singleQuote: options.singleQuote ?? false,
     });
     return { output, error: null };
   } catch (err) {

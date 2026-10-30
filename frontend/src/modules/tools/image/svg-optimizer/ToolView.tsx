@@ -5,9 +5,9 @@ import { DualPane } from "@/components/tools/DualPane";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { ToolInput } from "@/components/tools/ToolInput";
 import { optimizeSvg } from "./transform";
-import type { SvgOptimizerOptions } from "./schema";
+import { svgOptimizerOptionsSchema, type SvgOptimizerOptions } from "./schema";
 
-const defaultOptions: SvgOptimizerOptions = { pluginsPreset: "default", removeViewBox: false, multipass: true };
+const defaultOptions: SvgOptimizerOptions = svgOptimizerOptionsSchema.parse({});
 
 const SAMPLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <circle cx="50" cy="50" r="40" fill="#6366f1" />
@@ -59,6 +59,84 @@ export function SvgOptimizerToolView() {
             onChange={(e) => setOptions((o) => ({ ...o, multipass: e.target.checked }))}
           />
           Multipass
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Precision
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.floatPrecision}
+            onChange={(e) => setOptions((o) => ({ ...o, floatPrecision: e.target.value as SvgOptimizerOptions["floatPrecision"] }))}
+          >
+            <option value="default">Default</option>
+            <option value="0">0 decimals</option>
+            <option value="1">1 decimal</option>
+            <option value="2">2 decimals</option>
+            <option value="3">3 decimals</option>
+            <option value="4">4 decimals</option>
+            <option value="5">5 decimals</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Output format
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.outputFormat}
+            onChange={(e) => setOptions((o) => ({ ...o, outputFormat: e.target.value as SvgOptimizerOptions["outputFormat"] }))}
+          >
+            <option value="svg">SVG markup</option>
+            <option value="dataUri">Data URI (CSS)</option>
+            <option value="base64">Base64 data URI</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.removeTitle}
+            onChange={(e) => setOptions((o) => ({ ...o, removeTitle: e.target.checked }))}
+          />
+          Remove {"<title>"}
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.removeDimensions}
+            onChange={(e) => setOptions((o) => ({ ...o, removeDimensions: e.target.checked }))}
+          />
+          Remove width/height
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.keepIds}
+            onChange={(e) => setOptions((o) => ({ ...o, keepIds: e.target.checked }))}
+          />
+          Keep IDs
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.currentColor}
+            onChange={(e) => setOptions((o) => ({ ...o, currentColor: e.target.checked }))}
+          />
+          Colours → currentColor
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.pretty}
+            onChange={(e) => setOptions((o) => ({ ...o, pretty: e.target.checked }))}
+          />
+          Pretty print
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          ID prefix
+          <input
+            type="text"
+            value={options.idPrefix}
+            placeholder="none"
+            onChange={(e) => setOptions((o) => ({ ...o, idPrefix: e.target.value }))}
+            className="w-28 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1 font-mono text-sm"
+          />
         </label>
         <button
           type="button"

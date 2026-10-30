@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { beautifyCss } from "./transform";
 
-const base = { mode: "beautify" as const, tabWidth: 2 as const };
+const base = { mode: "beautify" as const, tabWidth: 2 as const, useTabs: false, printWidth: 80 as const, singleQuote: false, restructure: true, keepLicenseComments: true };
 
 describe("beautifyCss — beautify mode", () => {
   it("formats minified CSS", async () => {
@@ -49,5 +49,18 @@ describe("beautifyCss — minify mode", () => {
     );
     expect(result.error).toBeNull();
     expect(result.output).toBe("@media (min-width:100px){a{color:red}}");
+  });
+
+  it("uses tabs and single quotes on request", async () => {
+    expect((await beautifyCss('a{content:"x";color:red}', { ...base, useTabs: true, singleQuote: true })).output).toBe("a {\n\tcontent: 'x';\n\tcolor: red;\n}\n");
+  });
+
+  it("keeps licence comments and only restructures when asked", async () => {
+    const src = "/*! MIT */ .a{color:red} .b{margin:0} .a{padding:0}";
+    expect((await beautifyCss(src, { ...base, mode: "minify", restructure: false })).output).toBe("/*! MIT */\n.a{color:red}.b{margin:0}.a{padding:0}");
+    expect((await beautifyCss(src, { ...base, mode: "minify", keepLicenseComments: false, restructure: false })).output).toBe(".a{color:red}.b{margin:0}.a{padding:0}");
+    // Adjacent rules for the same selector merge only when restructuring is on.
+    expect((await beautifyCss(".a{color:red} .a{padding:0}", { ...base, mode: "minify" })).output).toBe(".a{color:red;padding:0}");
+    expect((await beautifyCss(".a{color:red} .a{padding:0}", { ...base, mode: "minify", restructure: false })).output).toBe(".a{color:red}.a{padding:0}");
   });
 });

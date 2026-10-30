@@ -14,7 +14,7 @@ export async function beautifyHtml(input: string, options: HtmlBeautifierOptions
     try {
       const output = await minify(input, {
         collapseWhitespace: true,
-        removeComments: true,
+        removeComments: !options.keepComments,
         minifyCSS: true,
         minifyJS: true,
       });
@@ -29,6 +29,11 @@ export async function beautifyHtml(input: string, options: HtmlBeautifierOptions
       parser: "html",
       plugins: [htmlPlugin, cssPlugin, babelPlugin, estreePlugin],
       tabWidth: options.tabWidth,
+      useTabs: options.useTabs ?? false,
+      printWidth: options.printWidth ?? 80,
+      htmlWhitespaceSensitivity: options.whitespace ?? "css",
+      singleAttributePerLine: options.singleAttributePerLine ?? false,
+      bracketSameLine: options.bracketSameLine ?? false,
     });
     return { output, error: null };
   } catch (err) {

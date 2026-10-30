@@ -5,6 +5,8 @@ import {
   clampQuality,
   computeSizeReductionPercent,
   dataUrlByteLength,
+  findQualityForTarget,
+  fitWithin,
   formatBytes,
   mimeToExtension,
 } from "./image-canvas";
@@ -110,3 +112,30 @@ describe("dataUrlByteLength", () => {
     expect(dataUrlByteLength("data:image/png;base64,")).toBe(0);
   });
 });
+
+describe("fitWithin", () => {
+  it("scales the longer side down and never upscales", () => {
+    expect(fitWithin(4000, 3000, 1920)).toEqual({ width: 1920, height: 1440 });
+    expect(fitWithin(1000, 3000, 1000)).toEqual({ width: 333, height: 1000 });
+    expect(fitWithin(800, 600, 1920)).toEqual({ width: 800, height: 600 });
+    expect(fitWithin(800, 600, 0)).toEqual({ width: 800, height: 600 });
+    expect(fitWithin(5000, 1, 100)).toEqual({ width: 100, height: 1 });
+  });
+});
+
+describe("findQualityForTarget", () => {
+  it("finds the highest quality under the target", async () => {
+    const calls: number[] = [];
+    const r = await findQualityForTarget(async (q) => {
+      calls.push(q);
+      return q * 1000;
+    }, 42_500);
+    expect(r).toEqual({ quality: 42, bytes: 42_000, met: true });
+    expect(calls.length).toBeLessThanOrEqual(8);
+  });
+
+  it("reports when even quality 1 is too big", async () => {
+    expect(await findQualityForTarget(async (q) => 10_000 + q, 500)).toEqual({ quality: 1, bytes: 10_001, met: false });
+  });
+});
+

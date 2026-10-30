@@ -64,4 +64,62 @@ describe("markdownToHtml", () => {
   it("handles multiple paragraphs separated by blank lines", () => {
     expect(markdownToHtml("Para one.\n\nPara two.")).toBe("<p>Para one.</p>\n<p>Para two.</p>");
   });
+
+  it("keeps emphasis markers literal inside code spans", () => {
+    expect(markdownToHtml("`a**b**c` and `_x_`")).toBe("<p><code>a**b**c</code> and <code>_x_</code></p>");
+  });
+
+  it("supports link titles and keeps ordered-list start numbers", () => {
+    expect(markdownToHtml('[a](https://x.dev "Home")')).toBe('<p><a href="https://x.dev" title="Home">a</a></p>');
+    expect(markdownToHtml("3. c\n4. d")).toBe('<ol start="3"><li>c</li><li>d</li></ol>');
+  });
 });
+
+describe("markdownToHtml options", () => {
+  it("renders GFM tables with alignment", () => {
+    expect(markdownToHtml("| Name | Qty |\n| :--- | ---: |\n| a | 1 |\n| b\\|c | 2 |")).toBe(
+      '<table><thead><tr><th style="text-align:left">Name</th><th style="text-align:right">Qty</th></tr></thead>' +
+        '<tbody><tr><td style="text-align:left">a</td><td style="text-align:right">1</td></tr>' +
+        '<tr><td style="text-align:left">b|c</td><td style="text-align:right">2</td></tr></tbody></table>',
+    );
+  });
+
+  it("renders task lists, strikethrough and bare URLs, and turns GFM off on request", () => {
+    expect(markdownToHtml("- [x] done\n- [ ] todo")).toBe(
+      '<ul><li class="task-list-item"><input type="checkbox" disabled checked /> done</li><li class="task-list-item"><input type="checkbox" disabled /> todo</li></ul>',
+    );
+    expect(markdownToHtml("~~old~~ see https://example.com/a?b=1&c=2.")).toBe(
+      '<p><del>old</del> see <a href="https://example.com/a?b=1&amp;c=2">https://example.com/a?b=1&amp;c=2</a>.</p>',
+    );
+    expect(markdownToHtml("~~old~~ https://x.dev", { gfm: false })).toBe("<p>~~old~~ https://x.dev</p>");
+  });
+
+  it("adds GitHub-style heading ids, de-duplicated", () => {
+    expect(markdownToHtml("# Hello, World!\n## Hello, World!", { headingIds: true })).toBe(
+      '<h1 id="hello-world">Hello, World!</h1>\n<h2 id="hello-world-1">Hello, World!</h2>',
+    );
+  });
+
+  it("supports hard line breaks and external links", () => {
+    expect(markdownToHtml("a\nb", { hardBreaks: true })).toBe("<p>a<br />\nb</p>");
+    expect(markdownToHtml("[x](https://x.dev)", { externalLinks: true })).toBe(
+      '<p><a href="https://x.dev" target="_blank" rel="noopener noreferrer">x</a></p>',
+    );
+  });
+
+  it("neutralises script URLs by default", () => {
+    expect(markdownToHtml("[x](javascript:alert(1))")).not.toContain("javascript:");
+    expect(markdownToHtml("[x](JavaScript:alert)")).toBe('<p><a href="#">x</a></p>');
+    expect(markdownToHtml("![i](data:image/png;base64,AAAA)")).toContain('src="data:image/png;base64,AAAA"');
+    expect(markdownToHtml("[x](data:text/html,hi)")).toBe('<p><a href="#">x</a></p>');
+    expect(markdownToHtml("[x](javascript:alert)", { safeUrls: false })).toContain('href="javascript:alert"');
+  });
+
+  it("wraps a full document titled by the first h1", () => {
+    const doc = markdownToHtml("# My *Doc*\n\ntext", { fullDocument: true });
+    expect(doc.startsWith("<!DOCTYPE html>")).toBe(true);
+    expect(doc).toContain("<title>My Doc</title>");
+    expect(doc).toContain("<p>text</p>\n</body>");
+  });
+});
+

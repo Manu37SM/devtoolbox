@@ -11,7 +11,7 @@ function fakeImageFile(name = "photo.png", size = 8000): File {
 describe("convertImageFormat", () => {
   it("never throws and returns a graceful error result in this DOM-less environment", async () => {
     const file = fakeImageFile();
-    const result = await convertImageFormat(file, { targetFormat: "image/webp", quality: 92 });
+    const result = await convertImageFormat(file, { targetFormat: "image/webp", quality: 92, maxDimension: 0, background: "#ffffff" });
 
     expect(result.dataUrl).toBe("");
     expect(result.error).not.toBeNull();
@@ -20,8 +20,8 @@ describe("convertImageFormat", () => {
 
   it("behaves the same regardless of target format when decoding fails", async () => {
     const file = fakeImageFile();
-    const pngResult = await convertImageFormat(file, { targetFormat: "image/png", quality: 92 });
-    const jpegResult = await convertImageFormat(file, { targetFormat: "image/jpeg", quality: 92 });
+    const pngResult = await convertImageFormat(file, { targetFormat: "image/png", quality: 92, maxDimension: 0, background: "#ffffff" });
+    const jpegResult = await convertImageFormat(file, { targetFormat: "image/jpeg", quality: 92, maxDimension: 0, background: "#ffffff" });
 
     expect(pngResult.error).not.toBeNull();
     expect(jpegResult.error).not.toBeNull();

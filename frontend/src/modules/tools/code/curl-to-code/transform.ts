@@ -248,13 +248,239 @@ export function convertCurl(input: string, options: CurlToCodeOptions): Transfor
   if (input.trim().length === 0) return { output: "", error: null };
   try {
     const parsed = parseCurl(input);
+    const textBlocks = options.javaTextBlocks ?? true;
     const generators: Record<CurlTarget, (c: ParsedCurl) => string> = {
       fetch: generateFetch,
       axios: generateAxios,
       python: generatePython,
+      "java-httpclient": (c) => generateJavaHttpClient(c, textBlocks),
+      "spring-restclient": (c) => generateSpringRestClient(c, textBlocks),
+      "spring-webclient": (c) => generateSpringWebClient(c, textBlocks),
+      okhttp: (c) => generateOkHttp(c, textBlocks),
+      go: generateGo,
+      csharp: generateCSharp,
+      powershell: generatePowerShell,
     };
     return { output: generators[options.target](parsed), error: null };
   } catch (e) {
     return { output: "", error: { message: e instanceof Error ? e.message : "Could not parse the cURL command." } };
   }
 }
+
+// ---------------------------------------------------------------- shared helpers for the typed languages
+
+function splitAuth(creds: string): [string, string] {
+  const colon = creds.indexOf(":");
+  return colon === -1 ? [creds, ""] : [creds.slice(0, colon), creds.slice(colon + 1)];
+}
+
+/** The body as it should be written: pretty-printed when it is JSON. */
+function bodyText(c: ParsedCurl): string | null {
+  if (c.body === null) return null;
+  const json = isJsonContentType(c) ? tryJson(c.body) : undefined;
+  return json !== undefined ? JSON.stringify(json, null, 2) : c.body;
+}
+
+function contentType(c: ParsedCurl): string | null {
+  return c.headers.find(([n]) => n.toLowerCase() === "content-type")?.[1] ?? null;
+}
+
+/** Java string expression for a body: a text block for multi-line text when allowed, else an escaped literal. */
+function javaString(text: string, textBlocks: boolean, pad: string): string {
+  if (textBlocks && text.includes("\n")) {
+    const escaped = text.replace(/\\/g, "\\\\").replace(/"""/g, '\\"""');
+    return `"""\n${escaped.split("\n").map((l) => pad + l).join("\n")}\n${pad}"""`;
+  }
+  return q(text);
+}
+
+// Headers java.net.http.HttpClient refuses to let you set (IllegalArgumentException).
+const JAVA_RESTRICTED = new Set(["host", "content-length", "connection", "expect", "upgrade"]);
+
+function restrictedNote(skipped: string[], client: string): string {
+  if (!skipped.length) return "";
+  const list = skipped.join(", ");
+  const verb = skipped.length === 1 ? "header is" : "headers are";
+  const hostHint = skipped.some((h) => h.toLowerCase() === "host")
+    ? "\n// To send a custom Host anyway, start the JVM with -Djdk.httpclient.allowRestrictedHeaders=host."
+    : "";
+  const one = skipped.length === 1;
+  return `// The ${list} ${verb} managed by ${client}, which rejects ${one ? "it" : "them"}, so ${one ? "it was" : "they were"} left out.${hostHint}\n`;
+}
+
+export function generateJavaHttpClient(c: ParsedCurl, textBlocks = true): string {
+  const imports = ["java.net.URI", "java.net.http.HttpClient", "java.net.http.HttpRequest", "java.net.http.HttpResponse"];
+  const lines = [`HttpRequest request = HttpRequest.newBuilder()`, `        .uri(URI.create(${q(c.url)}))`];
+  const skipped: string[] = [];
+  for (const [n, v] of c.headers) {
+    if (JAVA_RESTRICTED.has(n.toLowerCase())) skipped.push(n);
+    else lines.push(`        .header(${q(n)}, ${q(v)})`);
+  }
+  if (c.basicAuth !== null) {
+    imports.push("java.nio.charset.StandardCharsets", "java.util.Base64");
+    lines.push(`        .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(${q(c.basicAuth)}.getBytes(StandardCharsets.UTF_8)))`);
+  }
+  const body = bodyText(c);
+  const publisher = body === null ? "HttpRequest.BodyPublishers.noBody()" : `HttpRequest.BodyPublishers.ofString(${javaString(body, textBlocks, "            ")})`;
+  if (c.method === "GET" && body === null) lines.push("        .GET()");
+  else if (c.method === "DELETE" && body === null) lines.push("        .DELETE()");
+  else lines.push(`        .method(${q(c.method)}, ${publisher})`);
+  lines.push("        .build();");
+  const note = restrictedNote(skipped, "HttpClient");
+  return `${imports.sort().map((i) => `import ${i};`).join("\n")}
+
+HttpClient client = HttpClient.newHttpClient();
+${note}${lines.join("\n")}
+HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.statusCode() + " " + response.body());
+`;
+}
+
+function springChain(c: ParsedCurl, textBlocks: boolean, bodyMethod: string, jdkRestricted: boolean): { lines: string[]; imports: string[]; note: string } {
+  const imports = ["org.springframework.http.HttpMethod"];
+  const lines = [`        .method(HttpMethod.valueOf(${q(c.method)}))`.replace(/HttpMethod\.valueOf\("(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)"\)/, "HttpMethod.$1"), `        .uri(${q(c.url)})`];
+  const skipped: string[] = [];
+  for (const [n, v] of c.headers) {
+    if (jdkRestricted && JAVA_RESTRICTED.has(n.toLowerCase())) skipped.push(n);
+    else lines.push(`        .header(${q(n)}, ${q(v)})`);
+  }
+  if (c.basicAuth !== null) {
+    const [user, pass] = splitAuth(c.basicAuth);
+    lines.push(`        .headers(h -> h.setBasicAuth(${q(user)}, ${q(pass)}))`);
+  }
+  const body = bodyText(c);
+  if (body !== null) lines.push(`        .${bodyMethod}(${javaString(body, textBlocks, "            ")})`);
+  return { lines, imports, note: restrictedNote(skipped, "RestClient's default JDK request factory") };
+}
+
+export function generateSpringRestClient(c: ParsedCurl, textBlocks = true): string {
+  const { lines, imports, note } = springChain(c, textBlocks, "body", true);
+  imports.push("org.springframework.web.client.RestClient");
+  return `${imports.sort().map((i) => `import ${i};`).join("\n")}
+
+RestClient restClient = RestClient.create();
+${note}String response = restClient${lines.join("\n").replace(/^ {8}/, "\n        ")}
+        .retrieve()
+        .body(String.class);
+`;
+}
+
+export function generateSpringWebClient(c: ParsedCurl, textBlocks = true): string {
+  const { lines, imports } = springChain(c, textBlocks, "bodyValue", false);
+  imports.push("org.springframework.web.reactive.function.client.WebClient");
+  return `${imports.sort().map((i) => `import ${i};`).join("\n")}
+
+WebClient webClient = WebClient.create();
+String response = webClient${lines.join("\n").replace(/^ {8}/, "\n        ")}
+        .retrieve()
+        .bodyToMono(String.class)
+        .block(); // in reactive code, return the Mono instead of blocking
+`;
+}
+
+export function generateOkHttp(c: ParsedCurl, textBlocks = true): string {
+  const imports = ["okhttp3.OkHttpClient", "okhttp3.Request", "okhttp3.Response"];
+  const out: string[] = ["OkHttpClient client = new OkHttpClient();"];
+  const body = bodyText(c);
+  if (body !== null) {
+    imports.push("okhttp3.MediaType", "okhttp3.RequestBody");
+    out.push(`RequestBody body = RequestBody.create(${javaString(body, textBlocks, "    ")}, MediaType.parse(${q(contentType(c) ?? "text/plain")}));`);
+  }
+  const lines = ["Request request = new Request.Builder()", `        .url(${q(c.url)})`];
+  for (const [n, v] of c.headers) if (n.toLowerCase() !== "content-type") lines.push(`        .header(${q(n)}, ${q(v)})`);
+  if (c.basicAuth !== null) {
+    imports.push("okhttp3.Credentials");
+    const [user, pass] = splitAuth(c.basicAuth);
+    lines.push(`        .header("Authorization", Credentials.basic(${q(user)}, ${q(pass)}))`);
+  }
+  if (c.method === "GET" && body === null) lines.push("        .get()");
+  else if (c.method === "HEAD") lines.push("        .head()");
+  else lines.push(`        .method(${q(c.method)}, ${body === null ? "null" : "body"})`);
+  lines.push("        .build();");
+  out.push(lines.join("\n"));
+  out.push(`try (Response response = client.newCall(request).execute()) {\n    System.out.println(response.code() + " " + response.body().string());\n}`);
+  return `${imports.sort().map((i) => `import ${i};`).join("\n")}\n\n${out.join("\n")}\n`;
+}
+
+function goString(text: string): string {
+  return text.includes("`") ? q(text) : "`" + text + "`";
+}
+
+export function generateGo(c: ParsedCurl): string {
+  const body = bodyText(c);
+  const imports = ["fmt", "io", "net/http", ...(body !== null ? ["strings"] : [])].sort();
+  const lines = [
+    `\treq, err := http.NewRequest(${q(c.method)}, ${q(c.url)}, ${body === null ? "nil" : `strings.NewReader(${goString(body)})`})`,
+    "\tif err != nil {\n\t\tpanic(err)\n\t}",
+  ];
+  for (const [n, v] of c.headers) {
+    // net/http ignores a Host entry in Header; the request's Host field is what gets sent.
+    lines.push(n.toLowerCase() === "host" ? `\treq.Host = ${q(v)}` : `\treq.Header.Add(${q(n)}, ${q(v)})`);
+  }
+  if (c.basicAuth !== null) {
+    const [user, pass] = splitAuth(c.basicAuth);
+    lines.push(`\treq.SetBasicAuth(${q(user)}, ${q(pass)})`);
+  }
+  lines.push(
+    "\tresp, err := http.DefaultClient.Do(req)",
+    "\tif err != nil {\n\t\tpanic(err)\n\t}",
+    "\tdefer resp.Body.Close()",
+    "\tdata, err := io.ReadAll(resp.Body)",
+    "\tif err != nil {\n\t\tpanic(err)\n\t}",
+    "\tfmt.Println(resp.Status, string(data))",
+  );
+  return `package main\n\nimport (\n${imports.map((i) => `\t${q(i)}`).join("\n")}\n)\n\nfunc main() {\n${lines.join("\n")}\n}\n`;
+}
+
+function csVerbatim(text: string): string {
+  return `@"${text.replace(/"/g, '""')}"`;
+}
+
+export function generateCSharp(c: ParsedCurl): string {
+  const method = { GET: "Get", POST: "Post", PUT: "Put", PATCH: "Patch", DELETE: "Delete", HEAD: "Head", OPTIONS: "Options" }[c.method];
+  const lines = [
+    "using var client = new HttpClient();",
+    `using var request = new HttpRequestMessage(${method ? `HttpMethod.${method}` : `new HttpMethod(${q(c.method)})`}, ${q(c.url)});`,
+  ];
+  // Content-Type belongs to the content, not the request; HttpClient throws if it is added as a request header.
+  for (const [n, v] of c.headers) if (n.toLowerCase() !== "content-type") lines.push(`request.Headers.TryAddWithoutValidation(${q(n)}, ${q(v)});`);
+  const usings = ["System.Text"];
+  if (c.basicAuth !== null) {
+    usings.push("System.Net.Http.Headers");
+    lines.push(`request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes(${q(c.basicAuth)})));`);
+  }
+  const body = bodyText(c);
+  if (body !== null) {
+    const ct = (contentType(c) ?? "text/plain").split(";")[0]!.trim();
+    lines.push(`request.Content = new StringContent(${csVerbatim(body)}, Encoding.UTF8, ${q(ct)});`);
+  }
+  lines.push("using var response = await client.SendAsync(request);", 'Console.WriteLine($"{(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");');
+  return `${usings.sort().map((u) => `using ${u};`).join("\n")}\n\n${lines.join("\n")}\n`;
+}
+
+function psString(text: string): string {
+  return `'${text.replace(/'/g, "''")}'`;
+}
+
+export function generatePowerShell(c: ParsedCurl): string {
+  const out: string[] = [];
+  const headers = c.headers.filter(([n]) => n.toLowerCase() !== "content-type");
+  const hasAuth = c.basicAuth !== null;
+  if (headers.length > 0 || hasAuth) {
+    out.push("$headers = @{");
+    for (const [n, v] of headers) out.push(`    ${psString(n)} = ${psString(v)}`);
+    if (hasAuth) out.push(`    'Authorization' = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(${psString(c.basicAuth!)}))`);
+    out.push("}");
+  }
+  const body = bodyText(c);
+  // A here-string keeps the body verbatim; a line starting with '@ would end it early.
+  if (body !== null) out.push(/^'@/m.test(body) ? `$body = ${psString(body)}` : `$body = @'\n${body}\n'@`);
+  const args = [`-Uri ${psString(c.url)}`, `-Method ${c.method.charAt(0) + c.method.slice(1).toLowerCase()}`];
+  if (headers.length > 0 || hasAuth) args.push("-Headers $headers");
+  const ct = contentType(c);
+  if (ct) args.push(`-ContentType ${psString(ct)}`);
+  if (body !== null) args.push("-Body $body");
+  out.push(`$response = Invoke-RestMethod ${args.join(" ")}`, "$response");
+  return out.join("\n") + "\n";
+}
+
