@@ -80,6 +80,10 @@ export const TOOL_IO: Record<string, ToolIoConfig> = {
   "iso8583-parser": { fileRead: "auto-hex" },
   "ascii-table-parser": { ext: "csv" },
 
+  "csv-diff": { ext: "csv", accept: ".csv,.tsv,.txt" },
+  "csv-join": { ext: "csv", accept: ".csv,.tsv,.txt" },
+  "sql-insert-parser": { ext: "csv", accept: ".sql,.txt" },
+  "json-schema-sample-generator": { ext: "json", accept: ".json,.txt" },
   // ---- encoding ------------------------------------------------------------
   base64: { ...C, fileRead: "auto-base64" },
   "base32-converter": C,
@@ -128,6 +132,8 @@ export const TOOL_IO: Record<string, ToolIoConfig> = {
   "css-clamp-generator": { ext: "css" },
   "code-diff": { ext: "diff" },
 
+  "source-map-resolver": { ext: "txt" },
+  "cron-to-systemd-timer": { ext: "txt" },
   // ---- text ----------------------------------------------------------------
   "case-converter": C,
   "text-cleaner": C,
@@ -153,6 +159,9 @@ export const TOOL_IO: Record<string, ToolIoConfig> = {
   "template-bulk-generator": { accept: ".csv,.tsv,.json,.txt" },
   "text-diff": { ext: "diff" },
 
+  "ascii-tree-generator": { ext: "txt" },
+  "text-wrap-formatter": { ext: "txt" },
+  "merge-conflict-resolver": { ext: "txt" },
   // ---- converters ----------------------------------------------------------
   "morse-code-converter": C,
   "nato-alphabet-converter": C,
@@ -196,6 +205,7 @@ export const TOOL_IO: Record<string, ToolIoConfig> = {
   "mock-api-response-generator": { ext: "json" },
   "fake-data-generator": { ext: "json" },
 
+  "ssh-config-generator": { downloadName: "config" },
   // ---- image ---------------------------------------------------------------
   "svg-optimizer": { ...C, ext: "svg", accept: ".svg" },
   "svg-exporter": { accept: ".svg" },
