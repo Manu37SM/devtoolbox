@@ -25,6 +25,29 @@ export function parseIpv4(text: string): number {
   throw new Error(`"${t}" isn't a recognised IPv4 form (dotted, decimal, 0xHEX, binary).`);
 }
 
+/**
+ * inet_aton(3) semantics: 1-4 parts, each decimal, 0-prefixed octal or 0x hex; the last part
+ * fills the remaining bytes (a.b.c -> c is 16 bits, a.b -> b is 24 bits, a -> 32 bits).
+ */
+export function parseInetAton(text: string): number {
+  const t = text.trim();
+  const parts = t.split(".");
+  if (parts.length < 1 || parts.length > 4 || parts.some((p) => p === "")) throw new Error(`"${t}" isn't an inet_aton address.`);
+  const nums = parts.map((p) => {
+    let v: number;
+    if (/^0x[0-9a-f]+$/i.test(p)) v = parseInt(p.slice(2), 16);
+    else if (/^0[0-7]*$/.test(p)) v = parseInt(p, 8);
+    else if (/^[1-9]\d*$/.test(p)) v = Number(p);
+    else throw new Error(`"${p}" in "${t}" is not decimal, octal (0…) or hex (0x…).`);
+    return v;
+  });
+  const last = nums.pop()!;
+  if (nums.some((v) => v > 255)) throw new Error(`Octet out of range (0–255) in "${t}".`);
+  const lastMax = 2 ** (8 * (4 - nums.length)) - 1;
+  if (last > lastMax) throw new Error(`Last part of "${t}" exceeds ${lastMax}.`);
+  return nums.reduce((acc, v, i) => acc + v * 2 ** (8 * (3 - i)), 0) + last;
+}
+
 export const toDotted = (n: number) => [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".");
 
 function classify(n: number): string[] {
@@ -65,11 +88,49 @@ export function describeIpv4(n: number): string {
   ].join("\n");
 }
 
-export function convertIpv4Address(input: string, _options: Ipv4AddressConverterOptions): TransformResult {
+const binDotted = (n: number) => n.toString(2).padStart(32, "0").match(/.{8}/g)!.join(".");
+const hexOf = (n: number) => `0x${n.toString(16).padStart(8, "0").toUpperCase()}`;
+
+export function convertIpv4Address(input: string, options: Partial<Ipv4AddressConverterOptions> = {}): TransformResult {
   const lines = input.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return { output: "", error: null };
+  const parse = (l: string) => {
+    try {
+      return parseIpv4(l);
+    } catch (e) {
+      if (options.inetAton) return parseInetAton(l);
+      throw e;
+    }
+  };
   try {
-    return { output: lines.map((l) => describeIpv4(parseIpv4(l))).join("\n\n"), error: null };
+    const nums = lines.map(parse);
+    switch (options.output ?? "details") {
+      case "dotted":
+        return { output: nums.map(toDotted).join("\n"), error: null };
+      case "integer":
+        return { output: nums.map(String).join("\n"), error: null };
+      case "hex":
+        return { output: nums.map(hexOf).join("\n"), error: null };
+      case "binary":
+        return { output: nums.map(binDotted).join("\n"), error: null };
+      case "csv":
+        return {
+          output: ["input,dotted,integer,hex", ...nums.map((n, i) => `${lines[i]!.includes(",") ? `"${lines[i]}"` : lines[i]},${toDotted(n)},${n},${hexOf(n)}`)].join("\n"),
+          error: null,
+        };
+    }
+    return {
+      output: nums
+        .map((n, i) => {
+          const d = describeIpv4(n);
+          // Flag inputs that only parse as inet_aton: they look like something else to a human.
+          return options.inetAton && lines[i] !== toDotted(n) && !/^(0x|0b)?[0-9a-f]+$/i.test(lines[i]!)
+            ? `Input            ${lines[i]}  →  resolves to ${toDotted(n)}\n${d}`
+            : d;
+        })
+        .join("\n\n"),
+      error: null,
+    };
   } catch (e) {
     return { output: "", error: { message: e instanceof Error ? e.message : "Could not parse the address." } };
   }

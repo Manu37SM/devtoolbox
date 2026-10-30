@@ -43,19 +43,31 @@ function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
-function buildSentence(variant: PlaceholderTextVariant, wordCount: number, rng: () => number): string {
+function buildSentence(variant: PlaceholderTextVariant, wordCount: number, rng: () => number, withOpener = true): string {
   const bank = WORD_BANKS[variant];
   const words = Array.from({ length: wordCount }, () => pick(bank, rng));
-  const sentence = `${OPENERS[variant]} ${words.join(", ")}.`;
+  const sentence = withOpener ? `${OPENERS[variant]} ${words.join(", ")}.` : `${words.join(", ")}.`;
   return capitalize(sentence);
 }
 
-function buildParagraph(variant: PlaceholderTextVariant, sentenceCount: number, rng: () => number): string {
-  return Array.from({ length: sentenceCount }, () => buildSentence(variant, 6, rng)).join(" ");
+function buildParagraph(
+  variant: PlaceholderTextVariant,
+  sentenceCount: number,
+  rng: () => number,
+  opener: (index: number) => boolean,
+  wordsPerSentence = 6,
+  offset = 0,
+): string {
+  return Array.from({ length: sentenceCount }, (_, i) => buildSentence(variant, wordsPerSentence, rng, opener(offset + i))).join(" ");
+}
+
+function wrap(blocks: string[], format: PlaceholderTextOptions["format"] | undefined, sep: string): string {
+  if (format === "html") return blocks.map((b) => `<p>${b}</p>`).join("\n");
+  return blocks.join(sep);
 }
 
 export function generatePlaceholderText(
-  options: PlaceholderTextOptions,
+  options: Partial<PlaceholderTextOptions> & Pick<PlaceholderTextOptions, "variant" | "unit" | "count">,
   rng: () => number = Math.random,
 ): PlaceholderTextResult {
   if (!Number.isInteger(options.count) || options.count < 1 || options.count > 50) {
@@ -72,11 +84,16 @@ export function generatePlaceholderText(
    return { output: words.slice(0, options.count).join(" "), error: null };
   }
 
+  const mode = options.opener ?? "every";
+  const opener = (i: number) => mode === "every" || (mode === "first" && i === 0);
+  const wps = options.wordsPerSentence ?? 6;
+
   if (options.unit === "sentences") {
-    const sentences = Array.from({ length: options.count }, () => buildSentence(options.variant, 6, rng));
-    return { output: sentences.join(" "), error: null };
+    const sentences = Array.from({ length: options.count }, (_, i) => buildSentence(options.variant, wps, rng, opener(i)));
+    return { output: wrap([sentences.join(" ")], options.format, " "), error: null };
   }
 
-  const paragraphs = Array.from({ length: options.count }, () => buildParagraph(options.variant, 4, rng));
-  return { output: paragraphs.join("\n\n"), error: null };
+  const spp = options.sentencesPerParagraph ?? 4;
+  const paragraphs = Array.from({ length: options.count }, (_, p) => buildParagraph(options.variant, spp, rng, opener, wps, p * spp));
+  return { output: wrap(paragraphs, options.format, "\n\n"), error: null };
 }

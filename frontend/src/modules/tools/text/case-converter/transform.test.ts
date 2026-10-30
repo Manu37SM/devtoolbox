@@ -38,4 +38,46 @@ describe("convertCase", () => {
   it("returns empty string for empty/whitespace input", () => {
     expect(convertCase("   ", { target: "camel" })).toBe("");
   });
+
+  it("splits acronyms followed by words", () => {
+    expect(convertCase("XMLHttpRequest", { target: "snake" })).toBe("xml_http_request");
+    expect(convertCase("parseHTMLString", { target: "kebab" })).toBe("parse-html-string");
+    expect(convertCase("userID", { target: "constant" })).toBe("USER_ID");
+  });
+
+  it("treats punctuation as a separator for identifier cases", () => {
+    expect(convertCase("user.first-name (primary)", { target: "camel" })).toBe("userFirstNamePrimary");
+    expect(convertCase("Ünïcode wörds", { target: "snake" })).toBe("ünïcode_wörds");
+  });
 });
+
+describe("convertCase options", () => {
+  it("adds dot, path and Train cases", () => {
+    expect(convertCase("helloWorld", { target: "dot" })).toBe("hello.world");
+    expect(convertCase("helloWorld", { target: "path" })).toBe("hello/world");
+    expect(convertCase("hello_world", { target: "train" })).toBe("Hello-World");
+  });
+
+  it("converts each line separately", () => {
+    expect(convertCase("first_name\n\nlast_name", { target: "camel", perLine: true })).toBe("firstName\n\nlastName");
+    expect(convertCase("first_name\nlast_name", { target: "camel" })).toBe("firstNameLastName");
+  });
+
+  it("can preserve acronyms", () => {
+    expect(convertCase("user_ID_URL", { target: "camel", preserveAcronyms: true })).toBe("userIDURL");
+    expect(convertCase("xml parser for API", { target: "pascal", preserveAcronyms: true })).toBe("XmlParserForAPI");
+    expect(convertCase("user_ID", { target: "camel" })).toBe("userId");
+  });
+
+  it("can split digits into their own words", () => {
+    expect(convertCase("version2Update", { target: "snake" })).toBe("version2_update");
+    expect(convertCase("version2Update", { target: "snake", splitDigits: true })).toBe("version_2_update");
+  });
+
+  it("smart title case keeps minor words lower-case except at the ends", () => {
+    expect(convertCase("the lord of the rings", { target: "title", smartTitle: true })).toBe("The Lord of the Rings");
+    expect(convertCase("what are you looking for", { target: "title", smartTitle: true })).toBe("What Are You Looking For");
+    expect(convertCase("the lord of the rings", { target: "title" })).toBe("The Lord Of The Rings");
+  });
+});
+

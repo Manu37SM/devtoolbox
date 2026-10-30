@@ -35,7 +35,7 @@ export function HttpHeaderAnalyzerToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="HTTP/2 200\ncontent-type: text/html"
+                placeholder={"HTTP/2 200\ncontent-type: text/html"}
                 aria-label="Response headers"
                 className="font-mono"
               />

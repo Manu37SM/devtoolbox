@@ -62,7 +62,7 @@ export function MathEvaluatorToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="price = 1200\nprice * 1.18"
+                placeholder={"price = 1200\nprice * 1.18"}
                 aria-label="Expressions (one per line)"
                 className="font-mono"
               />

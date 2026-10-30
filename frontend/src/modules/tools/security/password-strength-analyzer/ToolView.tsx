@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { analyzePassword } from "./transform";
-import type { PasswordStrengthScore } from "./schema";
+import { passwordStrengthOptionsSchema, type PasswordStrengthOptions, type PasswordStrengthScore } from "./schema";
 
 const SCORE_BAR_COLOR: Record<PasswordStrengthScore, string> = {
   0: "bg-red-500",
@@ -24,7 +24,8 @@ export function PasswordStrengthAnalyzerToolView() {
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
 
-  const result = useMemo(() => analyzePassword(password), [password]);
+  const [options, setOptions] = useState<PasswordStrengthOptions>(() => passwordStrengthOptionsSchema.parse({}));
+  const result = useMemo(() => analyzePassword(password, options), [password, options]);
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -54,6 +55,57 @@ export function PasswordStrengthAnalyzerToolView() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Attack
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.scenario}
+            onChange={(e) => setOptions((o) => ({ ...o, scenario: e.target.value as PasswordStrengthOptions["scenario"] }))}
+          >
+            <option value="offline-fast">Offline, fast hash (MD5/SHA-1)</option>
+            <option value="offline-slow">Offline, bcrypt/Argon2</option>
+            <option value="online">Online, no rate limit</option>
+            <option value="online-throttled">Online, rate-limited</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Policy
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.policy}
+            onChange={(e) => setOptions((o) => ({ ...o, policy: e.target.value as PasswordStrengthOptions["policy"] }))}
+          >
+            <option value="none">None</option>
+            <option value="nist">NIST SP 800-63B</option>
+            <option value="pci">PCI DSS 4.0</option>
+            <option value="custom">Custom minimum length</option>
+          </select>
+        </label>
+        {options.policy === "custom" && (
+          <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+            Min length
+            <input
+              type="number"
+              min={1}
+              max={128}
+              value={options.customMinLength}
+              onChange={(e) => setOptions((o) => ({ ...o, customMinLength: Math.min(128, Math.max(1, Number(e.target.value) || 0)) }))}
+              className="w-16 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            />
+          </label>
+        )}
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Personal words
+          <input
+            type="text"
+            value={options.userInputs}
+            placeholder="name, company, email"
+            onChange={(e) => setOptions((o) => ({ ...o, userInputs: e.target.value }))}
+            className="w-56 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1 font-mono text-sm"
+          />
+        </label>
+      </div>
       <div className="flex flex-col gap-1.5">
         <div className="h-2 w-full overflow-hidden rounded-full bg-bg-raised">
           <div
@@ -68,6 +120,35 @@ export function PasswordStrengthAnalyzerToolView() {
           </span>
         </div>
       </div>
+
+      {password && result.policy && (
+        <div
+          role="status"
+          className={`rounded-md border p-2 text-sm ${result.policy.passed ? "border-success/40 text-success" : "border-danger/40 text-danger"}`}
+        >
+          {result.policy.name}: {result.policy.passed ? "meets the policy" : "does not meet the policy"}
+          {result.policy.failures.length > 0 && (
+            <ul className="mt-1 list-disc pl-5 text-xs">
+              {result.policy.failures.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {password && result.crackTimes && (
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-border-subtle">
+            {result.crackTimes.map((c) => (
+              <tr key={c.scenario} className={c.scenario === options.scenario ? "font-medium text-text-primary" : "text-text-secondary"}>
+                <td className="py-1">{c.label}</td>
+                <td className="py-1 text-right font-mono">{c.time}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <div className="min-h-0 flex-1 overflow-auto rounded-md border border-border-default p-3">
         <p className="mb-2 text-sm font-medium text-text-secondary">Feedback</p>

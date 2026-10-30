@@ -42,7 +42,7 @@ export function KubernetesResourceConverterToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="cpu: 250m\nmemory: 512Mi"
+                placeholder={"cpu: 250m\nmemory: 512Mi"}
                 aria-label="Quantities (one per line, e.g. cpu: 250m)"
                 className="font-mono"
               />

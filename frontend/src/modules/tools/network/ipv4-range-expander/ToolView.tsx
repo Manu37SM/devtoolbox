@@ -33,7 +33,7 @@ export function Ipv4RangeExpanderToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="192.168.0.1 - 192.168.0.10\n10.0.0.0/22"
+                placeholder={"192.168.0.1 - 192.168.0.10\n10.0.0.0/22"}
                 aria-label="Range (start - end) or CIDR, one per line"
                 className="font-mono"
               />

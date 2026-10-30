@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { convertPunycode, domainFromPunycode, domainToPunycode } from "./transform";
+import { spoofingWarnings } from "./transform";
 
 describe("domainToPunycode", () => {
   it("encodes a German umlaut domain", () => {
@@ -57,3 +58,33 @@ describe("convertPunycode", () => {
     expect(convertPunycode("xn--mller-kva.de", "decode").output).toBe("müller.de");
   });
 });
+
+describe("punycode options (expected values from Node's url.domainToASCII)", () => {
+  it("normalises case, full-width forms and ideographic dots", () => {
+    expect(convertPunycode("MÜNCHEN.de", "encode").output).toBe("xn--mnchen-3ya.de");
+    expect(convertPunycode("münchen。de", "encode").output).toBe("xn--mnchen-3ya.de");
+    expect(convertPunycode("ｅｘａｍｐｌｅ.com", "encode").output).toBe("example.com");
+    expect(convertPunycode("MÜNCHEN.de", "encode", { normalize: false }).output).not.toBe("xn--mnchen-3ya.de");
+  });
+
+  it("converts only the host of URLs and email addresses, line by line", () => {
+    expect(convertPunycode("https://user@münchen.de:8443/straße?q=ä", "encode").output).toBe("https://user@xn--mnchen-3ya.de:8443/straße?q=ä");
+    expect(convertPunycode("info@bücher.example", "encode").output).toBe("info@xn--bcher-kva.example");
+    expect(convertPunycode("münchen.de\n\nxn--bcher-kva.example", "decode").output).toBe("münchen.de\n\nbücher.example");
+  });
+
+  it("warns about homographs", () => {
+    expect(convertPunycode("xn--80ak6aa92e.com", "decode")).toMatchObject({ output: "аррӏе.com" });
+    expect(convertPunycode("xn--80ak6aa92e.com", "decode").warnings![0]).toContain('can pass for "apple"');
+    expect(spoofingWarnings("аpple.com")[0]).toContain("mixes Cyrillic and Latin");
+    expect(spoofingWarnings("münchen.de")).toEqual([]);
+    expect(spoofingWarnings("東京タワー.jp")).toEqual([]);
+    expect(spoofingWarnings("пример.рф")).toEqual([]);
+    expect(convertPunycode("аpple.com", "encode", { checkSpoofing: false }).warnings).toBeUndefined();
+  });
+
+  it("warns about over-long labels", () => {
+    expect(convertPunycode("ü" + "a".repeat(70) + ".de", "encode").warnings![0]).toContain("DNS allows 63");
+  });
+});
+

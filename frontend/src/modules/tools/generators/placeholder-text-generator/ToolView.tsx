@@ -3,9 +3,14 @@
 import { useMemo, useState } from "react";
 import { OutputPane } from "@/components/tools/OutputPane";
 import { generatePlaceholderText } from "./transform";
-import type { PlaceholderTextOptions, PlaceholderTextUnit, PlaceholderTextVariant } from "./schema";
+import {
+  placeholderTextOptionsSchema,
+  type PlaceholderTextOptions,
+  type PlaceholderTextUnit,
+  type PlaceholderTextVariant,
+} from "./schema";
 
-const defaultOptions: PlaceholderTextOptions = { variant: "hipster", unit: "paragraphs", count: 3 };
+const defaultOptions: PlaceholderTextOptions = placeholderTextOptionsSchema.parse({});
 
 export function PlaceholderTextGeneratorToolView() {
   const [options, setOptions] = useState<PlaceholderTextOptions>(defaultOptions);
@@ -53,6 +58,57 @@ export function PlaceholderTextGeneratorToolView() {
             aria-label="Count"
           />
         </label>
+        <label className="flex flex-col gap-1 text-sm text-text-secondary">
+          Opener
+          <select
+            value={options.opener}
+            onChange={(e) => patch({ opener: e.target.value as PlaceholderTextOptions["opener"] })}
+            className="rounded-sm border border-border-default bg-bg-raised px-2 py-2"
+          >
+            <option value="every">Every sentence</option>
+            <option value="first">First sentence only</option>
+            <option value="none">None</option>
+          </select>
+        </label>
+        {options.unit !== "words" && (
+          <label className="flex flex-col gap-1 text-sm text-text-secondary">
+            Words per sentence
+            <input
+              type="number"
+              min={2}
+              max={30}
+              value={options.wordsPerSentence}
+              onChange={(e) => patch({ wordsPerSentence: Math.min(30, Math.max(2, Number(e.target.value) || 6)) })}
+              className="w-20 rounded-sm border border-border-default bg-bg-raised px-2 py-2 font-mono text-sm"
+            />
+          </label>
+        )}
+        {options.unit === "paragraphs" && (
+          <label className="flex flex-col gap-1 text-sm text-text-secondary">
+            Sentences per paragraph
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={options.sentencesPerParagraph}
+              onChange={(e) => patch({ sentencesPerParagraph: Math.min(20, Math.max(1, Number(e.target.value) || 4)) })}
+              className="w-20 rounded-sm border border-border-default bg-bg-raised px-2 py-2 font-mono text-sm"
+            />
+          </label>
+        )}
+        {options.unit !== "words" && (
+          <label className="flex flex-col gap-1 text-sm text-text-secondary">
+            Format
+            <select
+              value={options.format}
+              onChange={(e) => patch({ format: e.target.value as PlaceholderTextOptions["format"] })}
+              className="rounded-sm border border-border-default bg-bg-raised px-2 py-2"
+            >
+              <option value="text">Plain text</option>
+              <option value="html">HTML &lt;p&gt;</option>
+            </select>
+          </label>
+        )}
         <button
           type="button"
           onClick={() => setNonce((n) => n + 1)}

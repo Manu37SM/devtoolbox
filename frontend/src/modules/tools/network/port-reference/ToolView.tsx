@@ -45,7 +45,7 @@ export function PortReferenceToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="8080\nkafka\n8000-8100"
+                placeholder={"8080\nkafka\n8000-8100"}
                 aria-label="Port, range or name (one per line; empty = all)"
                 className="font-mono"
               />

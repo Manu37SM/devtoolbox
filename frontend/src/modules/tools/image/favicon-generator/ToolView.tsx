@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ImageDropzone } from "@/components/tools/ImageDropzone";
 import { Button } from "@/components/ui/button";
 import { generateFavicons, bundleFaviconsAsZip, type GeneratedFaviconImage } from "./transform";
-import { STANDARD_FAVICON_SIZES } from "./schema";
+import { faviconGeneratorOptionsSchema, STANDARD_FAVICON_SIZES, type FaviconGeneratorOptions } from "./schema";
 
 export function FaviconGeneratorToolView() {
   const [file, setFile] = useState<File | null>(null);
@@ -12,6 +12,7 @@ export function FaviconGeneratorToolView() {
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [zipUrl, setZipUrl] = useState<string | null>(null);
+  const [options, setOptions] = useState<FaviconGeneratorOptions>(() => faviconGeneratorOptionsSchema.parse({}));
 
   const handleFileSelect = useCallback((selected: File) => {
     setFile(selected);
@@ -29,7 +30,7 @@ export function FaviconGeneratorToolView() {
     if (!file) return;
     let cancelled = false;
     setIsGenerating(true);
-    generateFavicons(file, [...STANDARD_FAVICON_SIZES]).then((result) => {
+    generateFavicons(file, [...STANDARD_FAVICON_SIZES], options).then((result) => {
       if (cancelled) return;
       setImages(result.images);
       setError(result.error);
@@ -38,7 +39,7 @@ export function FaviconGeneratorToolView() {
     return () => {
       cancelled = true;
     };
-  }, [file]);
+  }, [file, options]);
 
   useEffect(() => {
     if (images.length === 0) {
@@ -47,7 +48,11 @@ export function FaviconGeneratorToolView() {
     }
     let cancelled = false;
     let objectUrl: string | null = null;
-    bundleFaviconsAsZip(images).then((zipBlob) => {
+    bundleFaviconsAsZip(images, {
+      full: options.bundle === "full",
+      appName: options.appName,
+      themeColor: options.background || "#ffffff",
+    }).then((zipBlob) => {
       if (cancelled) return;
       objectUrl = URL.createObjectURL(zipBlob);
       setZipUrl(objectUrl);
@@ -56,7 +61,7 @@ export function FaviconGeneratorToolView() {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [images]);
+  }, [images, options.bundle, options.appName, options.background]);
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -68,6 +73,80 @@ export function FaviconGeneratorToolView() {
         onClear={handleClear}
       />
 
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Padding %
+          <input
+            type="number"
+            min={0}
+            max={40}
+            value={options.padding}
+            onChange={(e) => setOptions((o) => ({ ...o, padding: Math.min(40, Math.max(0, Number(e.target.value) || 0)) }))}
+            className="w-16 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Rounded corners %
+          <input
+            type="number"
+            min={0}
+            max={50}
+            value={options.cornerRadius}
+            onChange={(e) => setOptions((o) => ({ ...o, cornerRadius: Math.min(50, Math.max(0, Number(e.target.value) || 0)) }))}
+            className="w-16 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+          />
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Fit
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.fit}
+            onChange={(e) => setOptions((o) => ({ ...o, fit: e.target.value as FaviconGeneratorOptions["fit"] }))}
+          >
+            <option value="contain">Fit inside</option>
+            <option value="cover">Fill & crop</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={options.background !== ""}
+            onChange={(e) => setOptions((o) => ({ ...o, background: e.target.checked ? "#ffffff" : "" }))}
+          />
+          Background
+          {options.background !== "" && (
+            <input
+              type="color"
+              aria-label="Background colour"
+              value={options.background}
+              onChange={(e) => setOptions((o) => ({ ...o, background: e.target.value }))}
+            />
+          )}
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+          Zip contents
+          <select
+            className="rounded-sm border border-border-default bg-bg-raised px-1.5 py-1"
+            value={options.bundle}
+            onChange={(e) => setOptions((o) => ({ ...o, bundle: e.target.value as FaviconGeneratorOptions["bundle"] }))}
+          >
+            <option value="full">Full set (ico, manifest, snippet)</option>
+            <option value="basic">PNGs only</option>
+          </select>
+        </label>
+        {options.bundle === "full" && (
+          <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+            App name
+            <input
+              type="text"
+              value={options.appName}
+              placeholder="My App"
+              onChange={(e) => setOptions((o) => ({ ...o, appName: e.target.value }))}
+              className="w-32 rounded-sm border border-border-default bg-bg-raised px-1.5 py-1 font-mono text-sm"
+            />
+          </label>
+        )}
+      </div>
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}

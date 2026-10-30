@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { generatePlaceholderImage, placeholderImageToDataUri } from "./transform";
 import type { PlaceholderImageOptions } from "./schema";
 
-const base: PlaceholderImageOptions = {
+const base: Pick<PlaceholderImageOptions, "width" | "height" | "backgroundColor" | "textColor" | "text"> = {
   width: 600,
   height: 400,
   backgroundColor: "#94a3b8",
@@ -52,3 +52,31 @@ describe("placeholderImageToDataUri", () => {
     expect(uri.startsWith("data:image/svg+xml,")).toBe(true);
   });
 });
+
+describe("placeholder image options", () => {
+  const base = { width: 300, height: 150, backgroundColor: "#cccccc", textColor: "#333333" };
+  it("keeps the old markup with default options", () => {
+    expect(generatePlaceholderImage(base).output).toBe(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="150" viewBox="0 0 300 150" role="img" aria-label="300×150">
+  <rect width="100%" height="100%" fill="#cccccc"/>
+  <text x="50%" y="50%" fill="#333333" font-family="sans-serif" font-size="19" text-anchor="middle" dominant-baseline="middle">300×150</text>
+</svg>`,
+    );
+  });
+
+  it("supports font size, rounded corners and patterns", () => {
+    const svg = generatePlaceholderImage({ ...base, fontSize: 40, cornerRadius: 12, pattern: "cross" }).output;
+    expect(svg).toContain('font-size="40"');
+    expect(svg).toContain('<rect width="100%" height="100%" fill="#cccccc" rx="12"/>');
+    expect(svg).toContain('<path d="M0 0L300 150M300 0L0 150"');
+    expect(svg).toContain('clip-path="url(#c)"');
+    expect(generatePlaceholderImage({ ...base, pattern: "grid" }).output).toContain("M15 0V150");
+  });
+
+  it("prints dimensions under custom text", () => {
+    const svg = generatePlaceholderImage({ ...base, text: "Hero", showDimensions: true }).output;
+    expect(svg).toContain(">Hero</text>");
+    expect(svg).toContain(">300×150</text>");
+  });
+});
+

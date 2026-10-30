@@ -58,8 +58,8 @@ describe("convertDockerRun", () => {
   });
 
   it("lists flags it could not convert", () => {
-    const out = convertDockerRun("docker run --rm --ulimit nofile=1024 --sysctl a=b alpine", opts).output;
-    expect(out.split("\n")[0]).toMatch(/^# Not converted: .*--ulimit.*--sysctl.*--rm/);
+    const out = convertDockerRun("docker run --rm --label-file l.txt --detach-keys ctrl-x alpine", opts).output;
+    expect(out.split("\n")[0]).toMatch(/^# Not converted: .*--label-file.*--detach-keys.*--rm/);
   });
 
   it("reports errors and handles empty input", () => {
@@ -67,3 +67,47 @@ describe("convertDockerRun", () => {
     expect(convertDockerRun("", opts)).toEqual({ output: "", error: null });
   });
 });
+
+describe("convertDockerRun options", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const y = (cmd: string, o = {}) => load(convertDockerRun(cmd, o).output) as Record<string, any>;
+  const PG = "docker run -d --name db -e POSTGRES_USER=app -e POSTGRES_PASSWORD=s3cret -e TZ postgres:16";
+
+  it("writes environment as a map and renames the service", () => {
+    const d = y(PG, { envStyle: "map", serviceName: "database" });
+    expect(d.services.database.environment).toEqual({ POSTGRES_USER: "app", POSTGRES_PASSWORD: "s3cret", TZ: null });
+  });
+
+  it("moves secret values to ${VAR} references and a .env listing", () => {
+    const out = convertDockerRun(PG, { extractSecrets: true }).output;
+    expect(out).toContain("POSTGRES_PASSWORD=${POSTGRES_PASSWORD}");
+    expect(out).toContain("POSTGRES_USER=app");
+    expect(out).toContain("# .env (keep out of version control)\n# POSTGRES_PASSWORD=s3cret");
+  });
+
+  it("can drop container_name and make networks local", () => {
+    const d = y("docker run --name api --network backend nginx", { containerName: false, externalNetworks: false });
+    expect(d.services.api.container_name).toBeUndefined();
+    expect(d.networks).toEqual({ backend: {} });
+  });
+
+  it("converts several docker run commands into one file", () => {
+    const d = y(`docker run -d --name db postgres:16 && docker run -d --name web -p 80:80 \\\n  nginx\ndocker run redis`);
+    expect(Object.keys(d.services)).toEqual(["db", "web", "redis"]);
+    expect(d.services.web.ports).toEqual(["80:80"]);
+  });
+
+  it("maps logging, ulimits, sysctls and --mount", () => {
+    const d = y(
+      "docker run --log-driver json-file --log-opt max-size=10m --ulimit nofile=1024:2048 --ulimit nproc=512 --sysctl net.core.somaxconn=1024 --mount type=volume,source=data,target=/var/lib/data,readonly --pull always alpine",
+    );
+    const s = d.services.alpine;
+    expect(s.logging).toEqual({ driver: "json-file", options: { "max-size": "10m" } });
+    expect(s.ulimits).toEqual({ nofile: { soft: 1024, hard: 2048 }, nproc: 512 });
+    expect(s.sysctls).toEqual({ "net.core.somaxconn": "1024" });
+    expect(s.volumes).toEqual([{ type: "volume", source: "data", target: "/var/lib/data", read_only: true }]);
+    expect(s.pull_policy).toBe("always");
+    expect(d.volumes).toEqual({ data: {} });
+  });
+});
+

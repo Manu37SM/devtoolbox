@@ -89,7 +89,7 @@ export function CspBuilderToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="script-src https://cdn.example.com\nconnect-src https://api.example.com"
+                placeholder={"script-src https://cdn.example.com\nconnect-src https://api.example.com"}
                 aria-label="Extra sources (one directive per line)"
                 className="font-mono"
               />

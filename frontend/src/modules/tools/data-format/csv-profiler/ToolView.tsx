@@ -31,7 +31,7 @@ export function CsvProfilerToolView() {
             <option value="auto">{"Auto-detect"}</option>
             <option value=",">{"Comma"}</option>
             <option value=";">{"Semicolon"}</option>
-            <option value="\t">{"Tab"}</option>
+            <option value={"\t"}>{"Tab"}</option>
             <option value="|">{"Pipe"}</option>
           </select>
         </label>
