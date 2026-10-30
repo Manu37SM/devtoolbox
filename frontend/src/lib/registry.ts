@@ -338,6 +338,20 @@ import { changelogGeneratorTool } from "@/modules/tools/text/changelog-generator
 import { markdownJiraConverterTool } from "@/modules/tools/text/markdown-jira-converter";
 import { templateBulkGeneratorTool } from "@/modules/tools/text/template-bulk-generator";
 import { unifiedDiffApplierTool } from "@/modules/tools/text/unified-diff-applier";
+import { asciiTreeGeneratorTool } from "@/modules/tools/text/ascii-tree-generator";
+import { textWrapFormatterTool } from "@/modules/tools/text/text-wrap-formatter";
+import { mergeConflictResolverTool } from "@/modules/tools/text/merge-conflict-resolver";
+import { csvDiffTool } from "@/modules/tools/data-format/csv-diff";
+import { csvJoinTool } from "@/modules/tools/data-format/csv-join";
+import { sqlInsertParserTool } from "@/modules/tools/data-format/sql-insert-parser";
+import { jsonSchemaSampleGeneratorTool } from "@/modules/tools/data-format/json-schema-sample-generator";
+import { sourceMapResolverTool } from "@/modules/tools/code/source-map-resolver";
+import { cronToSystemdTimerTool } from "@/modules/tools/code/cron-to-systemd-timer";
+import { sshConfigGeneratorTool } from "@/modules/tools/generators/ssh-config-generator";
+import { matrixCalculatorTool } from "@/modules/tools/converters/matrix-calculator";
+import { probabilityCalculatorTool } from "@/modules/tools/converters/probability-calculator";
+import { weekNumberCalculatorTool } from "@/modules/tools/converters/week-number-calculator";
+import { csrDecoderTool } from "@/modules/tools/security/csr-decoder";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -619,6 +633,20 @@ export const toolRegistry: ToolRegistryEntry[] = [
   markdownJiraConverterTool,
   templateBulkGeneratorTool,
   unifiedDiffApplierTool,
+  asciiTreeGeneratorTool,
+  textWrapFormatterTool,
+  mergeConflictResolverTool,
+  csvDiffTool,
+  csvJoinTool,
+  sqlInsertParserTool,
+  jsonSchemaSampleGeneratorTool,
+  sourceMapResolverTool,
+  cronToSystemdTimerTool,
+  sshConfigGeneratorTool,
+  matrixCalculatorTool,
+  probabilityCalculatorTool,
+  weekNumberCalculatorTool,
+  csrDecoderTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

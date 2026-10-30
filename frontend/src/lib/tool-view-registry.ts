@@ -334,6 +334,20 @@ import { ChangelogGeneratorToolView } from "@/modules/tools/text/changelog-gener
 import { MarkdownJiraConverterToolView } from "@/modules/tools/text/markdown-jira-converter/ToolView";
 import { TemplateBulkGeneratorToolView } from "@/modules/tools/text/template-bulk-generator/ToolView";
 import { UnifiedDiffApplierToolView } from "@/modules/tools/text/unified-diff-applier/ToolView";
+import { AsciiTreeGeneratorToolView } from "@/modules/tools/text/ascii-tree-generator/ToolView";
+import { TextWrapFormatterToolView } from "@/modules/tools/text/text-wrap-formatter/ToolView";
+import { MergeConflictResolverToolView } from "@/modules/tools/text/merge-conflict-resolver/ToolView";
+import { CsvDiffToolView } from "@/modules/tools/data-format/csv-diff/ToolView";
+import { CsvJoinToolView } from "@/modules/tools/data-format/csv-join/ToolView";
+import { SqlInsertParserToolView } from "@/modules/tools/data-format/sql-insert-parser/ToolView";
+import { JsonSchemaSampleGeneratorToolView } from "@/modules/tools/data-format/json-schema-sample-generator/ToolView";
+import { SourceMapResolverToolView } from "@/modules/tools/code/source-map-resolver/ToolView";
+import { CronToSystemdTimerToolView } from "@/modules/tools/code/cron-to-systemd-timer/ToolView";
+import { SshConfigGeneratorToolView } from "@/modules/tools/generators/ssh-config-generator/ToolView";
+import { MatrixCalculatorToolView } from "@/modules/tools/converters/matrix-calculator/ToolView";
+import { ProbabilityCalculatorToolView } from "@/modules/tools/converters/probability-calculator/ToolView";
+import { WeekNumberCalculatorToolView } from "@/modules/tools/converters/week-number-calculator/ToolView";
+import { CsrDecoderToolView } from "@/modules/tools/security/csr-decoder/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -615,4 +629,18 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "markdown-jira-converter": MarkdownJiraConverterToolView,
   "template-bulk-generator": TemplateBulkGeneratorToolView,
   "unified-diff-applier": UnifiedDiffApplierToolView,
+  "ascii-tree-generator": AsciiTreeGeneratorToolView,
+  "text-wrap-formatter": TextWrapFormatterToolView,
+  "merge-conflict-resolver": MergeConflictResolverToolView,
+  "csv-diff": CsvDiffToolView,
+  "csv-join": CsvJoinToolView,
+  "sql-insert-parser": SqlInsertParserToolView,
+  "json-schema-sample-generator": JsonSchemaSampleGeneratorToolView,
+  "source-map-resolver": SourceMapResolverToolView,
+  "cron-to-systemd-timer": CronToSystemdTimerToolView,
+  "ssh-config-generator": SshConfigGeneratorToolView,
+  "matrix-calculator": MatrixCalculatorToolView,
+  "probability-calculator": ProbabilityCalculatorToolView,
+  "week-number-calculator": WeekNumberCalculatorToolView,
+  "csr-decoder": CsrDecoderToolView,
 };
