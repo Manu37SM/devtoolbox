@@ -72,7 +72,7 @@ export function MarkdownTocGeneratorToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="# Title\n## Section"
+                placeholder={"# Title\n## Section"}
                 aria-label="Markdown"
                 className="font-mono"
               />

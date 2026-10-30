@@ -75,7 +75,7 @@ export function IcsEventGeneratorToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="title: Team sync\nstart: 2026-11-05 14:30\nend: 2026-11-05 15:00"
+                placeholder={"title: Team sync\nstart: 2026-11-05 14:30\nend: 2026-11-05 15:00"}
                 aria-label="Event(s) — key: value lines, blank line between events"
                 className="font-mono"
               />

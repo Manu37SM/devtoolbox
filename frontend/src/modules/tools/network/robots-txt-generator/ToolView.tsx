@@ -59,7 +59,7 @@ export function RobotsTxtGeneratorToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Disallow: /tmp/\nSitemap: https://example.com/sitemap.xml"
+                placeholder={"Disallow: /tmp/\nSitemap: https://example.com/sitemap.xml"}
                 aria-label="Extra rules and sitemaps"
                 className="font-mono"
               />

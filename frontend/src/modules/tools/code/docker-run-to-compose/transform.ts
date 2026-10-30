@@ -83,7 +83,18 @@ function booleanLong(name: string): boolean {
 
 const isBindSource = (src: string) => /^([./~]|[A-Za-z]:[\\/])/.test(src);
 
-export function toCompose(run: ParsedDockerRun): { yaml: string; skipped: string[] } {
+const SECRET_KEY = /(PASS(WORD|WD)?|SECRET|TOKEN|API_?KEY|PRIVATE_?KEY|CREDENTIALS?|AUTH)/i;
+
+interface ServiceBuild {
+  name: string;
+  svc: Record<string, unknown>;
+  skipped: string[];
+  volumes: Set<string>;
+  networks: Set<string>;
+  secrets: [string, string][];
+}
+
+function buildService(run: ParsedDockerRun, o: Partial<DockerRunToComposeOptions>): ServiceBuild {
   const f = (k: string) => run.flags.get(k) ?? [];
   const svc: Record<string, unknown> = {};
   const skipped: string[] = [];
@@ -92,7 +103,7 @@ export function toCompose(run: ParsedDockerRun): { yaml: string; skipped: string
 
   svc.image = run.image;
   const name = f("--name")[0];
-  if (name) svc.container_name = name;
+  if (name && (o.containerName ?? true)) svc.container_name = name;
   if (run.command.length) svc.command = run.command.length === 1 ? run.command[0] : run.command;
   const entrypoint = f("--entrypoint")[0];
   if (entrypoint !== undefined) svc.entrypoint = tokenize(entrypoint);
@@ -106,7 +117,24 @@ export function toCompose(run: ParsedDockerRun): { yaml: string; skipped: string
     }
   }
   if (f("--tmpfs").length) svc.tmpfs = f("--tmpfs");
-  if (f("--env").length) svc.environment = f("--env");
+  const secrets: [string, string][] = [];
+  if (f("--env").length) {
+    const entries = f("--env").map((e) => {
+      const eq = e.indexOf("=");
+      return eq === -1 ? ([e, null] as const) : ([e.slice(0, eq), e.slice(eq + 1)] as const);
+    });
+    const env = entries.map(([k, v]) => {
+      if (v !== null && o.extractSecrets && SECRET_KEY.test(k)) {
+        secrets.push([k, v]);
+        return [k, `\${${k}}`] as const;
+      }
+      return [k, v] as const;
+    });
+    svc.environment =
+      o.envStyle === "map"
+        ? Object.fromEntries(env.map(([k, v]) => [k, v ?? null]))
+        : env.map(([k, v]) => (v === null ? k : `${k}=${v}`));
+  }
   if (f("--env-file").length) svc.env_file = f("--env-file");
 
   const network = f("--network")[0];
@@ -134,6 +162,46 @@ export function toCompose(run: ParsedDockerRun): { yaml: string; skipped: string
   if (f("--security-opt").length) svc.security_opt = f("--security-opt");
   if (f("--shm-size")[0]) svc.shm_size = f("--shm-size")[0];
   if (f("--stop-signal")[0]) svc.stop_signal = f("--stop-signal")[0];
+  if (f("--log-driver")[0] || f("--log-opt").length) {
+    const logging: Record<string, unknown> = {};
+    if (f("--log-driver")[0]) logging.driver = f("--log-driver")[0];
+    if (f("--log-opt").length) logging.options = Object.fromEntries(f("--log-opt").map((x) => x.split(/=(.*)/s).slice(0, 2)));
+    svc.logging = logging;
+  }
+  if (f("--ulimit").length) {
+    svc.ulimits = Object.fromEntries(
+      f("--ulimit").map((u) => {
+        const [k, v = ""] = u.split("=");
+        const [soft, hard] = v.split(":");
+        return [k, hard !== undefined ? { soft: Number(soft), hard: Number(hard) } : Number(soft)];
+      }),
+    );
+  }
+  if (f("--sysctl").length) svc.sysctls = Object.fromEntries(f("--sysctl").map((x) => x.split(/=(.*)/s).slice(0, 2)));
+  if (f("--pid")[0]) svc.pid = f("--pid")[0];
+  if (f("--ipc")[0]) svc.ipc = f("--ipc")[0];
+  if (f("--runtime")[0]) svc.runtime = f("--runtime")[0];
+  if (f("--group-add").length) svc.group_add = f("--group-add");
+  if (f("--cpuset-cpus")[0]) svc.cpuset = f("--cpuset-cpus")[0];
+  if (f("--memory-swap")[0]) svc.memswap_limit = f("--memory-swap")[0];
+  if (f("--link").length) svc.links = f("--link");
+  if (f("--pull")[0]) svc.pull_policy = f("--pull")[0];
+  if (f("--mount").length) {
+    // --mount type=bind,source=./data,target=/data,readonly -> long volume syntax
+    const mounts = f("--mount").map((m) => {
+      const kv = Object.fromEntries(m.split(",").map((p) => (p.includes("=") ? p.split(/=(.*)/s).slice(0, 2) : [p, "true"])));
+      const v: Record<string, unknown> = { type: kv.type ?? "volume" };
+      const src = kv.source ?? kv.src;
+      if (src) {
+        v.source = src;
+        if (v.type === "volume") topVolumes.add(src);
+      }
+      v.target = kv.target ?? kv.destination ?? kv.dst;
+      if (kv.readonly === "true" || kv.ro === "true") v.read_only = true;
+      return v;
+    });
+    svc.volumes = [...((svc.volumes as unknown[] | undefined) ?? []), ...mounts];
+  }
   if (f("--health-cmd")[0]) {
     const hc: Record<string, unknown> = { test: ["CMD-SHELL", f("--health-cmd")[0]] };
     if (f("--health-interval")[0]) hc.interval = f("--health-interval")[0];
@@ -151,7 +219,8 @@ export function toCompose(run: ParsedDockerRun): { yaml: string; skipped: string
     "--name", "--entrypoint", "--publish", "--expose", "--volume", "--tmpfs", "--env", "--env-file", "--network", "--restart",
     "--workdir", "--user", "--hostname", "--cap-add", "--cap-drop", "--memory", "--cpus", "--label", "--add-host", "--dns",
     "--platform", "--device", "--security-opt", "--shm-size", "--stop-signal", "--health-cmd", "--health-interval",
-    "--health-timeout", "--health-retries",
+    "--health-timeout", "--health-retries", "--log-driver", "--log-opt", "--ulimit", "--sysctl", "--pid", "--ipc", "--runtime",
+    "--group-add", "--cpuset-cpus", "--memory-swap", "--link", "--pull", "--mount",
   ]);
   for (const k of run.flags.keys()) if (!handled.has(k)) skipped.push(k);
   for (const b of run.booleans) {
@@ -159,19 +228,58 @@ export function toCompose(run: ParsedDockerRun): { yaml: string; skipped: string
   }
   if (run.booleans.has("--rm")) skipped.push("--rm (Compose has no equivalent; use `docker compose run --rm`)");
 
-  const serviceName = (name ?? run.image.split("/").pop()!.split(":")[0]!.split("@")[0]!).replace(/[^A-Za-z0-9_.-]/g, "-") || "app";
-  const doc: Record<string, unknown> = { services: { [serviceName]: svc } };
-  if (topVolumes.size) doc.volumes = Object.fromEntries(Array.from(topVolumes, (v) => [v, {}]));
-  if (topNetworks.size) doc.networks = Object.fromEntries(Array.from(topNetworks, (n) => [n, { external: true }]));
-  return { yaml: dumpYaml(doc, { indent: 2, lineWidth: -1, noRefs: true }), skipped };
+  const serviceName =
+    (o.serviceName?.trim() || name || run.image.split("/").pop()!.split(":")[0]!.split("@")[0]!).replace(/[^A-Za-z0-9_.-]/g, "-") || "app";
+  return { name: serviceName, svc, skipped, volumes: topVolumes, networks: topNetworks, secrets };
 }
 
-export function convertDockerRun(input: string, _options: DockerRunToComposeOptions): TransformResult {
+function assemble(builds: ServiceBuild[], o: Partial<DockerRunToComposeOptions>): { yaml: string; skipped: string[]; secrets: [string, string][] } {
+  const services: Record<string, unknown> = {};
+  for (const b of builds) {
+    let key = b.name;
+    for (let n = 2; key in services; n++) key = `${b.name}-${n}`;
+    services[key] = b.svc;
+  }
+  const doc: Record<string, unknown> = { services };
+  const vols = new Set(builds.flatMap((b) => [...b.volumes]));
+  const nets = new Set(builds.flatMap((b) => [...b.networks]));
+  if (vols.size) doc.volumes = Object.fromEntries(Array.from(vols, (v) => [v, {}]));
+  if (nets.size) doc.networks = Object.fromEntries(Array.from(nets, (n) => [n, (o.externalNetworks ?? true) ? { external: true } : {}]));
+  return {
+    yaml: dumpYaml(doc, { indent: 2, lineWidth: -1, noRefs: true }),
+    skipped: builds.flatMap((b) => b.skipped),
+    secrets: builds.flatMap((b) => b.secrets),
+  };
+}
+
+export function toCompose(run: ParsedDockerRun, options: Partial<DockerRunToComposeOptions> = {}): { yaml: string; skipped: string[] } {
+  const { yaml, skipped } = assemble([buildService(run, options)], options);
+  return { yaml, skipped };
+}
+
+/** Splits pasted text into separate `docker run` commands, keeping backslash/backtick continuations together. */
+export function splitCommands(input: string): string[] {
+  const joined = input.replace(/[\\`^]\r?\n/g, " ");
+  return joined
+    .split(/\r?\n|&&|;/)
+    .map((l) => l.trim())
+    .filter((l) => /^(sudo\s+)?docker\s+(container\s+)?run\b/i.test(l));
+}
+
+export function convertDockerRun(input: string, options: Partial<DockerRunToComposeOptions> = {}): TransformResult {
   if (input.trim().length === 0) return { output: "", error: null };
   try {
-    const { yaml, skipped } = toCompose(parseDockerRun(input));
+    const cmds = splitCommands(input);
+    const builds =
+      cmds.length > 1
+        ? cmds.map((c) => buildService(parseDockerRun(c), { ...options, serviceName: "" }))
+        : [buildService(parseDockerRun(input), options)];
+    const { yaml, skipped, secrets } = assemble(builds, options);
     const note = skipped.length ? `# Not converted: ${skipped.join(", ")}\n` : "";
-    return { output: note + yaml, error: null };
+    const env = secrets.length
+      ? `\n# .env (keep out of version control)\n${secrets.map(([k, v]) => `# ${k}=${v}`).join("\n")}\n`
+      : "";
+    return { output: note + yaml + env, error: null };
   } catch (e) {
     return { output: "", error: { message: e instanceof Error ? e.message : "Could not parse the docker run command." } };
   }

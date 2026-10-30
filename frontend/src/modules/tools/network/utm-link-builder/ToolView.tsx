@@ -50,7 +50,7 @@ export function UtmLinkBuilderToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="https://example.com/pricing\nsource: newsletter\nmedium: email\ncampaign: spring sale"
+                placeholder={"https://example.com/pricing\nsource: newsletter\nmedium: email\ncampaign: spring sale"}
                 aria-label="URLs and parameters"
                 className="font-mono"
               />

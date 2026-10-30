@@ -42,7 +42,7 @@ export function KubernetesSecretEncoderToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="apiVersion: v1\nkind: Secret\n..."
+                placeholder={"apiVersion: v1\nkind: Secret\n..."}
                 aria-label="Secret YAML or .env"
                 className="font-mono"
               />

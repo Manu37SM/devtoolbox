@@ -49,7 +49,7 @@ export function GlobPatternTesterToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="src/**/*.{ts,tsx}\n---\nsrc/a.ts"
+                placeholder={"src/**/*.{ts,tsx}\n---\nsrc/a.ts"}
                 aria-label="Patterns, then a line with ---, then paths"
                 className="font-mono"
               />

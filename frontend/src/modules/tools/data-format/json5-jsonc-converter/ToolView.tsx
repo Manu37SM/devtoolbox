@@ -57,7 +57,7 @@ export function Json5JsoncConverterToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="{ // comment\n  key: 'value',\n}"
+                placeholder={"{ // comment\n  key: 'value',\n}"}
                 aria-label="JSON5 / JSONC / JSON"
                 className="font-mono"
               />

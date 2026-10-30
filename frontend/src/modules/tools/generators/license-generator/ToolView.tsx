@@ -69,7 +69,7 @@ export function LicenseGeneratorToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="holder: Jane Doe\nyear: 2026"
+                placeholder={"holder: Jane Doe\nyear: 2026"}
                 aria-label="Copyright holder (and optional year)"
                 className=""
               />

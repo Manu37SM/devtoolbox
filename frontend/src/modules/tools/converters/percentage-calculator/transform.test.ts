@@ -36,3 +36,22 @@ describe("calcPercentage", () => {
     expect(run("0.1% of 300").output).toBe("0.1% of 300  =  0.3");
   });
 });
+
+describe("calcPercentage — more phrases and options", () => {
+  it.each([
+    ["30 is 20% of what", "150"],
+    ["200 + 18%", "236"],
+    ["200 - 10%", "180"],
+    ["margin 80 price 100", "20% margin, 25% markup"],
+    ["margin cost 75, 100", "25% margin, 33.333333% markup"],
+  ])("%s = %s", (q, a) => {
+    expect(run(q).output).toBe(`${q}  =  ${a}`);
+  });
+
+  it("controls decimals, grouping and output style", () => {
+    expect(calcPercentage("1 is what % of 3", { decimals: 2 }).output).toBe("1 is what % of 3  =  33.33%");
+    expect(calcPercentage("15% of 12,345,678", { grouping: true }).output).toBe("15% of 12,345,678  =  1,851,851.7");
+    expect(calcPercentage("20% of 150\n10% of 50", { output: "result" }).output).toBe("30\n5");
+  });
+});
+

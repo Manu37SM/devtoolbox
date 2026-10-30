@@ -92,3 +92,37 @@ describe("calculateCidrSubnet", () => {
     expect(result.usableHosts).toBe(14);
   });
 });
+
+describe("calculateCidrSubnet options", () => {
+  it("accepts netmask notation", () => {
+    expect(calculateCidrSubnet("10.1.2.3 255.255.0.0")).toMatchObject({ networkAddress: "10.1.0.0", prefixLength: 16 });
+    expect(calculateCidrSubnet("10.1.2.3/255.255.255.128")).toMatchObject({ prefixLength: 25 });
+    expect(calculateCidrSubnet("10.1.2.3 255.0.255.0").error).toContain("not a contiguous");
+  });
+
+  it("applies cloud reserved addresses", () => {
+    expect(calculateCidrSubnet("10.0.0.0/24", { platform: "aws" })).toMatchObject({ firstHost: "10.0.0.4", lastHost: "10.0.0.254", usableHosts: 251 });
+    expect(calculateCidrSubnet("10.0.0.0/24", { platform: "gcp" })).toMatchObject({ firstHost: "10.0.0.2", lastHost: "10.0.0.253", usableHosts: 252 });
+    expect(calculateCidrSubnet("10.0.0.0/29", { platform: "azure" }).usableHosts).toBe(3);
+    expect(calculateCidrSubnet("10.0.0.0/31", { platform: "aws" }).usableHosts).toBe(0);
+    expect(calculateCidrSubnet("10.0.0.0/24", { platform: "aws" }).platformNote).toContain("AWS");
+  });
+
+  it("splits into subnets", () => {
+    const r = calculateCidrSubnet("192.168.0.0/24", { splitPrefix: 26 });
+    expect(r.subnetCount).toBe(4);
+    expect(r.subnets![3]).toEqual({ cidr: "192.168.0.192/26", first: "192.168.0.193", last: "192.168.0.254", usable: 62 });
+    expect(calculateCidrSubnet("10.0.0.0/8", { splitPrefix: 24 })).toMatchObject({ subnetCount: 65536 });
+    expect(calculateCidrSubnet("10.0.0.0/8", { splitPrefix: 24 }).subnets).toHaveLength(1024);
+    expect(calculateCidrSubnet("10.0.0.0/24", { splitPrefix: 16 }).error).toContain("Can't split");
+  });
+
+  it("shows binary", () => {
+    expect(calculateCidrSubnet("192.168.1.10/24", { showBinary: true }).binary).toEqual({
+      address: "11000000.10101000.00000001.00001010",
+      mask: "11111111.11111111.11111111.00000000",
+      network: "11000000.10101000.00000001.00000000",
+    });
+  });
+});
+

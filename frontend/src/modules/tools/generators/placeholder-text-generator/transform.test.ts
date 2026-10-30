@@ -41,3 +41,28 @@ describe("generatePlaceholderText", () => {
     expect(result.output.split(" ")).toHaveLength(3);
   });
 });
+
+describe("placeholder text options", () => {
+  let seed = 1;
+  const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const base = { variant: "hipster", unit: "paragraphs", count: 2 } as const;
+
+  it("controls the opener", () => {
+    expect(generatePlaceholderText({ ...base, opener: "every" }, rng).output.match(/Hipster ipsum/g)).toHaveLength(8);
+    expect(generatePlaceholderText({ ...base, opener: "first" }, rng).output.match(/Hipster ipsum/g)).toHaveLength(1);
+    expect(generatePlaceholderText({ ...base, opener: "none" }, rng).output).not.toContain("Hipster ipsum");
+  });
+
+  it("sets sentence and paragraph length", () => {
+    const out = generatePlaceholderText({ ...base, count: 1, opener: "none", wordsPerSentence: 3, sentencesPerParagraph: 2 }, rng).output;
+    expect(out.split(". ").length).toBe(2);
+    expect(out.split(".")[0]!.split(", ")).toHaveLength(3);
+  });
+
+  it("wraps paragraphs as HTML", () => {
+    const out = generatePlaceholderText({ ...base, format: "html" }, rng).output;
+    expect(out.split("\n")).toHaveLength(2);
+    expect(out.startsWith("<p>") && out.endsWith("</p>")).toBe(true);
+  });
+});
+

@@ -43,7 +43,7 @@ export function OpenapiViewerToolView() {
               <ToolInput
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="openapi: 3.0.3\ninfo: ..."
+                placeholder={"openapi: 3.0.3\ninfo: ..."}
                 aria-label="OpenAPI / Swagger document (JSON or YAML)"
                 className="font-mono"
               />

@@ -1,5 +1,6 @@
 import { loadImageSource } from "@/lib/image-canvas";
-import type { ColorBlindnessType } from "./schema";
+import type { ColorBlindnessSimulatorOptions, ColorBlindnessType } from "./schema";
+import { MACHADO_MATRICES } from "./machado-matrices";
 
 export interface RgbColor {
   r: number;
@@ -18,22 +19,82 @@ function clamp255(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
 }
 
-export function simulateColorBlindness(color: RgbColor, type: ColorBlindnessType): RgbColor {
-  const [m00, m01, m02, m10, m11, m12, m20, m21, m22] = COLOR_BLINDNESS_MATRICES[type];
-  return {
-    r: clamp255(color.r * m00 + color.g * m01 + color.b * m02),
-    g: clamp255(color.r * m10 + color.g * m11 + color.b * m12),
-    b: clamp255(color.r * m20 + color.g * m21 + color.b * m22),
+type Model = Pick<ColorBlindnessSimulatorOptions, "model" | "severity">;
+
+/** Machado matrix for a severity 0-100, interpolating between the published 10 % steps. */
+export function machadoMatrix(type: Exclude<ColorBlindnessType, "achromatopsia">, severity: number): number[] {
+  const table = MACHADO_MATRICES[type === "protanopia" ? "protan" : type === "deuteranopia" ? "deutan" : "tritan"];
+  const s = Math.min(100, Math.max(0, severity)) / 10;
+  const lo = Math.floor(s);
+  const hi = Math.min(10, lo + 1);
+  const t = s - lo;
+  return table[lo]!.map((v, i) => v * (1 - t) + table[hi]![i]! * t);
+}
+
+const SRGB_TO_LINEAR = Array.from({ length: 256 }, (_, v) => {
+  const c = v / 255;
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+});
+function linearToSrgb(v: number): number {
+  const c = Math.min(1, Math.max(0, v));
+  return clamp255(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055));
+}
+
+function makePixelFn(type: ColorBlindnessType, model: Partial<Model>): (r: number, g: number, b: number) => [number, number, number] {
+  const severity = model.severity ?? 100;
+  if ((model.model ?? "machado") === "simple") {
+    const full = COLOR_BLINDNESS_MATRICES[type];
+    const m = full.map((v, i) => v * (severity / 100) + ([0, 4, 8].includes(i) ? 1 : 0) * (1 - severity / 100));
+    return (r, g, b) => [
+      clamp255(r * m[0]! + g * m[1]! + b * m[2]!),
+      clamp255(r * m[3]! + g * m[4]! + b * m[5]!),
+      clamp255(r * m[6]! + g * m[7]! + b * m[8]!),
+    ];
+  }
+  if (type === "achromatopsia") {
+    const k = severity / 100;
+    return (r, g, b) => {
+      const R = SRGB_TO_LINEAR[r]!;
+      const G = SRGB_TO_LINEAR[g]!;
+      const B = SRGB_TO_LINEAR[b]!;
+      const y = 0.2126 * R + 0.7152 * G + 0.0722 * B; // relative luminance
+      return [linearToSrgb(R + (y - R) * k), linearToSrgb(G + (y - G) * k), linearToSrgb(B + (y - B) * k)];
+    };
+  }
+  const m = machadoMatrix(type, severity);
+  return (r, g, b) => {
+    const R = SRGB_TO_LINEAR[r]!;
+    const G = SRGB_TO_LINEAR[g]!;
+    const B = SRGB_TO_LINEAR[b]!;
+    return [
+      linearToSrgb(R * m[0]! + G * m[1]! + B * m[2]!),
+      linearToSrgb(R * m[3]! + G * m[4]! + B * m[5]!),
+      linearToSrgb(R * m[6]! + G * m[7]! + B * m[8]!),
+    ];
   };
 }
 
-export function applyColorBlindnessToImageData(imageData: ImageData, type: ColorBlindnessType): void {
+export function simulateColorBlindness(color: RgbColor, type: ColorBlindnessType, model: Partial<Model> = {}): RgbColor {
+  const [r, g, b] = makePixelFn(type, model)(color.r, color.g, color.b);
+  return { r, g, b };
+}
+
+export function applyColorBlindnessToImageData(imageData: ImageData, type: ColorBlindnessType, model: Partial<Model> = {}): void {
   const { data } = imageData;
+  const fn = makePixelFn(type, model);
+  // Photos repeat colours a lot; caching per 24-bit colour avoids redoing the maths.
+  const cache = new Map<number, number>();
   for (let i = 0; i < data.length; i += 4) {
-    const result = simulateColorBlindness({ r: data[i]!, g: data[i + 1]!, b: data[i + 2]! }, type);
-    data[i] = result.r;
-    data[i + 1] = result.g;
-    data[i + 2] = result.b;
+    const key = (data[i]! << 16) | (data[i + 1]! << 8) | data[i + 2]!;
+    let out = cache.get(key);
+    if (out === undefined) {
+      const [r, g, b] = fn(data[i]!, data[i + 1]!, data[i + 2]!);
+      out = (r << 16) | (g << 8) | b;
+      if (cache.size < 200_000) cache.set(key, out);
+    }
+    data[i] = (out >> 16) & 255;
+    data[i + 1] = (out >> 8) & 255;
+    data[i + 2] = out & 255;
   }
 }
 
@@ -45,6 +106,7 @@ export interface ColorBlindnessSimulatorResult {
 export async function simulateColorBlindnessOnImage(
   file: File,
   type: ColorBlindnessType,
+  model: Partial<Model> = {},
 ): Promise<ColorBlindnessSimulatorResult> {
   try {
     const source = await loadImageSource(file);
@@ -57,7 +119,7 @@ export async function simulateColorBlindnessOnImage(
     if (!ctx) throw new Error("Canvas 2D context is not available in this browser.");
     ctx.drawImage(source, 0, 0, width, height);
     const imageData = ctx.getImageData(0, 0, width, height);
-    applyColorBlindnessToImageData(imageData, type);
+    applyColorBlindnessToImageData(imageData, type, model);
     ctx.putImageData(imageData, 0, 0);
     return { dataUrl: canvas.toDataURL("image/png"), error: null };
   } catch (err) {
