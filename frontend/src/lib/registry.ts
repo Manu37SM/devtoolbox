@@ -348,6 +348,10 @@ import { jsonSchemaSampleGeneratorTool } from "@/modules/tools/data-format/json-
 import { sourceMapResolverTool } from "@/modules/tools/code/source-map-resolver";
 import { cronToSystemdTimerTool } from "@/modules/tools/code/cron-to-systemd-timer";
 import { sshConfigGeneratorTool } from "@/modules/tools/generators/ssh-config-generator";
+import { matrixCalculatorTool } from "@/modules/tools/converters/matrix-calculator";
+import { probabilityCalculatorTool } from "@/modules/tools/converters/probability-calculator";
+import { weekNumberCalculatorTool } from "@/modules/tools/converters/week-number-calculator";
+import { csrDecoderTool } from "@/modules/tools/security/csr-decoder";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -639,6 +643,10 @@ export const toolRegistry: ToolRegistryEntry[] = [
   sourceMapResolverTool,
   cronToSystemdTimerTool,
   sshConfigGeneratorTool,
+  matrixCalculatorTool,
+  probabilityCalculatorTool,
+  weekNumberCalculatorTool,
+  csrDecoderTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

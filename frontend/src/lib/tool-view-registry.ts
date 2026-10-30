@@ -344,6 +344,10 @@ import { JsonSchemaSampleGeneratorToolView } from "@/modules/tools/data-format/j
 import { SourceMapResolverToolView } from "@/modules/tools/code/source-map-resolver/ToolView";
 import { CronToSystemdTimerToolView } from "@/modules/tools/code/cron-to-systemd-timer/ToolView";
 import { SshConfigGeneratorToolView } from "@/modules/tools/generators/ssh-config-generator/ToolView";
+import { MatrixCalculatorToolView } from "@/modules/tools/converters/matrix-calculator/ToolView";
+import { ProbabilityCalculatorToolView } from "@/modules/tools/converters/probability-calculator/ToolView";
+import { WeekNumberCalculatorToolView } from "@/modules/tools/converters/week-number-calculator/ToolView";
+import { CsrDecoderToolView } from "@/modules/tools/security/csr-decoder/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -635,4 +639,8 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "source-map-resolver": SourceMapResolverToolView,
   "cron-to-systemd-timer": CronToSystemdTimerToolView,
   "ssh-config-generator": SshConfigGeneratorToolView,
+  "matrix-calculator": MatrixCalculatorToolView,
+  "probability-calculator": ProbabilityCalculatorToolView,
+  "week-number-calculator": WeekNumberCalculatorToolView,
+  "csr-decoder": CsrDecoderToolView,
 };
