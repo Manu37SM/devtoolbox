@@ -359,6 +359,13 @@ import { GitlabCiGeneratorToolView } from "@/modules/tools/generators/gitlab-ci-
 import { IsoCodeLookupToolView } from "@/modules/tools/converters/iso-code-lookup/ToolView";
 import { FirewallRuleBuilderToolView } from "@/modules/tools/network/firewall-rule-builder/ToolView";
 import { CaddyfileGeneratorToolView } from "@/modules/tools/generators/caddyfile-generator/ToolView";
+import { LineEndingConverterToolView } from "@/modules/tools/text/line-ending-converter/ToolView";
+import { LogrotateConfigGeneratorToolView } from "@/modules/tools/generators/logrotate-config-generator/ToolView";
+import { SudoersGeneratorToolView } from "@/modules/tools/security/sudoers-generator/ToolView";
+import { HaproxyConfigGeneratorToolView } from "@/modules/tools/generators/haproxy-config-generator/ToolView";
+import { HtaccessGeneratorToolView } from "@/modules/tools/generators/htaccess-generator/ToolView";
+import { AuthorizedKeysBuilderToolView } from "@/modules/tools/security/authorized-keys-builder/ToolView";
+import { MakefileGeneratorToolView } from "@/modules/tools/generators/makefile-generator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -665,4 +672,11 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "iso-code-lookup": IsoCodeLookupToolView,
   "firewall-rule-builder": FirewallRuleBuilderToolView,
   "caddyfile-generator": CaddyfileGeneratorToolView,
+  "line-ending-converter": LineEndingConverterToolView,
+  "logrotate-config-generator": LogrotateConfigGeneratorToolView,
+  "sudoers-generator": SudoersGeneratorToolView,
+  "haproxy-config-generator": HaproxyConfigGeneratorToolView,
+  "htaccess-generator": HtaccessGeneratorToolView,
+  "authorized-keys-builder": AuthorizedKeysBuilderToolView,
+  "makefile-generator": MakefileGeneratorToolView,
 };

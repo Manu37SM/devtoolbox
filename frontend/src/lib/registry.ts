@@ -363,6 +363,13 @@ import { gitlabCiGeneratorTool } from "@/modules/tools/generators/gitlab-ci-gene
 import { isoCodeLookupTool } from "@/modules/tools/converters/iso-code-lookup";
 import { firewallRuleBuilderTool } from "@/modules/tools/network/firewall-rule-builder";
 import { caddyfileGeneratorTool } from "@/modules/tools/generators/caddyfile-generator";
+import { lineEndingConverterTool } from "@/modules/tools/text/line-ending-converter";
+import { logrotateConfigGeneratorTool } from "@/modules/tools/generators/logrotate-config-generator";
+import { sudoersGeneratorTool } from "@/modules/tools/security/sudoers-generator";
+import { haproxyConfigGeneratorTool } from "@/modules/tools/generators/haproxy-config-generator";
+import { htaccessGeneratorTool } from "@/modules/tools/generators/htaccess-generator";
+import { authorizedKeysBuilderTool } from "@/modules/tools/security/authorized-keys-builder";
+import { makefileGeneratorTool } from "@/modules/tools/generators/makefile-generator";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -669,6 +676,13 @@ export const toolRegistry: ToolRegistryEntry[] = [
   isoCodeLookupTool,
   firewallRuleBuilderTool,
   caddyfileGeneratorTool,
+  lineEndingConverterTool,
+  logrotateConfigGeneratorTool,
+  sudoersGeneratorTool,
+  haproxyConfigGeneratorTool,
+  htaccessGeneratorTool,
+  authorizedKeysBuilderTool,
+  makefileGeneratorTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {
