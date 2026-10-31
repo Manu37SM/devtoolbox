@@ -370,6 +370,15 @@ import { haproxyConfigGeneratorTool } from "@/modules/tools/generators/haproxy-c
 import { htaccessGeneratorTool } from "@/modules/tools/generators/htaccess-generator";
 import { authorizedKeysBuilderTool } from "@/modules/tools/security/authorized-keys-builder";
 import { makefileGeneratorTool } from "@/modules/tools/generators/makefile-generator";
+import { base85UuencodeConverterTool } from "@/modules/tools/encoding/base85-uuencode-converter";
+import { businessDaysCalculatorTool } from "@/modules/tools/converters/business-days-calculator";
+import { geohashPlusCodeConverterTool } from "@/modules/tools/converters/geohash-plus-code-converter";
+import { bankIdentifierValidatorTool } from "@/modules/tools/network/bank-identifier-validator";
+import { reverseDnsNameGeneratorTool } from "@/modules/tools/network/reverse-dns-name-generator";
+import { knownHostsHasherTool } from "@/modules/tools/security/known-hosts-hasher";
+import { unixCryptHashGeneratorTool } from "@/modules/tools/security/unix-crypt-hash-generator";
+import { ansiblePlaybookGeneratorTool } from "@/modules/tools/generators/ansible-playbook-generator";
+import { fail2banConfigGeneratorTool } from "@/modules/tools/generators/fail2ban-config-generator";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -683,6 +692,15 @@ export const toolRegistry: ToolRegistryEntry[] = [
   htaccessGeneratorTool,
   authorizedKeysBuilderTool,
   makefileGeneratorTool,
+  base85UuencodeConverterTool,
+  businessDaysCalculatorTool,
+  geohashPlusCodeConverterTool,
+  bankIdentifierValidatorTool,
+  reverseDnsNameGeneratorTool,
+  knownHostsHasherTool,
+  unixCryptHashGeneratorTool,
+  ansiblePlaybookGeneratorTool,
+  fail2banConfigGeneratorTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

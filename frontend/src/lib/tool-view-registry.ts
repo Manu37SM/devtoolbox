@@ -366,6 +366,15 @@ import { HaproxyConfigGeneratorToolView } from "@/modules/tools/generators/hapro
 import { HtaccessGeneratorToolView } from "@/modules/tools/generators/htaccess-generator/ToolView";
 import { AuthorizedKeysBuilderToolView } from "@/modules/tools/security/authorized-keys-builder/ToolView";
 import { MakefileGeneratorToolView } from "@/modules/tools/generators/makefile-generator/ToolView";
+import { Base85UuencodeConverterToolView } from "@/modules/tools/encoding/base85-uuencode-converter/ToolView";
+import { BusinessDaysCalculatorToolView } from "@/modules/tools/converters/business-days-calculator/ToolView";
+import { GeohashPlusCodeConverterToolView } from "@/modules/tools/converters/geohash-plus-code-converter/ToolView";
+import { BankIdentifierValidatorToolView } from "@/modules/tools/network/bank-identifier-validator/ToolView";
+import { ReverseDnsNameGeneratorToolView } from "@/modules/tools/network/reverse-dns-name-generator/ToolView";
+import { KnownHostsHasherToolView } from "@/modules/tools/security/known-hosts-hasher/ToolView";
+import { UnixCryptHashGeneratorToolView } from "@/modules/tools/security/unix-crypt-hash-generator/ToolView";
+import { AnsiblePlaybookGeneratorToolView } from "@/modules/tools/generators/ansible-playbook-generator/ToolView";
+import { Fail2banConfigGeneratorToolView } from "@/modules/tools/generators/fail2ban-config-generator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -679,4 +688,13 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "htaccess-generator": HtaccessGeneratorToolView,
   "authorized-keys-builder": AuthorizedKeysBuilderToolView,
   "makefile-generator": MakefileGeneratorToolView,
+  "base85-uuencode-converter": Base85UuencodeConverterToolView,
+  "business-days-calculator": BusinessDaysCalculatorToolView,
+  "geohash-plus-code-converter": GeohashPlusCodeConverterToolView,
+  "bank-identifier-validator": BankIdentifierValidatorToolView,
+  "reverse-dns-name-generator": ReverseDnsNameGeneratorToolView,
+  "known-hosts-hasher": KnownHostsHasherToolView,
+  "unix-crypt-hash-generator": UnixCryptHashGeneratorToolView,
+  "ansible-playbook-generator": AnsiblePlaybookGeneratorToolView,
+  "fail2ban-config-generator": Fail2banConfigGeneratorToolView,
 };
