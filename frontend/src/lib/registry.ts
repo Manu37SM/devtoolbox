@@ -379,6 +379,18 @@ import { knownHostsHasherTool } from "@/modules/tools/security/known-hosts-hashe
 import { unixCryptHashGeneratorTool } from "@/modules/tools/security/unix-crypt-hash-generator";
 import { ansiblePlaybookGeneratorTool } from "@/modules/tools/generators/ansible-playbook-generator";
 import { fail2banConfigGeneratorTool } from "@/modules/tools/generators/fail2ban-config-generator";
+import { uriTemplateExpanderTool } from "@/modules/tools/network/uri-template-expander";
+import { acceptHeaderNegotiatorTool } from "@/modules/tools/network/accept-header-negotiator";
+import { contentDispositionBuilderTool } from "@/modules/tools/network/content-disposition-builder";
+import { sriHashGeneratorTool } from "@/modules/tools/security/sri-hash-generator";
+import { apacheVhostGeneratorTool } from "@/modules/tools/generators/apache-vhost-generator";
+import { redisConfGeneratorTool } from "@/modules/tools/generators/redis-conf-generator";
+import { postgresqlTuningCalculatorTool } from "@/modules/tools/generators/postgresql-tuning-calculator";
+import { jsonLdGeneratorTool } from "@/modules/tools/generators/json-ld-generator";
+import { rssAtomFeedGeneratorTool } from "@/modules/tools/generators/rss-atom-feed-generator";
+import { upiPaymentLinkBuilderTool } from "@/modules/tools/generators/upi-payment-link-builder";
+import { swiftMtParserTool } from "@/modules/tools/data-format/swift-mt-parser";
+import { avroSchemaGeneratorTool } from "@/modules/tools/data-format/avro-schema-generator";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -701,6 +713,18 @@ export const toolRegistry: ToolRegistryEntry[] = [
   unixCryptHashGeneratorTool,
   ansiblePlaybookGeneratorTool,
   fail2banConfigGeneratorTool,
+  uriTemplateExpanderTool,
+  acceptHeaderNegotiatorTool,
+  contentDispositionBuilderTool,
+  sriHashGeneratorTool,
+  apacheVhostGeneratorTool,
+  redisConfGeneratorTool,
+  postgresqlTuningCalculatorTool,
+  jsonLdGeneratorTool,
+  rssAtomFeedGeneratorTool,
+  upiPaymentLinkBuilderTool,
+  swiftMtParserTool,
+  avroSchemaGeneratorTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {
