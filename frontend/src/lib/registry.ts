@@ -391,6 +391,15 @@ import { rssAtomFeedGeneratorTool } from "@/modules/tools/generators/rss-atom-fe
 import { upiPaymentLinkBuilderTool } from "@/modules/tools/generators/upi-payment-link-builder";
 import { swiftMtParserTool } from "@/modules/tools/data-format/swift-mt-parser";
 import { avroSchemaGeneratorTool } from "@/modules/tools/data-format/avro-schema-generator";
+import { sqlPaginationGeneratorTool } from "@/modules/tools/code/sql-pagination-generator";
+import { sqlDataTypeMapperTool } from "@/modules/tools/code/sql-data-type-mapper";
+import { codeownersTesterTool } from "@/modules/tools/code/codeowners-tester";
+import { soapEnvelopeBuilderTool } from "@/modules/tools/data-format/soap-envelope-builder";
+import { julianDateConverterTool } from "@/modules/tools/converters/julian-date-converter";
+import { smpteTimecodeConverterTool } from "@/modules/tools/converters/smpte-timecode-converter";
+import { complexNumberCalculatorTool } from "@/modules/tools/converters/complex-number-calculator";
+import { meetingTimePlannerTool } from "@/modules/tools/converters/meeting-time-planner";
+import { brailleConverterTool } from "@/modules/tools/encoding/braille-converter";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -725,6 +734,15 @@ export const toolRegistry: ToolRegistryEntry[] = [
   upiPaymentLinkBuilderTool,
   swiftMtParserTool,
   avroSchemaGeneratorTool,
+  sqlPaginationGeneratorTool,
+  sqlDataTypeMapperTool,
+  codeownersTesterTool,
+  soapEnvelopeBuilderTool,
+  julianDateConverterTool,
+  smpteTimecodeConverterTool,
+  complexNumberCalculatorTool,
+  meetingTimePlannerTool,
+  brailleConverterTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {
