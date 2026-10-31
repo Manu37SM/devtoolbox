@@ -352,6 +352,17 @@ import { matrixCalculatorTool } from "@/modules/tools/converters/matrix-calculat
 import { probabilityCalculatorTool } from "@/modules/tools/converters/probability-calculator";
 import { weekNumberCalculatorTool } from "@/modules/tools/converters/week-number-calculator";
 import { csrDecoderTool } from "@/modules/tools/security/csr-decoder";
+import { pemToolkitTool } from "@/modules/tools/security/pem-toolkit";
+import { mimeEncodedWordConverterTool } from "@/modules/tools/encoding/mime-encoded-word-converter";
+import { dataUriToolTool } from "@/modules/tools/encoding/data-uri-tool";
+import { columnExtractorTool } from "@/modules/tools/text/column-extractor";
+import { csvPivotTool } from "@/modules/tools/data-format/csv-pivot";
+import { sequenceGeneratorTool } from "@/modules/tools/text/sequence-generator";
+import { tsconfigGeneratorTool } from "@/modules/tools/generators/tsconfig-generator";
+import { gitlabCiGeneratorTool } from "@/modules/tools/generators/gitlab-ci-generator";
+import { isoCodeLookupTool } from "@/modules/tools/converters/iso-code-lookup";
+import { firewallRuleBuilderTool } from "@/modules/tools/network/firewall-rule-builder";
+import { caddyfileGeneratorTool } from "@/modules/tools/generators/caddyfile-generator";
 
 export const toolRegistry: ToolRegistryEntry[] = [
   jsonFormatterTool,
@@ -647,6 +658,17 @@ export const toolRegistry: ToolRegistryEntry[] = [
   probabilityCalculatorTool,
   weekNumberCalculatorTool,
   csrDecoderTool,
+  pemToolkitTool,
+  mimeEncodedWordConverterTool,
+  dataUriToolTool,
+  columnExtractorTool,
+  csvPivotTool,
+  sequenceGeneratorTool,
+  tsconfigGeneratorTool,
+  gitlabCiGeneratorTool,
+  isoCodeLookupTool,
+  firewallRuleBuilderTool,
+  caddyfileGeneratorTool,
 ];
 
 export function getToolBySlug(slug: string): ToolRegistryEntry | undefined {

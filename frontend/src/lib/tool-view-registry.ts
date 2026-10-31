@@ -348,6 +348,17 @@ import { MatrixCalculatorToolView } from "@/modules/tools/converters/matrix-calc
 import { ProbabilityCalculatorToolView } from "@/modules/tools/converters/probability-calculator/ToolView";
 import { WeekNumberCalculatorToolView } from "@/modules/tools/converters/week-number-calculator/ToolView";
 import { CsrDecoderToolView } from "@/modules/tools/security/csr-decoder/ToolView";
+import { PemToolkitToolView } from "@/modules/tools/security/pem-toolkit/ToolView";
+import { MimeEncodedWordConverterToolView } from "@/modules/tools/encoding/mime-encoded-word-converter/ToolView";
+import { DataUriToolToolView } from "@/modules/tools/encoding/data-uri-tool/ToolView";
+import { ColumnExtractorToolView } from "@/modules/tools/text/column-extractor/ToolView";
+import { CsvPivotToolView } from "@/modules/tools/data-format/csv-pivot/ToolView";
+import { SequenceGeneratorToolView } from "@/modules/tools/text/sequence-generator/ToolView";
+import { TsconfigGeneratorToolView } from "@/modules/tools/generators/tsconfig-generator/ToolView";
+import { GitlabCiGeneratorToolView } from "@/modules/tools/generators/gitlab-ci-generator/ToolView";
+import { IsoCodeLookupToolView } from "@/modules/tools/converters/iso-code-lookup/ToolView";
+import { FirewallRuleBuilderToolView } from "@/modules/tools/network/firewall-rule-builder/ToolView";
+import { CaddyfileGeneratorToolView } from "@/modules/tools/generators/caddyfile-generator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -643,4 +654,15 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "probability-calculator": ProbabilityCalculatorToolView,
   "week-number-calculator": WeekNumberCalculatorToolView,
   "csr-decoder": CsrDecoderToolView,
+  "pem-toolkit": PemToolkitToolView,
+  "mime-encoded-word-converter": MimeEncodedWordConverterToolView,
+  "data-uri-tool": DataUriToolToolView,
+  "column-extractor": ColumnExtractorToolView,
+  "csv-pivot": CsvPivotToolView,
+  "sequence-generator": SequenceGeneratorToolView,
+  "tsconfig-generator": TsconfigGeneratorToolView,
+  "gitlab-ci-generator": GitlabCiGeneratorToolView,
+  "iso-code-lookup": IsoCodeLookupToolView,
+  "firewall-rule-builder": FirewallRuleBuilderToolView,
+  "caddyfile-generator": CaddyfileGeneratorToolView,
 };
