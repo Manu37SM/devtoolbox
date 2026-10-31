@@ -387,6 +387,15 @@ import { RssAtomFeedGeneratorToolView } from "@/modules/tools/generators/rss-ato
 import { UpiPaymentLinkBuilderToolView } from "@/modules/tools/generators/upi-payment-link-builder/ToolView";
 import { SwiftMtParserToolView } from "@/modules/tools/data-format/swift-mt-parser/ToolView";
 import { AvroSchemaGeneratorToolView } from "@/modules/tools/data-format/avro-schema-generator/ToolView";
+import { SqlPaginationGeneratorToolView } from "@/modules/tools/code/sql-pagination-generator/ToolView";
+import { SqlDataTypeMapperToolView } from "@/modules/tools/code/sql-data-type-mapper/ToolView";
+import { CodeownersTesterToolView } from "@/modules/tools/code/codeowners-tester/ToolView";
+import { SoapEnvelopeBuilderToolView } from "@/modules/tools/data-format/soap-envelope-builder/ToolView";
+import { JulianDateConverterToolView } from "@/modules/tools/converters/julian-date-converter/ToolView";
+import { SmpteTimecodeConverterToolView } from "@/modules/tools/converters/smpte-timecode-converter/ToolView";
+import { ComplexNumberCalculatorToolView } from "@/modules/tools/converters/complex-number-calculator/ToolView";
+import { MeetingTimePlannerToolView } from "@/modules/tools/converters/meeting-time-planner/ToolView";
+import { BrailleConverterToolView } from "@/modules/tools/encoding/braille-converter/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -721,4 +730,13 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "upi-payment-link-builder": UpiPaymentLinkBuilderToolView,
   "swift-mt-parser": SwiftMtParserToolView,
   "avro-schema-generator": AvroSchemaGeneratorToolView,
+  "sql-pagination-generator": SqlPaginationGeneratorToolView,
+  "sql-data-type-mapper": SqlDataTypeMapperToolView,
+  "codeowners-tester": CodeownersTesterToolView,
+  "soap-envelope-builder": SoapEnvelopeBuilderToolView,
+  "julian-date-converter": JulianDateConverterToolView,
+  "smpte-timecode-converter": SmpteTimecodeConverterToolView,
+  "complex-number-calculator": ComplexNumberCalculatorToolView,
+  "meeting-time-planner": MeetingTimePlannerToolView,
+  "braille-converter": BrailleConverterToolView,
 };
