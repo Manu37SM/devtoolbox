@@ -375,6 +375,18 @@ import { KnownHostsHasherToolView } from "@/modules/tools/security/known-hosts-h
 import { UnixCryptHashGeneratorToolView } from "@/modules/tools/security/unix-crypt-hash-generator/ToolView";
 import { AnsiblePlaybookGeneratorToolView } from "@/modules/tools/generators/ansible-playbook-generator/ToolView";
 import { Fail2banConfigGeneratorToolView } from "@/modules/tools/generators/fail2ban-config-generator/ToolView";
+import { UriTemplateExpanderToolView } from "@/modules/tools/network/uri-template-expander/ToolView";
+import { AcceptHeaderNegotiatorToolView } from "@/modules/tools/network/accept-header-negotiator/ToolView";
+import { ContentDispositionBuilderToolView } from "@/modules/tools/network/content-disposition-builder/ToolView";
+import { SriHashGeneratorToolView } from "@/modules/tools/security/sri-hash-generator/ToolView";
+import { ApacheVhostGeneratorToolView } from "@/modules/tools/generators/apache-vhost-generator/ToolView";
+import { RedisConfGeneratorToolView } from "@/modules/tools/generators/redis-conf-generator/ToolView";
+import { PostgresqlTuningCalculatorToolView } from "@/modules/tools/generators/postgresql-tuning-calculator/ToolView";
+import { JsonLdGeneratorToolView } from "@/modules/tools/generators/json-ld-generator/ToolView";
+import { RssAtomFeedGeneratorToolView } from "@/modules/tools/generators/rss-atom-feed-generator/ToolView";
+import { UpiPaymentLinkBuilderToolView } from "@/modules/tools/generators/upi-payment-link-builder/ToolView";
+import { SwiftMtParserToolView } from "@/modules/tools/data-format/swift-mt-parser/ToolView";
+import { AvroSchemaGeneratorToolView } from "@/modules/tools/data-format/avro-schema-generator/ToolView";
 
 export const toolViewRegistry: Record<string, ComponentType> = {
   "json-formatter": JsonFormatterToolView,
@@ -697,4 +709,16 @@ export const toolViewRegistry: Record<string, ComponentType> = {
   "unix-crypt-hash-generator": UnixCryptHashGeneratorToolView,
   "ansible-playbook-generator": AnsiblePlaybookGeneratorToolView,
   "fail2ban-config-generator": Fail2banConfigGeneratorToolView,
+  "uri-template-expander": UriTemplateExpanderToolView,
+  "accept-header-negotiator": AcceptHeaderNegotiatorToolView,
+  "content-disposition-builder": ContentDispositionBuilderToolView,
+  "sri-hash-generator": SriHashGeneratorToolView,
+  "apache-vhost-generator": ApacheVhostGeneratorToolView,
+  "redis-conf-generator": RedisConfGeneratorToolView,
+  "postgresql-tuning-calculator": PostgresqlTuningCalculatorToolView,
+  "json-ld-generator": JsonLdGeneratorToolView,
+  "rss-atom-feed-generator": RssAtomFeedGeneratorToolView,
+  "upi-payment-link-builder": UpiPaymentLinkBuilderToolView,
+  "swift-mt-parser": SwiftMtParserToolView,
+  "avro-schema-generator": AvroSchemaGeneratorToolView,
 };
