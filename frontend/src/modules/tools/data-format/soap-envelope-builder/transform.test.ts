@@ -159,7 +159,7 @@ describe("parse", () => {
 });
 
 // ---- oracle: xmllint must accept every generated envelope (well-formed + namespaces bound) ----
-const hasXmllint = spawnSync("xmllint", ["--version"], { encoding: "utf8" }).status === 0 || spawnSync("xmllint", ["--version"]).stderr.length > 0;
+const hasXmllint = spawnSync("xmllint", ["--version"], { encoding: "utf8" }).status === 0; // absent binary => status null => skipped
 describe.skipIf(!hasXmllint)("xmllint oracle", () => {
   const lint = (xml: string) => spawnSync("xmllint", ["--noout", "-"], { input: xml, encoding: "utf8" });
   it("accepts every combination", () => {
