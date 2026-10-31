@@ -7,8 +7,16 @@ import { firewallRuleBuilder, parseRules } from "./transform";
 import type { FirewallRuleBuilderOptions } from "./schema";
 
 const have = (bin: string) => spawnSync("sh", ["-c", `command -v ${bin}`]).status === 0;
-const HAS_IPT = have("iptables-restore") && have("ip6tables-restore");
-const HAS_NFT = have("nft");
+// The binaries can exist yet be unusable (CI runners are not root and have no netlink access),
+// so probe with a trivial valid input and only run the oracle when it really works.
+const works = (cmd: string, args: string[], input: string) => have(cmd) && spawnSync(cmd, args, { input, encoding: "utf8" }).status === 0;
+const HAS_IPT = works("iptables-restore", ["--test"], "*filter\nCOMMIT\n") && works("ip6tables-restore", ["--test"], "*filter\nCOMMIT\n");
+const probeFile = () => {
+  const f = join(mkdtempSync(join(tmpdir(), "nftprobe-")), "p.nft");
+  writeFileSync(f, "table inet probe\n");
+  return f;
+};
+const HAS_NFT = have("nft") && spawnSync("nft", ["-c", "-f", probeFile()], { encoding: "utf8" }).status === 0;
 const HAS_UFW = have("ufw") && process.getuid?.() === 0;
 const FW_PY = spawnSync("/usr/bin/python3", ["-c", "import sys; sys.path.insert(0,'/usr/lib/python3/dist-packages'); from firewall.core.rich import Rich_Rule"]).status === 0;
 
